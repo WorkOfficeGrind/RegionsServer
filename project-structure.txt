@@ -1,0 +1,82 @@
+PROJECT STRUCTURE:
+
+📁 config/
+  📄 db.js
+  📄 redis.js
+📁 controllers/
+  📄 authControllers.js
+  📄 testControllers.js
+  📄 transactionControllers.js
+  📄 userController.js
+📁 logs/
+📄 logStream.js
+📄 map-project.js
+📁 middleware/
+  📄 auth.js
+  📄 errorHandler.js
+  📄 errorLogger.js
+  📄 httpLogger.js
+  📄 validationErrorHandler.js
+📁 models/
+  📄 account.js
+  📄 beneficiary.js
+  📄 bill.js
+  📄 card.js
+  📄 cashapp.js
+  📄 paypal.js
+  📄 transaction.js
+  📄 user.js
+  📄 venmo.js
+  📄 zelle.js
+📄 package-lock.json
+📄 package.json
+📁 routes/
+  📄 auth.js
+  📄 transaction.js
+  📄 user.js
+📄 server.js
+📄 socket-test.js
+📁 utils/
+  📄 customError.js
+  📄 emailService.js
+  📄 logger.js
+  📄 validationError.js
+
+PACKAGE.JSON DEPENDENCIES:
+  Dependencies:
+    @faker-js/faker: ^8.4.1
+    @sendgrid/mail: ^8.1.4
+    bcryptjs: ^2.4.3
+    cloudinary: ^1.41.3
+    compression: ^1.8.0
+    cors: ^2.8.5
+    csv-writer: ^1.6.0
+    dotenv: ^16.4.5
+    express: ^4.19.2
+    express-async-handler: ^1.2.0
+    express-request-id: ^3.0.0
+    express-validator: ^7.2.0
+    fs: ^0.0.1-security
+    helmet: ^8.0.0
+    http: ^0.0.1-security
+    jsonwebtoken: ^9.0.2
+    moment: ^2.30.1
+    mongoose: ^8.5.2
+    morgan: ^1.10.0
+    multer: ^1.4.5-lts.1
+    multer-storage-cloudinary: ^4.0.0
+    node-cron: ^3.0.3
+    nodemailer: ^6.10.0
+    os: ^0.1.2
+    path: ^0.12.7
+    readline: ^1.3.0
+    socket.io: ^4.8.1
+    socket.io-client: ^4.8.1
+    stream: ^0.0.3
+    twilio: ^5.3.5
+    uuid: ^11.1.0
+    validator: ^13.12.0
+    winston: ^3.17.0
+    winston-transport: ^4.9.0
+  Dev Dependencies:
+    nodemon: ^3.1.4

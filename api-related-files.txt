@@ -1,0 +1,188 @@
+API-RELATED FILES:
+
+middleware\httpLogger.js
+---
+
+const morgan = require("morgan");
+const logger = require("../utils/logger");
+
+// Create a write stream for Morgan
+const stream = {
+  write: (message) => logger.http(message.trim()),
+};
+
+// Custom token for request body
+morgan.token("body", (req) => {
+  const body = { ...req.body };
+
+  // Remove sensitive data
+  if (body.password) body.password = "********";
+  if (body.pin) body.pin = "****";
+  if (body.ssn) body.ssn = "***-**-****";
+
+  return JSON.stringify(body);
+});
+
+// Custom format string
+const morganFormat =
+  ':remote-addr - :remote-user [:date[clf]] ":method :url HTTP/:http-version" :status :res[content-length] ":referrer" ":user-agent" :response-time ms :body';
+
+// Create the middleware
+const httpLogger = morgan(morganFormat, { stream });
+
+module.exports = httpLogger;
+
+---
+
+utils\emailService.js
+---
+const nodemailer = require("nodemailer");
+const logger = require("./logger");
+
+// Create transporter based on environment
+const createTransporter = () => {
+  if (process.env.NODE_ENV === "production") {
+    // Production email service (e.g., SendGrid, AWS SES)
+    return nodemailer.createTransport({
+      service: process.env.EMAIL_SERVICE,
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASSWORD,
+      },
+    });
+  } else {
+    // Development email service (e.g., Ethereal or local SMTP)
+    return nodemailer.createTransport({
+      host: process.env.DEV_EMAIL_HOST || "smtp.ethereal.email",
+      port: process.env.DEV_EMAIL_PORT || 587,
+      secure: false,
+      auth: {
+        user: process.env.DEV_EMAIL_USER,
+        pass: process.env.DEV_EMAIL_PASS,
+      },
+    });
+  }
+};
+
+const generateVerificationEmailTemplate = (token, fields) => {
+  const fieldsList = fields.join(" and ");
+  const verificationLink = `${process.env.FRONTEND_URL}/verify-updates?token=${token}`;
+
+  return {
+    subject: "Verify Your Regions Account Updates",
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <div style="background-color: #1a365d; padding: 20px; text-align: center;">
+          <img src="regions-logo.png" alt="Regions Bank" style="max-width: 150px;">
+        </div>
+        
+        <div style="padding: 20px; background-color: #ffffff;">
+          <h2 style="color: #1a365d;">Verify Your Account Updates</h2>
+          
+          <p>You recently requested to update your ${fieldsList}. To complete this process, please verify these changes by clicking the button below:</p>
+          
+          <div style="text-align: center; margin: 30px 0;">
+            <a href="${verificationLink}" 
+               style="background-color: #1a365d; 
+                      color: white; 
+                      padding: 12px 30px; 
+                      text-decoration: none; 
+                      border-radius: 5px; 
+                      display: inline-block;">
+              Verify Updates
+            </a>
+          </div>
+          
+          <p>This link will expire in 30 minutes for your security.</p>
+          
+          <p>If you didn't request these changes, please contact our support team immediately.</p>
+          
+          <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee;">
+            <p style="font-size: 12px; color: #666;">
+              This is an automated message, please do not reply to this email. 
+              For support, visit our help center or contact us at support@regions.com
+            </p>
+          </div>
+        </div>
+      </div>
+    `,
+    text: `
+      Verify Your Regions Account Updates
+
+      You recently requested to update your ${fieldsList}. 
+      
+      To verify these changes, please visit the following link:
+      ${verificationLink}
+      
+      This link will expire in 30 minutes for your security.
+      
+      If you didn't request these changes, please contact our support team immediately.
+      
+      For support, visit our help center or contact us at support@regions.com
+    `,
+  };
+};
+
+const sendVerificationEmail = async (email, token, fields) => {
+  try {
+    const transporter = createTransporter();
+    const template = generateVerificationEmailTemplate(token, fields);
+
+    const mailOptions = {
+      from: process.env.EMAIL_FROM || '"Regions Bank" <noreply@regions.com>',
+      to: email,
+      subject: template.subject,
+      html: template.html,
+      text: template.text,
+    };
+
+    const info = await transporter.sendMail(mailOptions);
+
+    logger.info("Verification email sent successfully", {
+      messageId: info.messageId,
+      recipient: email,
+      fields,
+    });
+
+    // For development environment, log the test URL
+    if (process.env.NODE_ENV !== "production" && info.testMessageUrl) {
+      logger.info("Preview URL:", {
+        url: info.testMessageUrl,
+        recipient: email,
+      });
+    }
+
+    return info;
+  } catch (error) {
+    logger.error("Error sending verification email:", {
+      error: error.message,
+      stack: error.stack,
+      recipient: email,
+      fields,
+    });
+    throw new Error("Failed to send verification email");
+  }
+};
+
+// Utility function to create test SMTP account (useful for development)
+const createTestAccount = async () => {
+  try {
+    const testAccount = await nodemailer.createTestAccount();
+    logger.info("Test SMTP account created:", {
+      user: testAccount.user,
+      pass: testAccount.pass,
+    });
+    return testAccount;
+  } catch (error) {
+    logger.error("Error creating test account:", error);
+    throw error;
+  }
+};
+
+module.exports = {
+  sendVerificationEmail,
+  createTestAccount,
+};
+
+---
+
