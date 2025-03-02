@@ -273,6 +273,15 @@ const UserSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    passcodeAttemptLeft: {
+      type: Number,
+      default: 5,
+    },
+    status: {
+      type: String,
+      enum: ["active", "passcode_locked", "inactive", "dormant"],
+      default: "active",
+    },
   },
   { versionKey: false, timestamps: true }
 );

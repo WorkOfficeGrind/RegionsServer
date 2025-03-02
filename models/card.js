@@ -2,6 +2,11 @@ const mongoose = require("mongoose");
 
 const CardSchema = new mongoose.Schema(
   {
+    user: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+    },
     type: {
       type: String,
       enum: ["Debit", "Credit", "Black", "Platinum"],
@@ -120,6 +125,11 @@ const CardSchema = new mongoose.Schema(
     },
     googlePay: {
       type: Boolean,
+    },
+    status: {
+      type: String,
+      enum: ["active", "inactive", "suspended", "closed"],
+      default: "active",
     },
   },
   { versionKey: false, timestamps: true }

@@ -13,6 +13,8 @@ const Transport = require("winston-transport");
 const connectDB = require("./config/db");
 const userRoutes = require("./routes/user");
 const authRoutes = require("./routes/auth");
+const accountRoutes = require("./routes/account");
+const cardRoutes = require("./routes/card");
 const transactionRoutes = require("./routes/transaction");
 const waitlistRoutes = require("./routes/waitlist");
 const walletRoutes = require("./routes/wallet");
@@ -213,6 +215,8 @@ connectDB().catch((err) => {
 // Routes
 app.use("/api/users", userRoutes);
 app.use("/api/auth", authRoutes);
+app.use("/api/accounts", accountRoutes);
+app.use("/api/cards", cardRoutes);
 app.use("/api/transactions", transactionRoutes);
 app.use("/api/waitlists", waitlistRoutes);
 app.use("/api/wallets", walletRoutes);

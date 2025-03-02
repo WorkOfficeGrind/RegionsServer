@@ -1,4 +1,6 @@
 const mongoose = require("mongoose");
+const mongoosePaginate = require("mongoose-paginate-v2");
+
 
 const WalletSchema = new mongoose.Schema(
   {
@@ -18,9 +20,10 @@ const WalletSchema = new mongoose.Schema(
       enum: ["USD", "BTC", "ETH", "SOL", "XRP", "ADA", "USDT"], // Extend as needed
     },
     balance: {
-      type: Number,
+      type: mongoose.Schema.Types.Decimal128,
+      default: mongoose.Types.Decimal128.fromString("0"),
+      get: (v) => (v ? parseFloat(v.toString()) : 0),
       required: true,
-      default: 0,
     },
     transactions: [
       {
@@ -37,9 +40,31 @@ const WalletSchema = new mongoose.Schema(
       type: String,
       // required: true,
     },
+
+    // isActive: {
+    //   type: Boolean,
+    //   default: true,
+    // },
+    // isDefault: {
+    //   type: Boolean,
+    //   default: false,
+    // },
+    // lastTransactionDate: {
+    //   type: Date,
+    //   default: null,
+    // },
   },
-  { versionKey: false, timestamps: true }
+  {
+    versionKey: false,
+    timestamps: true,
+    toJSON: { getters: true, virtuals: true },
+    toObject: { getters: true, virtuals: true },
+  }
 );
+
+// Indexes for performance
+WalletSchema.index({ user: 1, currency: 1 });
+WalletSchema.index({ user: 1, isDefault: 1 });
 
 // Pre-save hook to auto-generate the wallet name based on the wallet count
 WalletSchema.pre("save", async function (next) {
@@ -49,11 +74,22 @@ WalletSchema.pre("save", async function (next) {
     // Wallet count + 1 gives the current wallet number
     const walletNumber = count + 1;
     // Pad the number to 2 digits and assign the name
-    this.name = `Address ${walletNumber.toString().padStart(2, "0")}`;
+    this.name = `Wallet ${walletNumber.toString().padStart(2, "0")}`;
   }
+  if (this.isDefault) {
+    // Find any other default wallets for this user and unset them
+    await this.constructor.updateMany(
+      { user: this.user, _id: { $ne: this._id }, isDefault: true },
+      { isDefault: false }
+    );
+  }
+
   next();
 });
+
+WalletSchema.plugin(mongoosePaginate);
 
 const Wallet = mongoose.model("Wallet", WalletSchema);
 
 module.exports = Wallet;
+

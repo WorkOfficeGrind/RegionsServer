@@ -260,7 +260,6 @@
 //   }
 // };
 
-
 // const verifyPasscodeAndAuth = async (req, res, next) => {
 //   try {
 //     // 1. Check for authentication token
@@ -390,7 +389,6 @@
 //   hasAccessOrIsAdmin,
 //   verifyPasscodeAndAuth,
 // };
-
 
 const jwt = require("jsonwebtoken");
 const User = require("../models/user");
@@ -1073,13 +1071,87 @@ const verifyPasscodeAndAuth = async (req, res, next) => {
   }
 };
 
+// const verifyPasscode = async (req, res, next) => {
+//   try {
+//     // Get passcode from custom header
+//     const passcodeSecurity = req.headers["x-passcode-auth"];
+//     const userId = req.user._id;
+
+//     // Add detailed logging for debugging
+//     logger.debug("Passcode verification attempt", {
+//       userId,
+//       hasPasscodeHeader: !!passcodeSecurity,
+//       requestId: req.id,
+//       headers: Object.keys(req.headers),
+//     });
+
+//     if (!passcodeSecurity) {
+//       throw new CustomError(
+//         400,
+//         "Passcode header is required for this operation"
+//       );
+//     }
+
+//     // Get user and specifically select passcodeHash field
+//     const user = await User.findById(userId).select("+passcodeHash");
+
+//     if (!user) {
+//       throw new CustomError(404, "User not found");
+//     }
+
+//     // Log detailed info about user's passcode status (only in development)
+//     if (process.env.NODE_ENV === "development") {
+//       logger.debug("Passcode verification details", {
+//         userId,
+//         hasPasscodeHash: !!user.passcodeHash,
+//         requestId: req.id,
+//       });
+//     }
+
+//     if (!user.passcodeHash) {
+//       throw new CustomError(
+//         400,
+//         "Passcode not set up. Please set up a passcode first."
+//       );
+//     }
+
+//     // Compare passcode hashes
+//     if (passcodeSecurity !== user.passcodeHash) {
+//       // Log hash comparison in development (without exposing full hash)
+//       if (process.env.NODE_ENV === "development") {
+//         logger.debug("Passcode hash mismatch", {
+//           userId,
+//           headerHashPrefix: passcodeSecurity.substring(0, 8) + "...",
+//           storedHashPrefix: user.passcodeHash.substring(0, 8) + "...",
+//           requestId: req.id,
+//         });
+//       }
+//       throw new CustomError(401, "Invalid passcode");
+//     }
+
+//     // Passcode verified, proceed
+//     logger.debug("Passcode verification successful", {
+//       userId,
+//       requestId: req.id,
+//     });
+//     next();
+//   } catch (error) {
+//     logger.error("Passcode verification error:", {
+//       error: error.message,
+//       userId: req.user?._id,
+//       requestId: req.id,
+//       timestamp: new Date().toISOString(),
+//     });
+//     next(error);
+//   }
+// };
+
 const verifyPasscode = async (req, res, next) => {
   try {
     // Get passcode from custom header
     const passcodeSecurity = req.headers["x-passcode-auth"];
     const userId = req.user._id;
 
-    // Add detailed logging for debugging
     logger.debug("Passcode verification attempt", {
       userId,
       hasPasscodeHeader: !!passcodeSecurity,
@@ -1094,11 +1166,21 @@ const verifyPasscode = async (req, res, next) => {
       );
     }
 
-    // Get user and specifically select passcodeHash field
-    const user = await User.findById(userId).select("+passcodeHash");
+    // Get user and explicitly select the passcodeHash, passcodeAttemptLeft, and status fields
+    const user = await User.findById(userId).select(
+      "+passcodeHash passcodeAttemptLeft status"
+    );
 
     if (!user) {
       throw new CustomError(404, "User not found");
+    }
+
+    // Check if user is allowed to attempt passcode verification
+    if (user.passcodeAttemptLeft <= 0 || user.status === "passcode_locked") {
+      throw new CustomError(
+        403,
+        "Passcode attempts exhausted. Account is locked."
+      );
     }
 
     // Log detailed info about user's passcode status (only in development)
@@ -1106,32 +1188,43 @@ const verifyPasscode = async (req, res, next) => {
       logger.debug("Passcode verification details", {
         userId,
         hasPasscodeHash: !!user.passcodeHash,
+        passcodeAttemptLeft: user.passcodeAttemptLeft,
+        status: user.status,
         requestId: req.id,
       });
     }
 
-    if (!user.passcodeHash) {
-      throw new CustomError(
-        400,
-        "Passcode not set up. Please set up a passcode first."
-      );
-    }
-
     // Compare passcode hashes
     if (passcodeSecurity !== user.passcodeHash) {
-      // Log hash comparison in development (without exposing full hash)
+      // Deduct one attempt
+      user.passcodeAttemptLeft -= 1;
+
+      // If attempts are exhausted, lock the account
+      if (user.passcodeAttemptLeft <= 0) {
+        user.status = "passcode_locked";
+      }
+
+      await user.save();
+
       if (process.env.NODE_ENV === "development") {
         logger.debug("Passcode hash mismatch", {
           userId,
           headerHashPrefix: passcodeSecurity.substring(0, 8) + "...",
-          storedHashPrefix: user.passcodeHash.substring(0, 8) + "...",
+          storedHashPrefix: user.passcodeHash,
+          remainingAttempts: user.passcodeAttemptLeft,
           requestId: req.id,
         });
       }
       throw new CustomError(401, "Invalid passcode");
     }
 
-    // Passcode verified, proceed
+    // If passcode is confirmed, reset attempts to 5 if needed and ensure account status is active
+    if (user.passcodeAttemptLeft < 5 || user.status !== "active") {
+      user.passcodeAttemptLeft = 5;
+      user.status = "active";
+      await user.save();
+    }
+
     logger.debug("Passcode verification successful", {
       userId,
       requestId: req.id,
@@ -1148,6 +1241,8 @@ const verifyPasscode = async (req, res, next) => {
   }
 };
 
+module.exports = verifyPasscode;
+
 /**
  * Get passcode status (Development only)
  * @route GET /api/auth/dev/passcode-status
@@ -1157,7 +1252,10 @@ const getPasscodeStatus = async (req, res, next) => {
   try {
     // Only allow in development environment
     if (process.env.NODE_ENV !== "development") {
-      throw new CustomError(403, "This endpoint is only available in development mode");
+      throw new CustomError(
+        403,
+        "This endpoint is only available in development mode"
+      );
     }
 
     // Only allow for admins
@@ -1166,14 +1264,14 @@ const getPasscodeStatus = async (req, res, next) => {
     }
 
     const { userId } = req.query;
-    
+
     // If userId is provided, check that specific user
     // Otherwise check the current user
     const targetId = userId || req.user._id;
 
     // Find user and select passcodeHash
     const user = await User.findById(targetId).select("+passcodeHash");
-    
+
     if (!user) {
       throw new CustomError(404, "User not found");
     }
@@ -1182,17 +1280,18 @@ const getPasscodeStatus = async (req, res, next) => {
     const passcodeInfo = {
       userId: user._id,
       hasPasscode: !!user.passcodeHash,
-      passcodeHashPrefix: user.passcodeHash ? 
-        `${user.passcodeHash.substring(0, 8)}...${user.passcodeHash.substring(user.passcodeHash.length - 8)}` : 
-        null,
+      passcodeHashPrefix: user.passcodeHash
+        ? `${user.passcodeHash.substring(0, 8)}...${user.passcodeHash.substring(
+            user.passcodeHash.length - 8
+          )}`
+        : null,
     };
 
     res.status(200).json({
       status: "success",
       message: "Passcode status retrieved",
-      data: passcodeInfo
+      data: passcodeInfo,
     });
-
   } catch (error) {
     logger.error("Get passcode status error:", {
       error: error.message,
@@ -1214,7 +1313,10 @@ const hashPasscodeForDev = async (req, res, next) => {
   try {
     // Only allow in development environment
     if (process.env.NODE_ENV !== "development") {
-      throw new CustomError(403, "This endpoint is only available in development mode");
+      throw new CustomError(
+        403,
+        "This endpoint is only available in development mode"
+      );
     }
 
     // Only allow for admins
@@ -1240,7 +1342,7 @@ const hashPasscodeForDev = async (req, res, next) => {
     // If userId is provided, check against that user's passcode
     if (userId) {
       user = await User.findById(userId).select("+passcodeHash");
-      
+
       if (!user) {
         throw new CustomError(404, "User not found");
       }
@@ -1248,7 +1350,7 @@ const hashPasscodeForDev = async (req, res, next) => {
       matchResult = {
         userId: user._id,
         hasStoredPasscode: !!user.passcodeHash,
-        isMatch: user.passcodeHash === passcodeHash
+        isMatch: user.passcodeHash === passcodeHash,
       };
     }
 
@@ -1258,10 +1360,9 @@ const hashPasscodeForDev = async (req, res, next) => {
       data: {
         passcodeHash,
         passcodeForHeader: passcodeHash, // Add this line to make it clear this is what should go in the header
-        matchResult
-      }
+        matchResult,
+      },
     });
-
   } catch (error) {
     logger.error("Hash passcode error:", {
       error: error.message,
@@ -1273,8 +1374,6 @@ const hashPasscodeForDev = async (req, res, next) => {
     next(error);
   }
 };
-
-
 
 module.exports = {
   auth,

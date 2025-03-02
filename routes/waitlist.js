@@ -3,7 +3,7 @@ const { auth, hasRole, verifyPasscodeAndAuth, verifyPasscode } = require("../mid
 const { applyForWallet, approveWalletApplication, rejectWalletApplication, getUserPendingApplications } = require("../controllers/waitlistControllers");
 const router = express.Router();
 
-router.get("/pending/:userId", auth, getUserPendingApplications);
+router.get("/pending", auth, getUserPendingApplications);
 
 router.post("/apply", auth, verifyPasscode, applyForWallet);
 

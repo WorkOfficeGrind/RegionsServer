@@ -310,7 +310,11 @@ const rejectWalletApplication = async (req, res, next) => {
 const getUserPendingApplications = async (req, res, next) => {
   try {
     // Assume user ID is passed as a URL parameter, e.g., /api/waitlist/pending/:userId
-    const userId = req.params.userId;
+    const userId = req.user._id;
+
+    if (!userId) {
+        throw new CustomError(404, "User Not Found.");
+    }
 
     const applications = await Waitlist.find({
       user: userId,
