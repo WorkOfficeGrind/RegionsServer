@@ -10597,3 +10597,111 @@
 {"level":"info","message":"Cryptocurrency rates added to the exchange rate cache","timestamp":"2025-03-02 04:23:09"}
 {"availableCurrencies":169,"includesCrypto":true,"level":"info","message":"Exchange rates updated and re-based to USD successfully","timestamp":"2025-03-02 04:23:09"}
 {"level":"info","message":"MongoDB Connected: ac-fky7kgt-shard-00-00.cgmoocn.mongodb.net","timestamp":"2025-03-02 04:23:17"}
+{"level":"info","message":"Starting server initialization...","timestamp":"2025-03-02 04:23:20"}
+{"level":"info","message":"Server is running on port 8080","timestamp":"2025-03-02 04:23:20"}
+{"level":"info","message":"Log streaming available on same port, path: /logs","timestamp":"2025-03-02 04:23:20"}
+{"level":"info","message":"Environment: development","timestamp":"2025-03-02 04:23:20"}
+{"level":"info","message":"Cryptocurrency rates added to the exchange rate cache","timestamp":"2025-03-02 04:23:21"}
+{"availableCurrencies":169,"includesCrypto":true,"level":"info","message":"Exchange rates updated and re-based to USD successfully","timestamp":"2025-03-02 04:23:21"}
+{"level":"info","message":"MongoDB Connected: ac-fky7kgt-shard-00-00.cgmoocn.mongodb.net","timestamp":"2025-03-02 04:23:22"}
+{"level":"info","message":"Authentication attempt","method":"GET","path":"/","requestId":"e6e2b21c-589c-43d5-90f4-8814b15589d9","timestamp":"2025-03-02 04:23:22"}
+{"level":"info","message":"Authentication successful","requestId":"e6e2b21c-589c-43d5-90f4-8814b15589d9","timestamp":"2025-03-02 04:23:24","userId":"67c368c5fd575921c844b2d2","userRole":"user"}
+{"count":1,"level":"info","message":"Accounts retrieved successfully","requestId":"e6e2b21c-589c-43d5-90f4-8814b15589d9","timestamp":"2025-03-02 04:23:24"}
+{"level":"http","message":"172.20.10.3 - - [02/Mar/2025:03:23:24 +0000] \"GET /api/accounts HTTP/1.1\" 304 - \"-\" \"Expo/1017655 CFNetwork/1496.0.7 Darwin/23.5.0\" 2052.643 ms {}","timestamp":"2025-03-02 04:23:24"}
+{"email":"tenpenny.mitchell@yahoo.com","ip":"172.20.10.3","level":"info","message":"User logged in successfully","requestId":"63114a58-e447-442d-897f-5bb5c5d4fc7f","timestamp":"2025-03-02T03:23:47.213Z","userId":"67c368c5fd575921c844b2d2"}
+{"level":"http","message":"172.20.10.3 - - [02/Mar/2025:03:23:47 +0000] \"POST /api/auth/login HTTP/1.1\" 200 687 \"-\" \"Expo/1017655 CFNetwork/1496.0.7 Darwin/23.5.0\" 1383.969 ms {\"email\":\"tenpenny.mitchell@yahoo.com\",\"password\":\"********\"}","timestamp":"2025-03-02 04:23:47"}
+{"level":"info","message":"Authentication attempt","method":"GET","path":"/","requestId":"2764a69e-e2ed-4250-ac46-3039e742a5aa","timestamp":"2025-03-02 04:23:47"}
+{"level":"info","message":"Authentication attempt","method":"GET","path":"/","requestId":"4b4f275b-feec-4b7a-8bf1-2e620de229b1","timestamp":"2025-03-02 04:23:47"}
+{"level":"info","message":"Authentication attempt","method":"GET","path":"/","requestId":"5017750f-80e7-4fad-ae30-fd9ee85e27e6","timestamp":"2025-03-02 04:23:47"}
+{"level":"info","message":"Authentication successful","requestId":"2764a69e-e2ed-4250-ac46-3039e742a5aa","timestamp":"2025-03-02 04:23:47","userId":"67c368c5fd575921c844b2d2","userRole":"user"}
+{"level":"info","message":"Authentication successful","requestId":"5017750f-80e7-4fad-ae30-fd9ee85e27e6","timestamp":"2025-03-02 04:23:47","userId":"67c368c5fd575921c844b2d2","userRole":"user"}
+{"level":"info","message":"Authentication successful","requestId":"4b4f275b-feec-4b7a-8bf1-2e620de229b1","timestamp":"2025-03-02 04:23:47","userId":"67c368c5fd575921c844b2d2","userRole":"user"}
+{"count":1,"level":"info","message":"Accounts retrieved successfully","requestId":"2764a69e-e2ed-4250-ac46-3039e742a5aa","timestamp":"2025-03-02 04:23:47"}
+{"level":"http","message":"172.20.10.3 - - [02/Mar/2025:03:23:47 +0000] \"GET /api/accounts HTTP/1.1\" 304 - \"-\" \"Expo/1017655 CFNetwork/1496.0.7 Darwin/23.5.0\" 432.720 ms {}","timestamp":"2025-03-02 04:23:47"}
+{"count":1,"level":"info","message":"Accounts retrieved successfully","requestId":"5017750f-80e7-4fad-ae30-fd9ee85e27e6","timestamp":"2025-03-02 04:23:47"}
+{"level":"http","message":"172.20.10.3 - - [02/Mar/2025:03:23:47 +0000] \"GET /api/accounts HTTP/1.1\" 304 - \"-\" \"Expo/1017655 CFNetwork/1496.0.7 Darwin/23.5.0\" 441.287 ms {}","timestamp":"2025-03-02 04:23:47"}
+{"count":1,"level":"info","message":"Accounts retrieved successfully","requestId":"4b4f275b-feec-4b7a-8bf1-2e620de229b1","timestamp":"2025-03-02 04:23:47"}
+{"level":"http","message":"172.20.10.3 - - [02/Mar/2025:03:23:47 +0000] \"GET /api/accounts HTTP/1.1\" 304 - \"-\" \"Expo/1017655 CFNetwork/1496.0.7 Darwin/23.5.0\" 451.205 ms {}","timestamp":"2025-03-02 04:23:47"}
+{"level":"info","message":"Authentication attempt","method":"GET","path":"/","requestId":"1d011833-9961-457a-814e-6e0a92da374b","timestamp":"2025-03-02 04:23:48"}
+{"level":"info","message":"Authentication attempt","method":"GET","path":"/pending","requestId":"5e549848-6b33-4955-b1f7-bb9560e1a861","timestamp":"2025-03-02 04:23:48"}
+{"level":"info","message":"Authentication attempt","method":"GET","path":"/","requestId":"75df102c-8831-406c-8940-5fe7310d9442","timestamp":"2025-03-02 04:23:48"}
+{"level":"info","message":"Authentication attempt","method":"GET","path":"/pending","requestId":"2ef38376-d2ba-47bb-9db1-ea927040b502","timestamp":"2025-03-02 04:23:48"}
+{"level":"info","message":"Authentication successful","requestId":"5e549848-6b33-4955-b1f7-bb9560e1a861","timestamp":"2025-03-02 04:23:49","userId":"67c368c5fd575921c844b2d2","userRole":"user"}
+{"level":"info","message":"Authentication successful","requestId":"1d011833-9961-457a-814e-6e0a92da374b","timestamp":"2025-03-02 04:23:49","userId":"67c368c5fd575921c844b2d2","userRole":"user"}
+{"level":"info","message":"Authentication successful","requestId":"75df102c-8831-406c-8940-5fe7310d9442","timestamp":"2025-03-02 04:23:49","userId":"67c368c5fd575921c844b2d2","userRole":"user"}
+{"level":"info","message":"Authentication successful","requestId":"2ef38376-d2ba-47bb-9db1-ea927040b502","timestamp":"2025-03-02 04:23:49","userId":"67c368c5fd575921c844b2d2","userRole":"user"}
+{"count":0,"level":"info","message":"Waitlist Applications retrieved successfully","timestamp":"2025-03-02 04:23:49"}
+{"level":"http","message":"172.20.10.3 - - [02/Mar/2025:03:23:49 +0000] \"GET /api/waitlists/pending HTTP/1.1\" 304 - \"-\" \"Expo/1017655 CFNetwork/1496.0.7 Darwin/23.5.0\" 571.864 ms {}","timestamp":"2025-03-02 04:23:49"}
+{"level":"http","message":"172.20.10.3 - - [02/Mar/2025:03:23:49 +0000] \"GET /api/wallets HTTP/1.1\" 304 - \"-\" \"Expo/1017655 CFNetwork/1496.0.7 Darwin/23.5.0\" 587.081 ms {}","timestamp":"2025-03-02 04:23:49"}
+{"count":0,"level":"info","message":"Waitlist Applications retrieved successfully","timestamp":"2025-03-02 04:23:49"}
+{"level":"http","message":"172.20.10.3 - - [02/Mar/2025:03:23:49 +0000] \"GET /api/waitlists/pending HTTP/1.1\" 304 - \"-\" \"Expo/1017655 CFNetwork/1496.0.7 Darwin/23.5.0\" 567.400 ms {}","timestamp":"2025-03-02 04:23:49"}
+{"level":"http","message":"172.20.10.3 - - [02/Mar/2025:03:23:49 +0000] \"GET /api/wallets HTTP/1.1\" 304 - \"-\" \"Expo/1017655 CFNetwork/1496.0.7 Darwin/23.5.0\" 580.282 ms {}","timestamp":"2025-03-02 04:23:49"}
+{"level":"info","message":"Authentication attempt","method":"POST","path":"/transact/deposit","requestId":"e3421a91-ac33-4653-b231-59ddbf46cfb1","timestamp":"2025-03-02 04:24:06"}
+{"level":"info","message":"Authentication successful","requestId":"e3421a91-ac33-4653-b231-59ddbf46cfb1","timestamp":"2025-03-02 04:24:07","userId":"67c368c5fd575921c844b2d2","userRole":"user"}
+{"ipAddress":"172.20.10.3","level":"info","message":"Deposit request initiated","requestBody":{"amount":63849.5,"description":"Wallet deposit","fromAccount":"67c368c5fd575921c844b2d5","walletId":"67c37739ff4069266cf11a3a"},"requestId":"e3421a91-ac33-4653-b231-59ddbf46cfb1","timestamp":"2025-03-02T03:24:07.291Z","userAgent":"Expo/1017655 CFNetwork/1496.0.7 Darwin/23.5.0","userId":"67c368c5fd575921c844b2d2"}
+{"amount":"63849.5","fromCurrency":"USD","level":"info","message":"Deposit completed successfully","requestId":"e3421a91-ac33-4653-b231-59ddbf46cfb1","timestamp":"2025-03-02T03:24:08.952Z","toCurrency":"BTC","transactionReference":"DP-1740885848408-608","userId":"67c368c5fd575921c844b2d2"}
+{"level":"http","message":"172.20.10.3 - - [02/Mar/2025:03:24:08 +0000] \"POST /api/wallets/transact/deposit HTTP/1.1\" 200 659 \"-\" \"Expo/1017655 CFNetwork/1496.0.7 Darwin/23.5.0\" 2145.957 ms {\"amount\":63849.5,\"fromAccount\":\"67c368c5fd575921c844b2d5\",\"fromCard\":null,\"walletId\":\"67c37739ff4069266cf11a3a\",\"toAccount\":\"67c368c5fd575921c844b2d5\",\"toCard\":null}","timestamp":"2025-03-02 04:24:08"}
+{"level":"info","message":"Authentication attempt","method":"GET","path":"/","requestId":"f1e06382-514c-41b9-9029-52016512b753","timestamp":"2025-03-02 04:24:12"}
+{"level":"info","message":"Authentication successful","requestId":"f1e06382-514c-41b9-9029-52016512b753","timestamp":"2025-03-02 04:24:12","userId":"67c368c5fd575921c844b2d2","userRole":"user"}
+{"count":1,"level":"info","message":"Accounts retrieved successfully","requestId":"f1e06382-514c-41b9-9029-52016512b753","timestamp":"2025-03-02 04:24:13"}
+{"level":"http","message":"172.20.10.3 - - [02/Mar/2025:03:24:13 +0000] \"GET /api/accounts HTTP/1.1\" 200 602 \"-\" \"Expo/1017655 CFNetwork/1496.0.7 Darwin/23.5.0\" 488.783 ms {}","timestamp":"2025-03-02 04:24:13"}
+{"level":"info","message":"Authentication attempt","method":"GET","path":"/","requestId":"d173a9f5-0d2e-417d-9cc8-f8f8812fbe40","timestamp":"2025-03-02 04:24:14"}
+{"level":"info","message":"Authentication attempt","method":"GET","path":"/pending","requestId":"905f091e-8676-4331-80cd-10fd48e94bf5","timestamp":"2025-03-02 04:24:14"}
+{"level":"info","message":"Authentication attempt","method":"GET","path":"/","requestId":"e478d963-0422-4791-8b3b-9b8f40d9ea6b","timestamp":"2025-03-02 04:24:14"}
+{"level":"info","message":"Authentication attempt","method":"GET","path":"/pending","requestId":"891298fa-1ea2-49f2-a3f4-1ee382c429bb","timestamp":"2025-03-02 04:24:14"}
+{"level":"info","message":"Authentication successful","requestId":"d173a9f5-0d2e-417d-9cc8-f8f8812fbe40","timestamp":"2025-03-02 04:24:15","userId":"67c368c5fd575921c844b2d2","userRole":"user"}
+{"level":"info","message":"Authentication successful","requestId":"905f091e-8676-4331-80cd-10fd48e94bf5","timestamp":"2025-03-02 04:24:15","userId":"67c368c5fd575921c844b2d2","userRole":"user"}
+{"level":"info","message":"Authentication successful","requestId":"891298fa-1ea2-49f2-a3f4-1ee382c429bb","timestamp":"2025-03-02 04:24:15","userId":"67c368c5fd575921c844b2d2","userRole":"user"}
+{"level":"info","message":"Authentication successful","requestId":"e478d963-0422-4791-8b3b-9b8f40d9ea6b","timestamp":"2025-03-02 04:24:15","userId":"67c368c5fd575921c844b2d2","userRole":"user"}
+{"level":"http","message":"172.20.10.3 - - [02/Mar/2025:03:24:15 +0000] \"GET /api/wallets HTTP/1.1\" 200 385 \"-\" \"Expo/1017655 CFNetwork/1496.0.7 Darwin/23.5.0\" 407.034 ms {}","timestamp":"2025-03-02 04:24:15"}
+{"count":0,"level":"info","message":"Waitlist Applications retrieved successfully","timestamp":"2025-03-02 04:24:15"}
+{"level":"http","message":"172.20.10.3 - - [02/Mar/2025:03:24:15 +0000] \"GET /api/waitlists/pending HTTP/1.1\" 304 - \"-\" \"Expo/1017655 CFNetwork/1496.0.7 Darwin/23.5.0\" 427.938 ms {}","timestamp":"2025-03-02 04:24:15"}
+{"count":0,"level":"info","message":"Waitlist Applications retrieved successfully","timestamp":"2025-03-02 04:24:15"}
+{"level":"http","message":"172.20.10.3 - - [02/Mar/2025:03:24:15 +0000] \"GET /api/waitlists/pending HTTP/1.1\" 304 - \"-\" \"Expo/1017655 CFNetwork/1496.0.7 Darwin/23.5.0\" 442.282 ms {}","timestamp":"2025-03-02 04:24:15"}
+{"level":"http","message":"172.20.10.3 - - [02/Mar/2025:03:24:15 +0000] \"GET /api/wallets HTTP/1.1\" 200 385 \"-\" \"Expo/1017655 CFNetwork/1496.0.7 Darwin/23.5.0\" 451.005 ms {}","timestamp":"2025-03-02 04:24:15"}
+{"level":"info","message":"Authentication attempt","method":"POST","path":"/transact/deposit","requestId":"4e2514ae-ef77-47ae-aba9-24065ccca334","timestamp":"2025-03-02 04:25:39"}
+{"level":"info","message":"Authentication successful","requestId":"4e2514ae-ef77-47ae-aba9-24065ccca334","timestamp":"2025-03-02 04:25:40","userId":"67c368c5fd575921c844b2d2","userRole":"user"}
+{"ipAddress":"172.20.10.3","level":"info","message":"Deposit request initiated","requestBody":{"amount":63849.5,"description":"Wallet deposit","fromAccount":"67c368c5fd575921c844b2d5","walletId":"67c37739ff4069266cf11a3a"},"requestId":"4e2514ae-ef77-47ae-aba9-24065ccca334","timestamp":"2025-03-02T03:25:40.536Z","userAgent":"Expo/1017655 CFNetwork/1496.0.7 Darwin/23.5.0","userId":"67c368c5fd575921c844b2d2"}
+{"amount":"63849.5","fromCurrency":"USD","level":"info","message":"Deposit completed successfully","requestId":"4e2514ae-ef77-47ae-aba9-24065ccca334","timestamp":"2025-03-02T03:25:42.108Z","toCurrency":"BTC","transactionReference":"DP-1740885941596-297","userId":"67c368c5fd575921c844b2d2"}
+{"level":"http","message":"172.20.10.3 - - [02/Mar/2025:03:25:42 +0000] \"POST /api/wallets/transact/deposit HTTP/1.1\" 200 659 \"-\" \"Expo/1017655 CFNetwork/1496.0.7 Darwin/23.5.0\" 2142.891 ms {\"amount\":63849.5,\"fromAccount\":\"67c368c5fd575921c844b2d5\",\"fromCard\":null,\"walletId\":\"67c37739ff4069266cf11a3a\",\"toAccount\":\"67c368c5fd575921c844b2d5\",\"toCard\":null}","timestamp":"2025-03-02 04:25:42"}
+{"level":"info","message":"Authentication attempt","method":"GET","path":"/","requestId":"f62331c4-8c27-499c-add8-6b40508a4170","timestamp":"2025-03-02 04:25:44"}
+{"level":"info","message":"Authentication attempt","method":"GET","path":"/pending","requestId":"834a5e74-a86c-4512-a88d-3f67e9831bf2","timestamp":"2025-03-02 04:25:44"}
+{"level":"info","message":"Authentication successful","requestId":"f62331c4-8c27-499c-add8-6b40508a4170","timestamp":"2025-03-02 04:25:44","userId":"67c368c5fd575921c844b2d2","userRole":"user"}
+{"level":"info","message":"Authentication successful","requestId":"834a5e74-a86c-4512-a88d-3f67e9831bf2","timestamp":"2025-03-02 04:25:44","userId":"67c368c5fd575921c844b2d2","userRole":"user"}
+{"level":"http","message":"172.20.10.3 - - [02/Mar/2025:03:25:44 +0000] \"GET /api/wallets HTTP/1.1\" 200 385 \"-\" \"Expo/1017655 CFNetwork/1496.0.7 Darwin/23.5.0\" 523.884 ms {}","timestamp":"2025-03-02 04:25:44"}
+{"count":0,"level":"info","message":"Waitlist Applications retrieved successfully","timestamp":"2025-03-02 04:25:44"}
+{"level":"http","message":"172.20.10.3 - - [02/Mar/2025:03:25:44 +0000] \"GET /api/waitlists/pending HTTP/1.1\" 304 - \"-\" \"Expo/1017655 CFNetwork/1496.0.7 Darwin/23.5.0\" 522.291 ms {}","timestamp":"2025-03-02 04:25:44"}
+{"level":"info","message":"Authentication attempt","method":"GET","path":"/","requestId":"2ec72641-8fea-4ce8-98e9-bdd1e77cbb7f","timestamp":"2025-03-02 04:25:47"}
+{"level":"info","message":"Authentication successful","requestId":"2ec72641-8fea-4ce8-98e9-bdd1e77cbb7f","timestamp":"2025-03-02 04:25:48","userId":"67c368c5fd575921c844b2d2","userRole":"user"}
+{"count":1,"level":"info","message":"Accounts retrieved successfully","requestId":"2ec72641-8fea-4ce8-98e9-bdd1e77cbb7f","timestamp":"2025-03-02 04:25:48"}
+{"level":"http","message":"172.20.10.3 - - [02/Mar/2025:03:25:48 +0000] \"GET /api/accounts HTTP/1.1\" 200 600 \"-\" \"Expo/1017655 CFNetwork/1496.0.7 Darwin/23.5.0\" 431.800 ms {}","timestamp":"2025-03-02 04:25:48"}
+{"level":"info","message":"Authentication attempt","method":"GET","path":"/","requestId":"97e6cc17-3317-4bef-994d-37aa83036d49","timestamp":"2025-03-02 04:25:55"}
+{"level":"info","message":"Authentication attempt","method":"GET","path":"/pending","requestId":"5d676344-d888-4c12-85b7-f39d9f585a14","timestamp":"2025-03-02 04:25:55"}
+{"level":"info","message":"Authentication successful","requestId":"97e6cc17-3317-4bef-994d-37aa83036d49","timestamp":"2025-03-02 04:25:55","userId":"67c368c5fd575921c844b2d2","userRole":"user"}
+{"level":"info","message":"Authentication successful","requestId":"5d676344-d888-4c12-85b7-f39d9f585a14","timestamp":"2025-03-02 04:25:55","userId":"67c368c5fd575921c844b2d2","userRole":"user"}
+{"level":"http","message":"172.20.10.3 - - [02/Mar/2025:03:25:56 +0000] \"GET /api/wallets HTTP/1.1\" 304 - \"-\" \"Expo/1017655 CFNetwork/1496.0.7 Darwin/23.5.0\" 415.977 ms {}","timestamp":"2025-03-02 04:25:56"}
+{"count":0,"level":"info","message":"Waitlist Applications retrieved successfully","timestamp":"2025-03-02 04:25:56"}
+{"level":"http","message":"172.20.10.3 - - [02/Mar/2025:03:25:56 +0000] \"GET /api/waitlists/pending HTTP/1.1\" 304 - \"-\" \"Expo/1017655 CFNetwork/1496.0.7 Darwin/23.5.0\" 440.538 ms {}","timestamp":"2025-03-02 04:25:56"}
+{"level":"info","message":"Authentication attempt","method":"POST","path":"/transact/deposit","requestId":"ed0c5c9e-943c-41fc-9e96-271be6929b2a","timestamp":"2025-03-02 04:26:08"}
+{"level":"info","message":"Authentication successful","requestId":"ed0c5c9e-943c-41fc-9e96-271be6929b2a","timestamp":"2025-03-02 04:26:08","userId":"67c368c5fd575921c844b2d2","userRole":"user"}
+{"ipAddress":"172.20.10.3","level":"info","message":"Deposit request initiated","requestBody":{"amount":63849.5,"description":"Wallet deposit","fromAccount":"67c368c5fd575921c844b2d5","walletId":"67c37739ff4069266cf11a3a"},"requestId":"ed0c5c9e-943c-41fc-9e96-271be6929b2a","timestamp":"2025-03-02T03:26:08.909Z","userAgent":"Expo/1017655 CFNetwork/1496.0.7 Darwin/23.5.0","userId":"67c368c5fd575921c844b2d2"}
+{"amount":"63849.5","fromCurrency":"USD","level":"info","message":"Deposit completed successfully","requestId":"ed0c5c9e-943c-41fc-9e96-271be6929b2a","timestamp":"2025-03-02T03:26:10.368Z","toCurrency":"BTC","transactionReference":"DP-1740885969901-150","userId":"67c368c5fd575921c844b2d2"}
+{"level":"http","message":"172.20.10.3 - - [02/Mar/2025:03:26:10 +0000] \"POST /api/wallets/transact/deposit HTTP/1.1\" 200 659 \"-\" \"Expo/1017655 CFNetwork/1496.0.7 Darwin/23.5.0\" 2008.087 ms {\"amount\":63849.5,\"fromAccount\":\"67c368c5fd575921c844b2d5\",\"fromCard\":null,\"walletId\":\"67c37739ff4069266cf11a3a\",\"toAccount\":\"67c368c5fd575921c844b2d5\",\"toCard\":null}","timestamp":"2025-03-02 04:26:10"}
+{"level":"info","message":"Authentication attempt","method":"GET","path":"/","requestId":"726b1c9c-35b5-427f-be77-03be3007ab4e","timestamp":"2025-03-02 04:26:12"}
+{"level":"info","message":"Authentication attempt","method":"GET","path":"/pending","requestId":"dc6e61c1-4b44-4bac-adbb-d484de2a2788","timestamp":"2025-03-02 04:26:12"}
+{"level":"info","message":"Authentication successful","requestId":"726b1c9c-35b5-427f-be77-03be3007ab4e","timestamp":"2025-03-02 04:26:12","userId":"67c368c5fd575921c844b2d2","userRole":"user"}
+{"level":"info","message":"Authentication successful","requestId":"dc6e61c1-4b44-4bac-adbb-d484de2a2788","timestamp":"2025-03-02 04:26:12","userId":"67c368c5fd575921c844b2d2","userRole":"user"}
+{"level":"http","message":"172.20.10.3 - - [02/Mar/2025:03:26:12 +0000] \"GET /api/wallets HTTP/1.1\" 200 385 \"-\" \"Expo/1017655 CFNetwork/1496.0.7 Darwin/23.5.0\" 409.590 ms {}","timestamp":"2025-03-02 04:26:12"}
+{"count":0,"level":"info","message":"Waitlist Applications retrieved successfully","timestamp":"2025-03-02 04:26:12"}
+{"level":"http","message":"172.20.10.3 - - [02/Mar/2025:03:26:12 +0000] \"GET /api/waitlists/pending HTTP/1.1\" 304 - \"-\" \"Expo/1017655 CFNetwork/1496.0.7 Darwin/23.5.0\" 416.725 ms {}","timestamp":"2025-03-02 04:26:12"}
+{"level":"info","message":"Authentication attempt","method":"GET","path":"/","requestId":"80e60f74-8931-4d4c-a45c-3783f19b726b","timestamp":"2025-03-02 04:26:13"}
+{"level":"info","message":"Authentication successful","requestId":"80e60f74-8931-4d4c-a45c-3783f19b726b","timestamp":"2025-03-02 04:26:14","userId":"67c368c5fd575921c844b2d2","userRole":"user"}
+{"count":1,"level":"info","message":"Accounts retrieved successfully","requestId":"80e60f74-8931-4d4c-a45c-3783f19b726b","timestamp":"2025-03-02 04:26:14"}
+{"level":"http","message":"172.20.10.3 - - [02/Mar/2025:03:26:14 +0000] \"GET /api/accounts HTTP/1.1\" 200 601 \"-\" \"Expo/1017655 CFNetwork/1496.0.7 Darwin/23.5.0\" 626.141 ms {}","timestamp":"2025-03-02 04:26:14"}
+{"level":"info","message":"Authentication attempt","method":"GET","path":"/","requestId":"0f12c898-2f0c-4723-99c6-6a2a5531312f","timestamp":"2025-03-02 04:26:35"}
+{"level":"info","message":"Authentication attempt","method":"GET","path":"/pending","requestId":"da34f303-2740-45c7-833c-75728ef62132","timestamp":"2025-03-02 04:26:35"}
+{"level":"info","message":"Authentication successful","requestId":"0f12c898-2f0c-4723-99c6-6a2a5531312f","timestamp":"2025-03-02 04:26:35","userId":"67c368c5fd575921c844b2d2","userRole":"user"}
+{"level":"info","message":"Authentication successful","requestId":"da34f303-2740-45c7-833c-75728ef62132","timestamp":"2025-03-02 04:26:35","userId":"67c368c5fd575921c844b2d2","userRole":"user"}
+{"count":0,"level":"info","message":"Waitlist Applications retrieved successfully","timestamp":"2025-03-02 04:26:36"}
+{"level":"http","message":"172.20.10.3 - - [02/Mar/2025:03:26:36 +0000] \"GET /api/waitlists/pending HTTP/1.1\" 304 - \"-\" \"Expo/1017655 CFNetwork/1496.0.7 Darwin/23.5.0\" 543.505 ms {}","timestamp":"2025-03-02 04:26:36"}
+{"level":"http","message":"172.20.10.3 - - [02/Mar/2025:03:26:36 +0000] \"GET /api/wallets HTTP/1.1\" 304 - \"-\" \"Expo/1017655 CFNetwork/1496.0.7 Darwin/23.5.0\" 551.206 ms {}","timestamp":"2025-03-02 04:26:36"}
