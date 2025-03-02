@@ -86,12 +86,13 @@ exports.validateDeposit = middlewareRunner([
       return true;
     }),
 
+  // Validate fromAccount field, allowing null/undefined
   body("fromAccount")
-    .optional()
-    .isMongoId()
+    .custom(isValidOrNull)
     .withMessage("Invalid account ID format"),
 
-  body("fromCard").optional().isMongoId().withMessage("Invalid card ID format"),
+  // Validate fromCard field, allowing null/undefined
+  body("fromCard").custom(isValidOrNull).withMessage("Invalid card ID format"),
 
   body("description")
     .optional()
@@ -100,12 +101,10 @@ exports.validateDeposit = middlewareRunner([
     .isLength({ max: 500 })
     .withMessage("Description cannot exceed 500 characters"),
 
-  // Custom validator to ensure exactly one source is provided
+  // Cross-field validation: exactly one of fromAccount or fromCard must be provided
   body().custom((body) => {
-    if (
-      (body.fromAccount && body.fromCard) ||
-      (!body.fromAccount && !body.fromCard)
-    ) {
+    const { fromAccount, fromCard } = body;
+    if ((fromAccount && fromCard) || (!fromAccount && !fromCard)) {
       throw new Error(
         "Please provide either fromAccount OR fromCard, not both or neither"
       );
@@ -113,6 +112,7 @@ exports.validateDeposit = middlewareRunner([
     return true;
   }),
 ]);
+
 
 /**
  * Validation rules for wallet to wallet swap

@@ -9722,3 +9722,878 @@
 {"level":"info","message":"Authentication successful","requestId":"1c521d54-0541-480e-b3f3-9064c7098efd","timestamp":"2025-03-02 03:34:28","userId":"67c368c5fd575921c844b2d2","userRole":"user"}
 {"count":1,"level":"info","message":"Accounts retrieved successfully","requestId":"1c521d54-0541-480e-b3f3-9064c7098efd","timestamp":"2025-03-02 03:34:29"}
 {"level":"http","message":"172.20.10.3 - - [02/Mar/2025:02:34:29 +0000] \"GET /api/accounts HTTP/1.1\" 200 600 \"-\" \"Expo/1017655 CFNetwork/1496.0.7 Darwin/23.5.0\" 464.186 ms {}","timestamp":"2025-03-02 03:34:29"}
+{"level":"info","message":"Authentication attempt","method":"GET","path":"/","requestId":"0ff1fa0a-a44b-4b2b-ae43-e91e7a432e61","timestamp":"2025-03-02 03:35:41"}
+{"level":"info","message":"Authentication attempt","method":"GET","path":"/pending","requestId":"2c951929-9684-44d6-9e40-70faebff8713","timestamp":"2025-03-02 03:35:41"}
+{"level":"info","message":"Authentication successful","requestId":"2c951929-9684-44d6-9e40-70faebff8713","timestamp":"2025-03-02 03:35:41","userId":"67c368c5fd575921c844b2d2","userRole":"user"}
+{"level":"info","message":"Authentication successful","requestId":"0ff1fa0a-a44b-4b2b-ae43-e91e7a432e61","timestamp":"2025-03-02 03:35:41","userId":"67c368c5fd575921c844b2d2","userRole":"user"}
+{"count":0,"level":"info","message":"Waitlist Applications retrieved successfully","timestamp":"2025-03-02 03:35:41"}
+{"level":"http","message":"172.20.10.3 - - [02/Mar/2025:02:35:41 +0000] \"GET /api/waitlists/pending HTTP/1.1\" 304 - \"-\" \"Expo/1017655 CFNetwork/1496.0.7 Darwin/23.5.0\" 492.400 ms {}","timestamp":"2025-03-02 03:35:41"}
+{"level":"http","message":"172.20.10.3 - - [02/Mar/2025:02:35:41 +0000] \"GET /api/wallets HTTP/1.1\" 304 - \"-\" \"Expo/1017655 CFNetwork/1496.0.7 Darwin/23.5.0\" 514.700 ms {}","timestamp":"2025-03-02 03:35:41"}
+{"level":"info","message":"Authentication attempt","method":"GET","path":"/","requestId":"14a2ea07-0acd-4be1-9bae-ecc3bd21063f","timestamp":"2025-03-02 03:35:45"}
+{"level":"info","message":"Authentication attempt","method":"GET","path":"/pending","requestId":"5757d963-ba2a-432a-92fc-f36cd2a12836","timestamp":"2025-03-02 03:35:45"}
+{"level":"info","message":"Authentication successful","requestId":"5757d963-ba2a-432a-92fc-f36cd2a12836","timestamp":"2025-03-02 03:35:45","userId":"67c368c5fd575921c844b2d2","userRole":"user"}
+{"level":"info","message":"Authentication successful","requestId":"14a2ea07-0acd-4be1-9bae-ecc3bd21063f","timestamp":"2025-03-02 03:35:46","userId":"67c368c5fd575921c844b2d2","userRole":"user"}
+{"count":0,"level":"info","message":"Waitlist Applications retrieved successfully","timestamp":"2025-03-02 03:35:46"}
+{"level":"http","message":"172.20.10.3 - - [02/Mar/2025:02:35:46 +0000] \"GET /api/waitlists/pending HTTP/1.1\" 304 - \"-\" \"Expo/1017655 CFNetwork/1496.0.7 Darwin/23.5.0\" 439.648 ms {}","timestamp":"2025-03-02 03:35:46"}
+{"level":"http","message":"172.20.10.3 - - [02/Mar/2025:02:35:46 +0000] \"GET /api/wallets HTTP/1.1\" 304 - \"-\" \"Expo/1017655 CFNetwork/1496.0.7 Darwin/23.5.0\" 446.152 ms {}","timestamp":"2025-03-02 03:35:46"}
+{"level":"info","message":"Starting server initialization...","timestamp":"2025-03-02 03:38:49"}
+{"level":"info","message":"Server is running on port 8080","timestamp":"2025-03-02 03:38:49"}
+{"level":"info","message":"Log streaming available on same port, path: /logs","timestamp":"2025-03-02 03:38:49"}
+{"level":"info","message":"Environment: development","timestamp":"2025-03-02 03:38:49"}
+{"level":"info","message":"Cryptocurrency rates added to the exchange rate cache","timestamp":"2025-03-02 03:38:50"}
+{"availableCurrencies":169,"includesCrypto":true,"level":"info","message":"Exchange rates updated and re-based to USD successfully","timestamp":"2025-03-02 03:38:50"}
+{"level":"info","message":"MongoDB Connected: ac-fky7kgt-shard-00-00.cgmoocn.mongodb.net","timestamp":"2025-03-02 03:38:55"}
+{"level":"info","message":"Authentication attempt","method":"GET","path":"/","requestId":"1007d35c-e4a9-41ae-94c5-d8bad3bd0905","timestamp":"2025-03-02 03:39:02"}
+{"level":"info","message":"Authentication attempt","method":"GET","path":"/pending","requestId":"b178241d-7a08-498c-bac0-cb9949901f3d","timestamp":"2025-03-02 03:39:02"}
+{"level":"info","message":"Authentication successful","requestId":"1007d35c-e4a9-41ae-94c5-d8bad3bd0905","timestamp":"2025-03-02 03:39:02","userId":"67c368c5fd575921c844b2d2","userRole":"user"}
+{"level":"info","message":"Authentication successful","requestId":"b178241d-7a08-498c-bac0-cb9949901f3d","timestamp":"2025-03-02 03:39:02","userId":"67c368c5fd575921c844b2d2","userRole":"user"}
+{"count":0,"level":"info","message":"Waitlist Applications retrieved successfully","timestamp":"2025-03-02 03:39:02"}
+{"level":"http","message":"172.20.10.3 - - [02/Mar/2025:02:39:02 +0000] \"GET /api/waitlists/pending HTTP/1.1\" 304 - \"-\" \"Expo/1017655 CFNetwork/1496.0.7 Darwin/23.5.0\" 603.038 ms {}","timestamp":"2025-03-02 03:39:02"}
+{"level":"http","message":"172.20.10.3 - - [02/Mar/2025:02:39:02 +0000] \"GET /api/wallets HTTP/1.1\" 304 - \"-\" \"Expo/1017655 CFNetwork/1496.0.7 Darwin/23.5.0\" 640.910 ms {}","timestamp":"2025-03-02 03:39:02"}
+{"email":"tenpenny.mitchell@yahoo.com","ip":"172.20.10.3","level":"info","message":"User logged in successfully","requestId":"ed735f15-8b64-42e1-b2c6-3858f149442c","timestamp":"2025-03-02T02:40:40.237Z","userId":"67c368c5fd575921c844b2d2"}
+{"level":"http","message":"172.20.10.3 - - [02/Mar/2025:02:40:40 +0000] \"POST /api/auth/login HTTP/1.1\" 200 687 \"-\" \"Expo/1017655 CFNetwork/1496.0.7 Darwin/23.5.0\" 990.601 ms {\"email\":\"tenpenny.mitchell@yahoo.com\",\"password\":\"********\"}","timestamp":"2025-03-02 03:40:40"}
+{"level":"info","message":"Authentication attempt","method":"GET","path":"/","requestId":"e4c9b2af-95a5-4a1c-b3dd-52a64b84197e","timestamp":"2025-03-02 03:40:40"}
+{"level":"info","message":"Authentication attempt","method":"GET","path":"/","requestId":"02ef7a2f-64ed-4742-9303-2f9ea2e89bbc","timestamp":"2025-03-02 03:40:40"}
+{"level":"info","message":"Authentication attempt","method":"GET","path":"/","requestId":"4ca83c10-1247-40d2-b917-c1ad39507ef6","timestamp":"2025-03-02 03:40:40"}
+{"level":"info","message":"Authentication successful","requestId":"02ef7a2f-64ed-4742-9303-2f9ea2e89bbc","timestamp":"2025-03-02 03:40:40","userId":"67c368c5fd575921c844b2d2","userRole":"user"}
+{"level":"info","message":"Authentication successful","requestId":"e4c9b2af-95a5-4a1c-b3dd-52a64b84197e","timestamp":"2025-03-02 03:40:40","userId":"67c368c5fd575921c844b2d2","userRole":"user"}
+{"level":"info","message":"Authentication successful","requestId":"4ca83c10-1247-40d2-b917-c1ad39507ef6","timestamp":"2025-03-02 03:40:40","userId":"67c368c5fd575921c844b2d2","userRole":"user"}
+{"count":1,"level":"info","message":"Accounts retrieved successfully","requestId":"02ef7a2f-64ed-4742-9303-2f9ea2e89bbc","timestamp":"2025-03-02 03:40:40"}
+{"level":"http","message":"172.20.10.3 - - [02/Mar/2025:02:40:40 +0000] \"GET /api/accounts HTTP/1.1\" 304 - \"-\" \"Expo/1017655 CFNetwork/1496.0.7 Darwin/23.5.0\" 481.686 ms {}","timestamp":"2025-03-02 03:40:40"}
+{"count":1,"level":"info","message":"Accounts retrieved successfully","requestId":"e4c9b2af-95a5-4a1c-b3dd-52a64b84197e","timestamp":"2025-03-02 03:40:40"}
+{"level":"http","message":"172.20.10.3 - - [02/Mar/2025:02:40:40 +0000] \"GET /api/accounts HTTP/1.1\" 304 - \"-\" \"Expo/1017655 CFNetwork/1496.0.7 Darwin/23.5.0\" 494.223 ms {}","timestamp":"2025-03-02 03:40:40"}
+{"count":1,"level":"info","message":"Accounts retrieved successfully","requestId":"4ca83c10-1247-40d2-b917-c1ad39507ef6","timestamp":"2025-03-02 03:40:40"}
+{"level":"http","message":"172.20.10.3 - - [02/Mar/2025:02:40:40 +0000] \"GET /api/accounts HTTP/1.1\" 304 - \"-\" \"Expo/1017655 CFNetwork/1496.0.7 Darwin/23.5.0\" 482.439 ms {}","timestamp":"2025-03-02 03:40:40"}
+{"level":"info","message":"Authentication attempt","method":"GET","path":"/","requestId":"b411fc4a-099e-407f-8902-310cdd770483","timestamp":"2025-03-02 03:40:41"}
+{"level":"info","message":"Authentication attempt","method":"GET","path":"/pending","requestId":"0f018815-c4e4-4f75-b92c-55e69e102fd9","timestamp":"2025-03-02 03:40:41"}
+{"level":"info","message":"Authentication attempt","method":"GET","path":"/","requestId":"07326092-167f-4d6d-8e8d-541d0f9d3eed","timestamp":"2025-03-02 03:40:41"}
+{"level":"info","message":"Authentication attempt","method":"GET","path":"/pending","requestId":"d18d77c7-adbd-4064-a164-9e925cac6c0d","timestamp":"2025-03-02 03:40:41"}
+{"level":"info","message":"Authentication successful","requestId":"0f018815-c4e4-4f75-b92c-55e69e102fd9","timestamp":"2025-03-02 03:40:41","userId":"67c368c5fd575921c844b2d2","userRole":"user"}
+{"level":"info","message":"Authentication successful","requestId":"b411fc4a-099e-407f-8902-310cdd770483","timestamp":"2025-03-02 03:40:41","userId":"67c368c5fd575921c844b2d2","userRole":"user"}
+{"level":"info","message":"Authentication successful","requestId":"07326092-167f-4d6d-8e8d-541d0f9d3eed","timestamp":"2025-03-02 03:40:41","userId":"67c368c5fd575921c844b2d2","userRole":"user"}
+{"level":"info","message":"Authentication successful","requestId":"d18d77c7-adbd-4064-a164-9e925cac6c0d","timestamp":"2025-03-02 03:40:41","userId":"67c368c5fd575921c844b2d2","userRole":"user"}
+{"count":0,"level":"info","message":"Waitlist Applications retrieved successfully","timestamp":"2025-03-02 03:40:41"}
+{"level":"http","message":"172.20.10.3 - - [02/Mar/2025:02:40:41 +0000] \"GET /api/waitlists/pending HTTP/1.1\" 304 - \"-\" \"Expo/1017655 CFNetwork/1496.0.7 Darwin/23.5.0\" 412.779 ms {}","timestamp":"2025-03-02 03:40:41"}
+{"level":"http","message":"172.20.10.3 - - [02/Mar/2025:02:40:41 +0000] \"GET /api/wallets HTTP/1.1\" 304 - \"-\" \"Expo/1017655 CFNetwork/1496.0.7 Darwin/23.5.0\" 428.987 ms {}","timestamp":"2025-03-02 03:40:41"}
+{"level":"http","message":"172.20.10.3 - - [02/Mar/2025:02:40:41 +0000] \"GET /api/wallets HTTP/1.1\" 304 - \"-\" \"Expo/1017655 CFNetwork/1496.0.7 Darwin/23.5.0\" 435.695 ms {}","timestamp":"2025-03-02 03:40:41"}
+{"count":0,"level":"info","message":"Waitlist Applications retrieved successfully","timestamp":"2025-03-02 03:40:41"}
+{"level":"http","message":"172.20.10.3 - - [02/Mar/2025:02:40:41 +0000] \"GET /api/waitlists/pending HTTP/1.1\" 304 - \"-\" \"Expo/1017655 CFNetwork/1496.0.7 Darwin/23.5.0\" 432.371 ms {}","timestamp":"2025-03-02 03:40:41"}
+{"level":"info","message":"Authentication attempt","method":"GET","path":"/","requestId":"d33db65b-ad31-41cf-9a1a-505bb88ed296","timestamp":"2025-03-02 03:43:25"}
+{"level":"info","message":"Authentication attempt","method":"GET","path":"/","requestId":"8568f760-1cf4-4844-b354-6ed7152d3636","timestamp":"2025-03-02 03:43:25"}
+{"level":"info","message":"Authentication successful","requestId":"d33db65b-ad31-41cf-9a1a-505bb88ed296","timestamp":"2025-03-02 03:43:26","userId":"67c368c5fd575921c844b2d2","userRole":"user"}
+{"level":"info","message":"Authentication successful","requestId":"8568f760-1cf4-4844-b354-6ed7152d3636","timestamp":"2025-03-02 03:43:26","userId":"67c368c5fd575921c844b2d2","userRole":"user"}
+{"count":1,"level":"info","message":"Accounts retrieved successfully","requestId":"d33db65b-ad31-41cf-9a1a-505bb88ed296","timestamp":"2025-03-02 03:43:26"}
+{"level":"http","message":"172.20.10.3 - - [02/Mar/2025:02:43:26 +0000] \"GET /api/accounts HTTP/1.1\" 304 - \"-\" \"Expo/1017655 CFNetwork/1496.0.7 Darwin/23.5.0\" 437.219 ms {}","timestamp":"2025-03-02 03:43:26"}
+{"count":1,"level":"info","message":"Accounts retrieved successfully","requestId":"8568f760-1cf4-4844-b354-6ed7152d3636","timestamp":"2025-03-02 03:43:26"}
+{"level":"http","message":"172.20.10.3 - - [02/Mar/2025:02:43:26 +0000] \"GET /api/accounts HTTP/1.1\" 304 - \"-\" \"Expo/1017655 CFNetwork/1496.0.7 Darwin/23.5.0\" 436.597 ms {}","timestamp":"2025-03-02 03:43:26"}
+{"level":"info","message":"Authentication attempt","method":"GET","path":"/","requestId":"0e5d04b4-478a-478d-94c7-2c28b7aa7159","timestamp":"2025-03-02 03:45:39"}
+{"level":"info","message":"Authentication attempt","method":"GET","path":"/pending","requestId":"8f928e1c-9556-44f7-8841-6080a5ceba99","timestamp":"2025-03-02 03:45:39"}
+{"level":"info","message":"Authentication attempt","method":"GET","path":"/","requestId":"b0491c40-8ae1-4fb0-ba7f-584516a7f3d2","timestamp":"2025-03-02 03:45:39"}
+{"level":"info","message":"Authentication attempt","method":"GET","path":"/pending","requestId":"045bc7c8-4287-4faa-812c-824635f666ca","timestamp":"2025-03-02 03:45:39"}
+{"level":"info","message":"Authentication successful","requestId":"0e5d04b4-478a-478d-94c7-2c28b7aa7159","timestamp":"2025-03-02 03:45:39","userId":"67c368c5fd575921c844b2d2","userRole":"user"}
+{"level":"info","message":"Authentication successful","requestId":"8f928e1c-9556-44f7-8841-6080a5ceba99","timestamp":"2025-03-02 03:45:39","userId":"67c368c5fd575921c844b2d2","userRole":"user"}
+{"level":"info","message":"Authentication successful","requestId":"b0491c40-8ae1-4fb0-ba7f-584516a7f3d2","timestamp":"2025-03-02 03:45:39","userId":"67c368c5fd575921c844b2d2","userRole":"user"}
+{"level":"info","message":"Authentication successful","requestId":"045bc7c8-4287-4faa-812c-824635f666ca","timestamp":"2025-03-02 03:45:39","userId":"67c368c5fd575921c844b2d2","userRole":"user"}
+{"level":"http","message":"172.20.10.3 - - [02/Mar/2025:02:45:39 +0000] \"GET /api/wallets HTTP/1.1\" 304 - \"-\" \"Expo/1017655 CFNetwork/1496.0.7 Darwin/23.5.0\" 460.526 ms {}","timestamp":"2025-03-02 03:45:39"}
+{"count":0,"level":"info","message":"Waitlist Applications retrieved successfully","timestamp":"2025-03-02 03:45:39"}
+{"level":"http","message":"172.20.10.3 - - [02/Mar/2025:02:45:39 +0000] \"GET /api/waitlists/pending HTTP/1.1\" 304 - \"-\" \"Expo/1017655 CFNetwork/1496.0.7 Darwin/23.5.0\" 456.093 ms {}","timestamp":"2025-03-02 03:45:39"}
+{"level":"http","message":"172.20.10.3 - - [02/Mar/2025:02:45:40 +0000] \"GET /api/wallets HTTP/1.1\" 304 - \"-\" \"Expo/1017655 CFNetwork/1496.0.7 Darwin/23.5.0\" 467.319 ms {}","timestamp":"2025-03-02 03:45:40"}
+{"count":0,"level":"info","message":"Waitlist Applications retrieved successfully","timestamp":"2025-03-02 03:45:40"}
+{"level":"http","message":"172.20.10.3 - - [02/Mar/2025:02:45:40 +0000] \"GET /api/waitlists/pending HTTP/1.1\" 304 - \"-\" \"Expo/1017655 CFNetwork/1496.0.7 Darwin/23.5.0\" 463.366 ms {}","timestamp":"2025-03-02 03:45:40"}
+{"email":"tenpenny.mitchell@yahoo.com","ip":"172.20.10.3","level":"info","message":"User logged in successfully","requestId":"51d644d0-a80b-4961-a4da-d0ff31ef1260","timestamp":"2025-03-02T02:48:58.062Z","userId":"67c368c5fd575921c844b2d2"}
+{"level":"http","message":"172.20.10.3 - - [02/Mar/2025:02:48:58 +0000] \"POST /api/auth/login HTTP/1.1\" 200 687 \"-\" \"Expo/1017655 CFNetwork/1496.0.7 Darwin/23.5.0\" 791.199 ms {\"email\":\"tenpenny.mitchell@yahoo.com\",\"password\":\"********\"}","timestamp":"2025-03-02 03:48:58"}
+{"level":"info","message":"Authentication attempt","method":"GET","path":"/","requestId":"2a9b93d6-943b-4c11-ac8e-2d2e710b1c09","timestamp":"2025-03-02 03:48:58"}
+{"level":"info","message":"Authentication attempt","method":"GET","path":"/","requestId":"afdaa876-9e8c-4df3-b75e-25f453b5874a","timestamp":"2025-03-02 03:48:58"}
+{"level":"info","message":"Authentication attempt","method":"GET","path":"/","requestId":"53644d35-253e-4a48-941a-635062d0ff4d","timestamp":"2025-03-02 03:48:58"}
+{"level":"info","message":"Authentication successful","requestId":"2a9b93d6-943b-4c11-ac8e-2d2e710b1c09","timestamp":"2025-03-02 03:48:58","userId":"67c368c5fd575921c844b2d2","userRole":"user"}
+{"level":"info","message":"Authentication successful","requestId":"afdaa876-9e8c-4df3-b75e-25f453b5874a","timestamp":"2025-03-02 03:48:58","userId":"67c368c5fd575921c844b2d2","userRole":"user"}
+{"level":"info","message":"Authentication successful","requestId":"53644d35-253e-4a48-941a-635062d0ff4d","timestamp":"2025-03-02 03:48:58","userId":"67c368c5fd575921c844b2d2","userRole":"user"}
+{"count":1,"level":"info","message":"Accounts retrieved successfully","requestId":"2a9b93d6-943b-4c11-ac8e-2d2e710b1c09","timestamp":"2025-03-02 03:48:58"}
+{"level":"http","message":"172.20.10.3 - - [02/Mar/2025:02:48:58 +0000] \"GET /api/accounts HTTP/1.1\" 304 - \"-\" \"Expo/1017655 CFNetwork/1496.0.7 Darwin/23.5.0\" 424.774 ms {}","timestamp":"2025-03-02 03:48:58"}
+{"count":1,"level":"info","message":"Accounts retrieved successfully","requestId":"afdaa876-9e8c-4df3-b75e-25f453b5874a","timestamp":"2025-03-02 03:48:58"}
+{"level":"http","message":"172.20.10.3 - - [02/Mar/2025:02:48:58 +0000] \"GET /api/accounts HTTP/1.1\" 304 - \"-\" \"Expo/1017655 CFNetwork/1496.0.7 Darwin/23.5.0\" 432.504 ms {}","timestamp":"2025-03-02 03:48:58"}
+{"count":1,"level":"info","message":"Accounts retrieved successfully","requestId":"53644d35-253e-4a48-941a-635062d0ff4d","timestamp":"2025-03-02 03:48:58"}
+{"level":"http","message":"172.20.10.3 - - [02/Mar/2025:02:48:58 +0000] \"GET /api/accounts HTTP/1.1\" 304 - \"-\" \"Expo/1017655 CFNetwork/1496.0.7 Darwin/23.5.0\" 446.797 ms {}","timestamp":"2025-03-02 03:48:58"}
+{"level":"info","message":"Authentication attempt","method":"GET","path":"/","requestId":"757b6f1e-c367-479b-8225-8779f18bd002","timestamp":"2025-03-02 03:49:00"}
+{"level":"info","message":"Authentication attempt","method":"GET","path":"/pending","requestId":"8d28fefc-dcd2-43c8-8cab-02335f8d9d8e","timestamp":"2025-03-02 03:49:00"}
+{"level":"info","message":"Authentication attempt","method":"GET","path":"/","requestId":"36f44fd6-b351-433a-a520-f34806c59aaa","timestamp":"2025-03-02 03:49:00"}
+{"level":"info","message":"Authentication attempt","method":"GET","path":"/pending","requestId":"acd90323-9310-4ffa-b408-0f9b0d5ecc6c","timestamp":"2025-03-02 03:49:00"}
+{"level":"info","message":"Authentication successful","requestId":"757b6f1e-c367-479b-8225-8779f18bd002","timestamp":"2025-03-02 03:49:00","userId":"67c368c5fd575921c844b2d2","userRole":"user"}
+{"level":"info","message":"Authentication successful","requestId":"acd90323-9310-4ffa-b408-0f9b0d5ecc6c","timestamp":"2025-03-02 03:49:00","userId":"67c368c5fd575921c844b2d2","userRole":"user"}
+{"level":"info","message":"Authentication successful","requestId":"36f44fd6-b351-433a-a520-f34806c59aaa","timestamp":"2025-03-02 03:49:00","userId":"67c368c5fd575921c844b2d2","userRole":"user"}
+{"level":"info","message":"Authentication successful","requestId":"8d28fefc-dcd2-43c8-8cab-02335f8d9d8e","timestamp":"2025-03-02 03:49:00","userId":"67c368c5fd575921c844b2d2","userRole":"user"}
+{"level":"http","message":"172.20.10.3 - - [02/Mar/2025:02:49:00 +0000] \"GET /api/wallets HTTP/1.1\" 304 - \"-\" \"Expo/1017655 CFNetwork/1496.0.7 Darwin/23.5.0\" 511.281 ms {}","timestamp":"2025-03-02 03:49:00"}
+{"count":0,"level":"info","message":"Waitlist Applications retrieved successfully","timestamp":"2025-03-02 03:49:00"}
+{"level":"http","message":"172.20.10.3 - - [02/Mar/2025:02:49:00 +0000] \"GET /api/waitlists/pending HTTP/1.1\" 304 - \"-\" \"Expo/1017655 CFNetwork/1496.0.7 Darwin/23.5.0\" 484.966 ms {}","timestamp":"2025-03-02 03:49:00"}
+{"level":"http","message":"172.20.10.3 - - [02/Mar/2025:02:49:00 +0000] \"GET /api/wallets HTTP/1.1\" 304 - \"-\" \"Expo/1017655 CFNetwork/1496.0.7 Darwin/23.5.0\" 492.575 ms {}","timestamp":"2025-03-02 03:49:00"}
+{"count":0,"level":"info","message":"Waitlist Applications retrieved successfully","timestamp":"2025-03-02 03:49:00"}
+{"level":"http","message":"172.20.10.3 - - [02/Mar/2025:02:49:00 +0000] \"GET /api/waitlists/pending HTTP/1.1\" 304 - \"-\" \"Expo/1017655 CFNetwork/1496.0.7 Darwin/23.5.0\" 498.892 ms {}","timestamp":"2025-03-02 03:49:00"}
+{"level":"info","message":"Authentication attempt","method":"GET","path":"/","requestId":"2af13c75-b887-4b0f-9e8a-853e5da1944d","timestamp":"2025-03-02 03:50:11"}
+{"level":"info","message":"Authentication attempt","method":"GET","path":"/pending","requestId":"662ecb6d-4df5-4835-bc46-e9e023c4e3b1","timestamp":"2025-03-02 03:50:11"}
+{"level":"info","message":"Authentication successful","requestId":"2af13c75-b887-4b0f-9e8a-853e5da1944d","timestamp":"2025-03-02 03:50:11","userId":"67c368c5fd575921c844b2d2","userRole":"user"}
+{"level":"info","message":"Authentication successful","requestId":"662ecb6d-4df5-4835-bc46-e9e023c4e3b1","timestamp":"2025-03-02 03:50:11","userId":"67c368c5fd575921c844b2d2","userRole":"user"}
+{"count":0,"level":"info","message":"Waitlist Applications retrieved successfully","timestamp":"2025-03-02 03:50:11"}
+{"level":"http","message":"172.20.10.3 - - [02/Mar/2025:02:50:11 +0000] \"GET /api/waitlists/pending HTTP/1.1\" 304 - \"-\" \"Expo/1017655 CFNetwork/1496.0.7 Darwin/23.5.0\" 516.513 ms {}","timestamp":"2025-03-02 03:50:11"}
+{"level":"http","message":"172.20.10.3 - - [02/Mar/2025:02:50:11 +0000] \"GET /api/wallets HTTP/1.1\" 304 - \"-\" \"Expo/1017655 CFNetwork/1496.0.7 Darwin/23.5.0\" 531.971 ms {}","timestamp":"2025-03-02 03:50:11"}
+{"level":"info","message":"Authentication attempt","method":"POST","path":"/transact/withdraw","requestId":"71644037-a501-4e76-a4c4-987fe61c676b","timestamp":"2025-03-02 03:50:37"}
+{"level":"info","message":"Authentication successful","requestId":"71644037-a501-4e76-a4c4-987fe61c676b","timestamp":"2025-03-02 03:50:37","userId":"67c368c5fd575921c844b2d2","userRole":"user"}
+{"ipAddress":"172.20.10.3","level":"info","message":"Withdrawal request initiated","requestBody":{"amount":63849.5,"description":"Wallet withdrawal","toAccount":"67c368c5fd575921c844b2d5","walletId":"67c37739ff4069266cf11a3a"},"requestId":"71644037-a501-4e76-a4c4-987fe61c676b","timestamp":"2025-03-02T02:50:38.208Z","userAgent":"Expo/1017655 CFNetwork/1496.0.7 Darwin/23.5.0","userId":"67c368c5fd575921c844b2d2"}
+{"difference":"63790.50000000","level":"warn","message":"Insufficient funds","requestId":"71644037-a501-4e76-a4c4-987fe61c676b","timestamp":"2025-03-02T02:50:38.426Z","userId":"67c368c5fd575921c844b2d2","walletBalance":"59","walletCurrency":"BTC","walletId":"67c37739ff4069266cf11a3a","withdrawalAmount":"63849.5"}
+{"errorMessage":"Insufficient funds in wallet","errorStack":"Error: Insufficient funds in wallet\n    at withdrawFromWallet (C:\\Users\\dimojiakuo\\Desktop\\code\\Backend\\regions-backend\\controllers\\walletControllers.js:233:13)\n    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)","level":"error","message":"Aborting database transaction due to error","requestId":"71644037-a501-4e76-a4c4-987fe61c676b","timestamp":"2025-03-02T02:50:38.454Z","userId":"67c368c5fd575921c844b2d2"}
+{"error":"Insufficient funds in wallet","errorCode":400,"errorStack":"Error: Insufficient funds in wallet\n    at withdrawFromWallet (C:\\Users\\dimojiakuo\\Desktop\\code\\Backend\\regions-backend\\controllers\\walletControllers.js:233:13)\n    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)","level":"error","message":"Withdraw transaction failed:","requestBody":{"amount":63849.5,"toAccount":"67c368c5fd575921c844b2d5","toCard":null,"walletId":"67c37739ff4069266cf11a3a"},"requestId":"71644037-a501-4e76-a4c4-987fe61c676b","timestamp":"2025-03-02T02:50:38.667Z","userId":"67c368c5fd575921c844b2d2"}
+{"body":{"amount":63849.5,"toAccount":"67c368c5fd575921c844b2d5","toCard":null,"walletId":"67c37739ff4069266cf11a3a"},"ip":"172.20.10.3","level":"error","message":"Insufficient funds in wallet","method":"POST","params":{},"query":{},"requestId":"71644037-a501-4e76-a4c4-987fe61c676b","stack":"Error: Insufficient funds in wallet\n    at withdrawFromWallet (C:\\Users\\dimojiakuo\\Desktop\\code\\Backend\\regions-backend\\controllers\\walletControllers.js:233:13)\n    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)","timestamp":"2025-03-02 03:50:38","url":"/api/wallets/transact/withdraw"}
+{"clientInfo":{"ip":"172.20.10.3","userAgent":"Expo/1017655 CFNetwork/1496.0.7 Darwin/23.5.0"},"error":{"stack":"Error: Insufficient funds in wallet\n    at withdrawFromWallet (C:\\Users\\dimojiakuo\\Desktop\\code\\Backend\\regions-backend\\controllers\\walletControllers.js:233:13)\n    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)"},"level":"warn","message":"Insufficient funds in wallet","request":{"body":{"amount":63849.5,"toAccount":"67c368c5fd575921c844b2d5","toCard":null,"walletId":"67c37739ff4069266cf11a3a"},"headers":{"accept":"application/json","content-type":"application/json","user-agent":"Expo/1017655 CFNetwork/1496.0.7 Darwin/23.5.0"},"method":"POST","params":{},"query":{},"url":"/api/wallets/transact/withdraw"},"requestId":"71644037-a501-4e76-a4c4-987fe61c676b","statusCode":400,"timestamp":"2025-03-02 03:50:38","type":"Error","user":{"role":"user"}}
+{"level":"http","message":"172.20.10.3 - - [02/Mar/2025:02:50:38 +0000] \"POST /api/wallets/transact/withdraw HTTP/1.1\" 400 411 \"-\" \"Expo/1017655 CFNetwork/1496.0.7 Darwin/23.5.0\" 1029.132 ms {\"amount\":63849.5,\"toAccount\":\"67c368c5fd575921c844b2d5\",\"toCard\":null,\"walletId\":\"67c37739ff4069266cf11a3a\"}","timestamp":"2025-03-02 03:50:38"}
+{"level":"info","message":"Starting server initialization...","timestamp":"2025-03-02 03:52:42"}
+{"level":"info","message":"Server is running on port 8080","timestamp":"2025-03-02 03:52:42"}
+{"level":"info","message":"Log streaming available on same port, path: /logs","timestamp":"2025-03-02 03:52:42"}
+{"level":"info","message":"Environment: development","timestamp":"2025-03-02 03:52:42"}
+{"level":"info","message":"Cryptocurrency rates added to the exchange rate cache","timestamp":"2025-03-02 03:52:43"}
+{"availableCurrencies":169,"includesCrypto":true,"level":"info","message":"Exchange rates updated and re-based to USD successfully","timestamp":"2025-03-02 03:52:43"}
+{"level":"info","message":"Starting server initialization...","timestamp":"2025-03-02 03:52:46"}
+{"level":"info","message":"Server is running on port 8080","timestamp":"2025-03-02 03:52:46"}
+{"level":"info","message":"Log streaming available on same port, path: /logs","timestamp":"2025-03-02 03:52:46"}
+{"level":"info","message":"Environment: development","timestamp":"2025-03-02 03:52:46"}
+{"level":"info","message":"Cryptocurrency rates added to the exchange rate cache","timestamp":"2025-03-02 03:52:47"}
+{"availableCurrencies":169,"includesCrypto":true,"level":"info","message":"Exchange rates updated and re-based to USD successfully","timestamp":"2025-03-02 03:52:47"}
+{"level":"info","message":"MongoDB Connected: ac-fky7kgt-shard-00-00.cgmoocn.mongodb.net","timestamp":"2025-03-02 03:52:54"}
+{"level":"info","message":"Starting server initialization...","timestamp":"2025-03-02 03:53:15"}
+{"level":"info","message":"Server is running on port 8080","timestamp":"2025-03-02 03:53:15"}
+{"level":"info","message":"Log streaming available on same port, path: /logs","timestamp":"2025-03-02 03:53:15"}
+{"level":"info","message":"Environment: development","timestamp":"2025-03-02 03:53:15"}
+{"level":"info","message":"Cryptocurrency rates added to the exchange rate cache","timestamp":"2025-03-02 03:53:16"}
+{"availableCurrencies":169,"includesCrypto":true,"level":"info","message":"Exchange rates updated and re-based to USD successfully","timestamp":"2025-03-02 03:53:16"}
+{"level":"info","message":"MongoDB Connected: ac-fky7kgt-shard-00-00.cgmoocn.mongodb.net","timestamp":"2025-03-02 03:53:17"}
+{"level":"info","message":"Starting server initialization...","timestamp":"2025-03-02 03:53:37"}
+{"level":"info","message":"Server is running on port 8080","timestamp":"2025-03-02 03:53:37"}
+{"level":"info","message":"Log streaming available on same port, path: /logs","timestamp":"2025-03-02 03:53:37"}
+{"level":"info","message":"Environment: development","timestamp":"2025-03-02 03:53:37"}
+{"level":"info","message":"Cryptocurrency rates added to the exchange rate cache","timestamp":"2025-03-02 03:53:38"}
+{"availableCurrencies":169,"includesCrypto":true,"level":"info","message":"Exchange rates updated and re-based to USD successfully","timestamp":"2025-03-02 03:53:38"}
+{"level":"info","message":"MongoDB Connected: ac-fky7kgt-shard-00-00.cgmoocn.mongodb.net","timestamp":"2025-03-02 03:53:41"}
+{"email":"tenpenny.mitchell@yahoo.com","ip":"172.20.10.3","level":"info","message":"User logged in successfully","requestId":"f8ae07fb-81d3-4da6-8bf2-7ba853c01438","timestamp":"2025-03-02T02:58:12.012Z","userId":"67c368c5fd575921c844b2d2"}
+{"level":"http","message":"172.20.10.3 - - [02/Mar/2025:02:58:12 +0000] \"POST /api/auth/login HTTP/1.1\" 200 687 \"-\" \"Expo/1017655 CFNetwork/1496.0.7 Darwin/23.5.0\" 1129.961 ms {\"email\":\"tenpenny.mitchell@yahoo.com\",\"password\":\"********\"}","timestamp":"2025-03-02 03:58:12"}
+{"level":"info","message":"Authentication attempt","method":"GET","path":"/","requestId":"67f111a7-66bb-4869-a31f-fe15f818db13","timestamp":"2025-03-02 03:58:12"}
+{"level":"info","message":"Authentication attempt","method":"GET","path":"/","requestId":"efb17249-5ea6-4682-88b6-da0c17c605fc","timestamp":"2025-03-02 03:58:12"}
+{"level":"info","message":"Authentication attempt","method":"GET","path":"/","requestId":"79f3bbfd-0904-4a6a-b91c-820bd1ed9a06","timestamp":"2025-03-02 03:58:12"}
+{"level":"info","message":"Authentication successful","requestId":"67f111a7-66bb-4869-a31f-fe15f818db13","timestamp":"2025-03-02 03:58:12","userId":"67c368c5fd575921c844b2d2","userRole":"user"}
+{"level":"info","message":"Authentication successful","requestId":"efb17249-5ea6-4682-88b6-da0c17c605fc","timestamp":"2025-03-02 03:58:12","userId":"67c368c5fd575921c844b2d2","userRole":"user"}
+{"level":"info","message":"Authentication successful","requestId":"79f3bbfd-0904-4a6a-b91c-820bd1ed9a06","timestamp":"2025-03-02 03:58:12","userId":"67c368c5fd575921c844b2d2","userRole":"user"}
+{"count":1,"level":"info","message":"Accounts retrieved successfully","requestId":"67f111a7-66bb-4869-a31f-fe15f818db13","timestamp":"2025-03-02 03:58:12"}
+{"level":"http","message":"172.20.10.3 - - [02/Mar/2025:02:58:12 +0000] \"GET /api/accounts HTTP/1.1\" 304 - \"-\" \"Expo/1017655 CFNetwork/1496.0.7 Darwin/23.5.0\" 547.658 ms {}","timestamp":"2025-03-02 03:58:12"}
+{"count":1,"level":"info","message":"Accounts retrieved successfully","requestId":"efb17249-5ea6-4682-88b6-da0c17c605fc","timestamp":"2025-03-02 03:58:12"}
+{"level":"http","message":"172.20.10.3 - - [02/Mar/2025:02:58:12 +0000] \"GET /api/accounts HTTP/1.1\" 304 - \"-\" \"Expo/1017655 CFNetwork/1496.0.7 Darwin/23.5.0\" 540.051 ms {}","timestamp":"2025-03-02 03:58:12"}
+{"count":1,"level":"info","message":"Accounts retrieved successfully","requestId":"79f3bbfd-0904-4a6a-b91c-820bd1ed9a06","timestamp":"2025-03-02 03:58:12"}
+{"level":"http","message":"172.20.10.3 - - [02/Mar/2025:02:58:12 +0000] \"GET /api/accounts HTTP/1.1\" 304 - \"-\" \"Expo/1017655 CFNetwork/1496.0.7 Darwin/23.5.0\" 539.134 ms {}","timestamp":"2025-03-02 03:58:12"}
+{"level":"info","message":"Authentication attempt","method":"GET","path":"/","requestId":"e68d3be7-6b72-4ac6-95ed-429f3f6adbd2","timestamp":"2025-03-02 03:58:13"}
+{"level":"info","message":"Authentication attempt","method":"GET","path":"/pending","requestId":"553b0f7e-9c20-407b-aedc-a41e25dc1a42","timestamp":"2025-03-02 03:58:13"}
+{"level":"info","message":"Authentication attempt","method":"GET","path":"/","requestId":"3ec11187-6ed5-41d5-89a4-ee6fd8a75c1a","timestamp":"2025-03-02 03:58:13"}
+{"level":"info","message":"Authentication attempt","method":"GET","path":"/pending","requestId":"f9f205a5-a4b4-452d-8682-e6256417ed1d","timestamp":"2025-03-02 03:58:13"}
+{"level":"info","message":"Authentication successful","requestId":"e68d3be7-6b72-4ac6-95ed-429f3f6adbd2","timestamp":"2025-03-02 03:58:14","userId":"67c368c5fd575921c844b2d2","userRole":"user"}
+{"level":"info","message":"Authentication successful","requestId":"3ec11187-6ed5-41d5-89a4-ee6fd8a75c1a","timestamp":"2025-03-02 03:58:14","userId":"67c368c5fd575921c844b2d2","userRole":"user"}
+{"level":"info","message":"Authentication successful","requestId":"553b0f7e-9c20-407b-aedc-a41e25dc1a42","timestamp":"2025-03-02 03:58:14","userId":"67c368c5fd575921c844b2d2","userRole":"user"}
+{"level":"info","message":"Authentication successful","requestId":"f9f205a5-a4b4-452d-8682-e6256417ed1d","timestamp":"2025-03-02 03:58:14","userId":"67c368c5fd575921c844b2d2","userRole":"user"}
+{"level":"http","message":"172.20.10.3 - - [02/Mar/2025:02:58:14 +0000] \"GET /api/wallets HTTP/1.1\" 304 - \"-\" \"Expo/1017655 CFNetwork/1496.0.7 Darwin/23.5.0\" 567.394 ms {}","timestamp":"2025-03-02 03:58:14"}
+{"level":"http","message":"172.20.10.3 - - [02/Mar/2025:02:58:14 +0000] \"GET /api/wallets HTTP/1.1\" 304 - \"-\" \"Expo/1017655 CFNetwork/1496.0.7 Darwin/23.5.0\" 557.692 ms {}","timestamp":"2025-03-02 03:58:14"}
+{"count":0,"level":"info","message":"Waitlist Applications retrieved successfully","timestamp":"2025-03-02 03:58:14"}
+{"level":"http","message":"172.20.10.3 - - [02/Mar/2025:02:58:14 +0000] \"GET /api/waitlists/pending HTTP/1.1\" 304 - \"-\" \"Expo/1017655 CFNetwork/1496.0.7 Darwin/23.5.0\" 568.310 ms {}","timestamp":"2025-03-02 03:58:14"}
+{"count":0,"level":"info","message":"Waitlist Applications retrieved successfully","timestamp":"2025-03-02 03:58:14"}
+{"level":"http","message":"172.20.10.3 - - [02/Mar/2025:02:58:14 +0000] \"GET /api/waitlists/pending HTTP/1.1\" 304 - \"-\" \"Expo/1017655 CFNetwork/1496.0.7 Darwin/23.5.0\" 553.482 ms {}","timestamp":"2025-03-02 03:58:14"}
+{"level":"info","message":"Authentication attempt","method":"POST","path":"/transact/withdraw","requestId":"db12db9d-4ef8-439b-9e08-589977aab211","timestamp":"2025-03-02 03:58:50"}
+{"level":"info","message":"Authentication successful","requestId":"db12db9d-4ef8-439b-9e08-589977aab211","timestamp":"2025-03-02 03:58:50","userId":"67c368c5fd575921c844b2d2","userRole":"user"}
+{"ipAddress":"172.20.10.3","level":"info","message":"Withdrawal request initiated","requestBody":{"amount":63849.5,"description":"Wallet withdrawal","toAccount":"67c368c5fd575921c844b2d5","walletId":"67c37739ff4069266cf11a3a"},"requestId":"db12db9d-4ef8-439b-9e08-589977aab211","timestamp":"2025-03-02T02:58:51.038Z","userAgent":"Expo/1017655 CFNetwork/1496.0.7 Darwin/23.5.0","userId":"67c368c5fd575921c844b2d2"}
+{"difference":"63790.50000000","level":"warn","message":"Insufficient funds","requestId":"db12db9d-4ef8-439b-9e08-589977aab211","timestamp":"2025-03-02T02:58:51.247Z","userId":"67c368c5fd575921c844b2d2","walletBalance":"59","walletCurrency":"BTC","walletId":"67c37739ff4069266cf11a3a","withdrawalAmount":"63849.5"}
+{"errorMessage":"Insufficient funds in wallet","errorStack":"Error: Insufficient funds in wallet\n    at withdrawFromWallet (C:\\Users\\dimojiakuo\\Desktop\\code\\Backend\\regions-backend\\controllers\\walletControllers.js:233:13)\n    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)","level":"error","message":"Aborting database transaction due to error","requestId":"db12db9d-4ef8-439b-9e08-589977aab211","timestamp":"2025-03-02T02:58:51.250Z","userId":"67c368c5fd575921c844b2d2"}
+{"error":"Insufficient funds in wallet","errorCode":400,"errorStack":"Error: Insufficient funds in wallet\n    at withdrawFromWallet (C:\\Users\\dimojiakuo\\Desktop\\code\\Backend\\regions-backend\\controllers\\walletControllers.js:233:13)\n    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)","level":"error","message":"Withdraw transaction failed:","requestBody":{"amount":63849.5,"fromAccount":"67c368c5fd575921c844b2d5","fromCard":null,"toAccount":"67c368c5fd575921c844b2d5","toCard":null,"walletId":"67c37739ff4069266cf11a3a"},"requestId":"db12db9d-4ef8-439b-9e08-589977aab211","timestamp":"2025-03-02T02:58:51.510Z","userId":"67c368c5fd575921c844b2d2"}
+{"body":{"amount":63849.5,"fromAccount":"67c368c5fd575921c844b2d5","fromCard":null,"toAccount":"67c368c5fd575921c844b2d5","toCard":null,"walletId":"67c37739ff4069266cf11a3a"},"ip":"172.20.10.3","level":"error","message":"Insufficient funds in wallet","method":"POST","params":{},"query":{},"requestId":"db12db9d-4ef8-439b-9e08-589977aab211","stack":"Error: Insufficient funds in wallet\n    at withdrawFromWallet (C:\\Users\\dimojiakuo\\Desktop\\code\\Backend\\regions-backend\\controllers\\walletControllers.js:233:13)\n    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)","timestamp":"2025-03-02 03:58:51","url":"/api/wallets/transact/withdraw"}
+{"clientInfo":{"ip":"172.20.10.3","userAgent":"Expo/1017655 CFNetwork/1496.0.7 Darwin/23.5.0"},"error":{"stack":"Error: Insufficient funds in wallet\n    at withdrawFromWallet (C:\\Users\\dimojiakuo\\Desktop\\code\\Backend\\regions-backend\\controllers\\walletControllers.js:233:13)\n    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)"},"level":"warn","message":"Insufficient funds in wallet","request":{"body":{"amount":63849.5,"fromAccount":"67c368c5fd575921c844b2d5","fromCard":null,"toAccount":"67c368c5fd575921c844b2d5","toCard":null,"walletId":"67c37739ff4069266cf11a3a"},"headers":{"accept":"application/json","content-type":"application/json","user-agent":"Expo/1017655 CFNetwork/1496.0.7 Darwin/23.5.0"},"method":"POST","params":{},"query":{},"url":"/api/wallets/transact/withdraw"},"requestId":"db12db9d-4ef8-439b-9e08-589977aab211","statusCode":400,"timestamp":"2025-03-02 03:58:51","type":"Error","user":{"role":"user"}}
+{"level":"http","message":"172.20.10.3 - - [02/Mar/2025:02:58:51 +0000] \"POST /api/wallets/transact/withdraw HTTP/1.1\" 400 411 \"-\" \"Expo/1017655 CFNetwork/1496.0.7 Darwin/23.5.0\" 1003.952 ms {\"amount\":63849.5,\"fromAccount\":\"67c368c5fd575921c844b2d5\",\"fromCard\":null,\"walletId\":\"67c37739ff4069266cf11a3a\",\"toAccount\":\"67c368c5fd575921c844b2d5\",\"toCard\":null}","timestamp":"2025-03-02 03:58:51"}
+{"email":"tenpenny.mitchell@yahoo.com","ip":"172.20.10.3","level":"info","message":"User logged in successfully","requestId":"a5f5f99c-d993-45c2-bdd7-b809bbe3bb94","timestamp":"2025-03-02T02:59:21.144Z","userId":"67c368c5fd575921c844b2d2"}
+{"level":"http","message":"172.20.10.3 - - [02/Mar/2025:02:59:21 +0000] \"POST /api/auth/login HTTP/1.1\" 200 687 \"-\" \"Expo/1017655 CFNetwork/1496.0.7 Darwin/23.5.0\" 934.204 ms {\"email\":\"tenpenny.mitchell@yahoo.com\",\"password\":\"********\"}","timestamp":"2025-03-02 03:59:21"}
+{"level":"info","message":"Authentication attempt","method":"GET","path":"/","requestId":"61043547-7e59-46ed-a9cb-b77f295a4422","timestamp":"2025-03-02 03:59:21"}
+{"level":"info","message":"Authentication attempt","method":"GET","path":"/","requestId":"fa2008bd-55fd-4d55-8f5e-6f2d54e07037","timestamp":"2025-03-02 03:59:21"}
+{"level":"info","message":"Authentication successful","requestId":"61043547-7e59-46ed-a9cb-b77f295a4422","timestamp":"2025-03-02 03:59:21","userId":"67c368c5fd575921c844b2d2","userRole":"user"}
+{"level":"info","message":"Authentication successful","requestId":"fa2008bd-55fd-4d55-8f5e-6f2d54e07037","timestamp":"2025-03-02 03:59:21","userId":"67c368c5fd575921c844b2d2","userRole":"user"}
+{"count":1,"level":"info","message":"Accounts retrieved successfully","requestId":"61043547-7e59-46ed-a9cb-b77f295a4422","timestamp":"2025-03-02 03:59:21"}
+{"level":"http","message":"172.20.10.3 - - [02/Mar/2025:02:59:21 +0000] \"GET /api/accounts HTTP/1.1\" 304 - \"-\" \"Expo/1017655 CFNetwork/1496.0.7 Darwin/23.5.0\" 434.574 ms {}","timestamp":"2025-03-02 03:59:21"}
+{"count":1,"level":"info","message":"Accounts retrieved successfully","requestId":"fa2008bd-55fd-4d55-8f5e-6f2d54e07037","timestamp":"2025-03-02 03:59:21"}
+{"level":"http","message":"172.20.10.3 - - [02/Mar/2025:02:59:21 +0000] \"GET /api/accounts HTTP/1.1\" 304 - \"-\" \"Expo/1017655 CFNetwork/1496.0.7 Darwin/23.5.0\" 426.073 ms {}","timestamp":"2025-03-02 03:59:21"}
+{"email":"tenpenny.mitchell@yahoo.com","ip":"172.20.10.3","level":"info","message":"User logged in successfully","requestId":"46288ced-d3b7-4da6-9dfc-585efbace62a","timestamp":"2025-03-02T02:59:30.540Z","userId":"67c368c5fd575921c844b2d2"}
+{"level":"http","message":"172.20.10.3 - - [02/Mar/2025:02:59:30 +0000] \"POST /api/auth/login HTTP/1.1\" 200 687 \"-\" \"Expo/1017655 CFNetwork/1496.0.7 Darwin/23.5.0\" 884.428 ms {\"email\":\"tenpenny.mitchell@yahoo.com\",\"password\":\"********\"}","timestamp":"2025-03-02 03:59:30"}
+{"level":"info","message":"Authentication attempt","method":"GET","path":"/","requestId":"324ad659-ade5-422b-8f1d-a386f0e714aa","timestamp":"2025-03-02 03:59:30"}
+{"level":"info","message":"Authentication attempt","method":"GET","path":"/","requestId":"bc8115c2-403c-44cd-b4cf-971f4458bc9b","timestamp":"2025-03-02 03:59:30"}
+{"level":"info","message":"Authentication attempt","method":"GET","path":"/","requestId":"82f5293a-3ad7-4783-970a-09f092154baa","timestamp":"2025-03-02 03:59:30"}
+{"level":"info","message":"Authentication successful","requestId":"324ad659-ade5-422b-8f1d-a386f0e714aa","timestamp":"2025-03-02 03:59:30","userId":"67c368c5fd575921c844b2d2","userRole":"user"}
+{"level":"info","message":"Authentication successful","requestId":"bc8115c2-403c-44cd-b4cf-971f4458bc9b","timestamp":"2025-03-02 03:59:31","userId":"67c368c5fd575921c844b2d2","userRole":"user"}
+{"level":"info","message":"Authentication successful","requestId":"82f5293a-3ad7-4783-970a-09f092154baa","timestamp":"2025-03-02 03:59:31","userId":"67c368c5fd575921c844b2d2","userRole":"user"}
+{"count":1,"level":"info","message":"Accounts retrieved successfully","requestId":"324ad659-ade5-422b-8f1d-a386f0e714aa","timestamp":"2025-03-02 03:59:31"}
+{"level":"http","message":"172.20.10.3 - - [02/Mar/2025:02:59:31 +0000] \"GET /api/accounts HTTP/1.1\" 304 - \"-\" \"Expo/1017655 CFNetwork/1496.0.7 Darwin/23.5.0\" 595.499 ms {}","timestamp":"2025-03-02 03:59:31"}
+{"count":1,"level":"info","message":"Accounts retrieved successfully","requestId":"bc8115c2-403c-44cd-b4cf-971f4458bc9b","timestamp":"2025-03-02 03:59:31"}
+{"level":"http","message":"172.20.10.3 - - [02/Mar/2025:02:59:31 +0000] \"GET /api/accounts HTTP/1.1\" 304 - \"-\" \"Expo/1017655 CFNetwork/1496.0.7 Darwin/23.5.0\" 592.249 ms {}","timestamp":"2025-03-02 03:59:31"}
+{"count":1,"level":"info","message":"Accounts retrieved successfully","requestId":"82f5293a-3ad7-4783-970a-09f092154baa","timestamp":"2025-03-02 03:59:31"}
+{"level":"http","message":"172.20.10.3 - - [02/Mar/2025:02:59:31 +0000] \"GET /api/accounts HTTP/1.1\" 304 - \"-\" \"Expo/1017655 CFNetwork/1496.0.7 Darwin/23.5.0\" 590.030 ms {}","timestamp":"2025-03-02 03:59:31"}
+{"level":"info","message":"Authentication attempt","method":"GET","path":"/pending","requestId":"379a2dc3-22eb-49c7-afa3-69b7530abd14","timestamp":"2025-03-02 03:59:32"}
+{"level":"info","message":"Authentication attempt","method":"GET","path":"/","requestId":"247b0d66-5a18-4a2b-966a-292836480a9a","timestamp":"2025-03-02 03:59:32"}
+{"level":"info","message":"Authentication attempt","method":"GET","path":"/","requestId":"c47df9e5-dd3c-41a6-aa1f-c2ddb69d297e","timestamp":"2025-03-02 03:59:32"}
+{"level":"info","message":"Authentication attempt","method":"GET","path":"/pending","requestId":"dc2b39bd-13d2-4845-b913-3d715ecfb173","timestamp":"2025-03-02 03:59:32"}
+{"level":"info","message":"Authentication successful","requestId":"379a2dc3-22eb-49c7-afa3-69b7530abd14","timestamp":"2025-03-02 03:59:32","userId":"67c368c5fd575921c844b2d2","userRole":"user"}
+{"level":"info","message":"Authentication successful","requestId":"247b0d66-5a18-4a2b-966a-292836480a9a","timestamp":"2025-03-02 03:59:32","userId":"67c368c5fd575921c844b2d2","userRole":"user"}
+{"level":"info","message":"Authentication successful","requestId":"dc2b39bd-13d2-4845-b913-3d715ecfb173","timestamp":"2025-03-02 03:59:32","userId":"67c368c5fd575921c844b2d2","userRole":"user"}
+{"level":"info","message":"Authentication successful","requestId":"c47df9e5-dd3c-41a6-aa1f-c2ddb69d297e","timestamp":"2025-03-02 03:59:32","userId":"67c368c5fd575921c844b2d2","userRole":"user"}
+{"level":"http","message":"172.20.10.3 - - [02/Mar/2025:02:59:32 +0000] \"GET /api/wallets HTTP/1.1\" 304 - \"-\" \"Expo/1017655 CFNetwork/1496.0.7 Darwin/23.5.0\" 524.524 ms {}","timestamp":"2025-03-02 03:59:32"}
+{"level":"http","message":"172.20.10.3 - - [02/Mar/2025:02:59:32 +0000] \"GET /api/wallets HTTP/1.1\" 304 - \"-\" \"Expo/1017655 CFNetwork/1496.0.7 Darwin/23.5.0\" 525.182 ms {}","timestamp":"2025-03-02 03:59:32"}
+{"count":0,"level":"info","message":"Waitlist Applications retrieved successfully","timestamp":"2025-03-02 03:59:32"}
+{"level":"http","message":"172.20.10.3 - - [02/Mar/2025:02:59:32 +0000] \"GET /api/waitlists/pending HTTP/1.1\" 304 - \"-\" \"Expo/1017655 CFNetwork/1496.0.7 Darwin/23.5.0\" 492.171 ms {}","timestamp":"2025-03-02 03:59:32"}
+{"count":0,"level":"info","message":"Waitlist Applications retrieved successfully","timestamp":"2025-03-02 03:59:32"}
+{"level":"http","message":"172.20.10.3 - - [02/Mar/2025:02:59:32 +0000] \"GET /api/waitlists/pending HTTP/1.1\" 304 - \"-\" \"Expo/1017655 CFNetwork/1496.0.7 Darwin/23.5.0\" 544.215 ms {}","timestamp":"2025-03-02 03:59:32"}
+{"level":"info","message":"Authentication attempt","method":"POST","path":"/transact/deposit","requestId":"a6116b54-e23c-4663-8800-0c9fac3144ca","timestamp":"2025-03-02 03:59:46"}
+{"level":"info","message":"Authentication successful","requestId":"a6116b54-e23c-4663-8800-0c9fac3144ca","timestamp":"2025-03-02 03:59:47","userId":"67c368c5fd575921c844b2d2","userRole":"user"}
+{"ipAddress":"172.20.10.3","level":"info","message":"Deposit request initiated","requestBody":{"amount":63849.5,"description":"Wallet Deposit","fromAccount":"67c368c5fd575921c844b2d5","walletId":"67c37739ff4069266cf11a3a"},"requestId":"a6116b54-e23c-4663-8800-0c9fac3144ca","timestamp":"2025-03-02T02:59:47.352Z","userAgent":"Expo/1017655 CFNetwork/1496.0.7 Darwin/23.5.0","userId":"67c368c5fd575921c844b2d2"}
+{"error":"Wallet not found","level":"error","message":"Deposit transaction failed:","requestId":"a6116b54-e23c-4663-8800-0c9fac3144ca","timestamp":"2025-03-02 03:59:47"}
+{"body":{"amount":63849.5,"fromAccount":"67c368c5fd575921c844b2d5","fromCard":null,"toAccount":"67c368c5fd575921c844b2d5","toCard":null,"walletId":"67c37739ff4069266cf11a3a"},"ip":"172.20.10.3","level":"error","message":"Wallet not found","method":"POST","params":{},"query":{},"requestId":"a6116b54-e23c-4663-8800-0c9fac3144ca","stack":"Error: Wallet not found\n    at depositToWallet (C:\\Users\\dimojiakuo\\Desktop\\code\\Backend\\regions-backend\\controllers\\walletControllers.js:576:13)\n    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)","timestamp":"2025-03-02 03:59:47","url":"/api/wallets/transact/deposit"}
+{"clientInfo":{"ip":"172.20.10.3","userAgent":"Expo/1017655 CFNetwork/1496.0.7 Darwin/23.5.0"},"error":{"stack":"Error: Wallet not found\n    at depositToWallet (C:\\Users\\dimojiakuo\\Desktop\\code\\Backend\\regions-backend\\controllers\\walletControllers.js:576:13)\n    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)"},"level":"warn","message":"Wallet not found","request":{"body":{"amount":63849.5,"fromAccount":"67c368c5fd575921c844b2d5","fromCard":null,"toAccount":"67c368c5fd575921c844b2d5","toCard":null,"walletId":"67c37739ff4069266cf11a3a"},"headers":{"accept":"application/json","content-type":"application/json","user-agent":"Expo/1017655 CFNetwork/1496.0.7 Darwin/23.5.0"},"method":"POST","params":{},"query":{},"url":"/api/wallets/transact/deposit"},"requestId":"a6116b54-e23c-4663-8800-0c9fac3144ca","statusCode":404,"timestamp":"2025-03-02 03:59:47","type":"Error","user":{"role":"user"}}
+{"level":"http","message":"172.20.10.3 - - [02/Mar/2025:02:59:47 +0000] \"POST /api/wallets/transact/deposit HTTP/1.1\" 404 384 \"-\" \"Expo/1017655 CFNetwork/1496.0.7 Darwin/23.5.0\" 1073.279 ms {\"amount\":63849.5,\"fromAccount\":\"67c368c5fd575921c844b2d5\",\"fromCard\":null,\"walletId\":\"67c37739ff4069266cf11a3a\",\"toAccount\":\"67c368c5fd575921c844b2d5\",\"toCard\":null}","timestamp":"2025-03-02 03:59:47"}
+{"level":"info","message":"Starting server initialization...","timestamp":"2025-03-02 04:00:54"}
+{"level":"info","message":"Server is running on port 8080","timestamp":"2025-03-02 04:00:54"}
+{"level":"info","message":"Log streaming available on same port, path: /logs","timestamp":"2025-03-02 04:00:54"}
+{"level":"info","message":"Environment: development","timestamp":"2025-03-02 04:00:54"}
+{"level":"info","message":"Cryptocurrency rates added to the exchange rate cache","timestamp":"2025-03-02 04:00:54"}
+{"availableCurrencies":169,"includesCrypto":true,"level":"info","message":"Exchange rates updated and re-based to USD successfully","timestamp":"2025-03-02 04:00:54"}
+{"level":"info","message":"Starting server initialization...","timestamp":"2025-03-02 04:01:07"}
+{"level":"info","message":"Server is running on port 8080","timestamp":"2025-03-02 04:01:07"}
+{"level":"info","message":"Log streaming available on same port, path: /logs","timestamp":"2025-03-02 04:01:07"}
+{"level":"info","message":"Environment: development","timestamp":"2025-03-02 04:01:07"}
+{"level":"info","message":"Cryptocurrency rates added to the exchange rate cache","timestamp":"2025-03-02 04:01:08"}
+{"availableCurrencies":169,"includesCrypto":true,"level":"info","message":"Exchange rates updated and re-based to USD successfully","timestamp":"2025-03-02 04:01:08"}
+{"level":"info","message":"MongoDB Connected: ac-fky7kgt-shard-00-00.cgmoocn.mongodb.net","timestamp":"2025-03-02 04:01:09"}
+{"level":"info","message":"Starting server initialization...","timestamp":"2025-03-02 04:01:32"}
+{"level":"info","message":"Server is running on port 8080","timestamp":"2025-03-02 04:01:32"}
+{"level":"info","message":"Log streaming available on same port, path: /logs","timestamp":"2025-03-02 04:01:32"}
+{"level":"info","message":"Environment: development","timestamp":"2025-03-02 04:01:32"}
+{"level":"info","message":"Cryptocurrency rates added to the exchange rate cache","timestamp":"2025-03-02 04:01:33"}
+{"availableCurrencies":169,"includesCrypto":true,"level":"info","message":"Exchange rates updated and re-based to USD successfully","timestamp":"2025-03-02 04:01:33"}
+{"level":"info","message":"MongoDB Connected: ac-fky7kgt-shard-00-00.cgmoocn.mongodb.net","timestamp":"2025-03-02 04:01:34"}
+{"level":"info","message":"Starting server initialization...","timestamp":"2025-03-02 04:01:38"}
+{"level":"info","message":"Server is running on port 8080","timestamp":"2025-03-02 04:01:38"}
+{"level":"info","message":"Log streaming available on same port, path: /logs","timestamp":"2025-03-02 04:01:38"}
+{"level":"info","message":"Environment: development","timestamp":"2025-03-02 04:01:38"}
+{"level":"info","message":"Cryptocurrency rates added to the exchange rate cache","timestamp":"2025-03-02 04:01:39"}
+{"availableCurrencies":169,"includesCrypto":true,"level":"info","message":"Exchange rates updated and re-based to USD successfully","timestamp":"2025-03-02 04:01:39"}
+{"level":"info","message":"MongoDB Connected: ac-fky7kgt-shard-00-00.cgmoocn.mongodb.net","timestamp":"2025-03-02 04:01:40"}
+{"level":"info","message":"Starting server initialization...","timestamp":"2025-03-02 04:01:47"}
+{"level":"info","message":"Server is running on port 8080","timestamp":"2025-03-02 04:01:47"}
+{"level":"info","message":"Log streaming available on same port, path: /logs","timestamp":"2025-03-02 04:01:47"}
+{"level":"info","message":"Environment: development","timestamp":"2025-03-02 04:01:47"}
+{"level":"info","message":"Cryptocurrency rates added to the exchange rate cache","timestamp":"2025-03-02 04:01:47"}
+{"availableCurrencies":169,"includesCrypto":true,"level":"info","message":"Exchange rates updated and re-based to USD successfully","timestamp":"2025-03-02 04:01:47"}
+{"level":"info","message":"MongoDB Connected: ac-fky7kgt-shard-00-00.cgmoocn.mongodb.net","timestamp":"2025-03-02 04:01:49"}
+{"level":"info","message":"Starting server initialization...","timestamp":"2025-03-02 04:01:54"}
+{"level":"info","message":"Server is running on port 8080","timestamp":"2025-03-02 04:01:54"}
+{"level":"info","message":"Log streaming available on same port, path: /logs","timestamp":"2025-03-02 04:01:54"}
+{"level":"info","message":"Environment: development","timestamp":"2025-03-02 04:01:54"}
+{"level":"info","message":"Starting server initialization...","timestamp":"2025-03-02 04:01:55"}
+{"level":"info","message":"Server is running on port 8080","timestamp":"2025-03-02 04:01:55"}
+{"level":"info","message":"Log streaming available on same port, path: /logs","timestamp":"2025-03-02 04:01:55"}
+{"level":"info","message":"Environment: development","timestamp":"2025-03-02 04:01:55"}
+{"level":"info","message":"Cryptocurrency rates added to the exchange rate cache","timestamp":"2025-03-02 04:01:56"}
+{"availableCurrencies":169,"includesCrypto":true,"level":"info","message":"Exchange rates updated and re-based to USD successfully","timestamp":"2025-03-02 04:01:56"}
+{"level":"info","message":"MongoDB Connected: ac-fky7kgt-shard-00-00.cgmoocn.mongodb.net","timestamp":"2025-03-02 04:01:58"}
+{"level":"info","message":"Starting server initialization...","timestamp":"2025-03-02 04:02:00"}
+{"level":"info","message":"Server is running on port 8080","timestamp":"2025-03-02 04:02:00"}
+{"level":"info","message":"Log streaming available on same port, path: /logs","timestamp":"2025-03-02 04:02:00"}
+{"level":"info","message":"Environment: development","timestamp":"2025-03-02 04:02:00"}
+{"level":"info","message":"Cryptocurrency rates added to the exchange rate cache","timestamp":"2025-03-02 04:02:01"}
+{"availableCurrencies":169,"includesCrypto":true,"level":"info","message":"Exchange rates updated and re-based to USD successfully","timestamp":"2025-03-02 04:02:01"}
+{"level":"info","message":"MongoDB Connected: ac-fky7kgt-shard-00-00.cgmoocn.mongodb.net","timestamp":"2025-03-02 04:02:02"}
+{"level":"info","message":"Starting server initialization...","timestamp":"2025-03-02 04:02:12"}
+{"level":"info","message":"Server is running on port 8080","timestamp":"2025-03-02 04:02:12"}
+{"level":"info","message":"Log streaming available on same port, path: /logs","timestamp":"2025-03-02 04:02:12"}
+{"level":"info","message":"Environment: development","timestamp":"2025-03-02 04:02:12"}
+{"level":"info","message":"Cryptocurrency rates added to the exchange rate cache","timestamp":"2025-03-02 04:02:13"}
+{"availableCurrencies":169,"includesCrypto":true,"level":"info","message":"Exchange rates updated and re-based to USD successfully","timestamp":"2025-03-02 04:02:13"}
+{"level":"info","message":"MongoDB Connected: ac-fky7kgt-shard-00-00.cgmoocn.mongodb.net","timestamp":"2025-03-02 04:02:25"}
+{"level":"info","message":"Starting server initialization...","timestamp":"2025-03-02 04:02:52"}
+{"level":"info","message":"Server is running on port 8080","timestamp":"2025-03-02 04:02:52"}
+{"level":"info","message":"Log streaming available on same port, path: /logs","timestamp":"2025-03-02 04:02:52"}
+{"level":"info","message":"Environment: development","timestamp":"2025-03-02 04:02:52"}
+{"level":"info","message":"Cryptocurrency rates added to the exchange rate cache","timestamp":"2025-03-02 04:02:53"}
+{"availableCurrencies":169,"includesCrypto":true,"level":"info","message":"Exchange rates updated and re-based to USD successfully","timestamp":"2025-03-02 04:02:53"}
+{"level":"info","message":"MongoDB Connected: ac-fky7kgt-shard-00-00.cgmoocn.mongodb.net","timestamp":"2025-03-02 04:02:54"}
+{"level":"info","message":"Starting server initialization...","timestamp":"2025-03-02 04:02:58"}
+{"level":"info","message":"Server is running on port 8080","timestamp":"2025-03-02 04:02:58"}
+{"level":"info","message":"Log streaming available on same port, path: /logs","timestamp":"2025-03-02 04:02:58"}
+{"level":"info","message":"Environment: development","timestamp":"2025-03-02 04:02:58"}
+{"level":"info","message":"Cryptocurrency rates added to the exchange rate cache","timestamp":"2025-03-02 04:02:58"}
+{"availableCurrencies":169,"includesCrypto":true,"level":"info","message":"Exchange rates updated and re-based to USD successfully","timestamp":"2025-03-02 04:02:58"}
+{"level":"info","message":"MongoDB Connected: ac-fky7kgt-shard-00-00.cgmoocn.mongodb.net","timestamp":"2025-03-02 04:03:00"}
+{"level":"info","message":"Starting server initialization...","timestamp":"2025-03-02 04:03:05"}
+{"level":"info","message":"Server is running on port 8080","timestamp":"2025-03-02 04:03:05"}
+{"level":"info","message":"Log streaming available on same port, path: /logs","timestamp":"2025-03-02 04:03:05"}
+{"level":"info","message":"Environment: development","timestamp":"2025-03-02 04:03:05"}
+{"level":"info","message":"Cryptocurrency rates added to the exchange rate cache","timestamp":"2025-03-02 04:03:06"}
+{"availableCurrencies":169,"includesCrypto":true,"level":"info","message":"Exchange rates updated and re-based to USD successfully","timestamp":"2025-03-02 04:03:06"}
+{"level":"info","message":"MongoDB Connected: ac-fky7kgt-shard-00-00.cgmoocn.mongodb.net","timestamp":"2025-03-02 04:03:07"}
+{"level":"info","message":"Starting server initialization...","timestamp":"2025-03-02 04:03:10"}
+{"level":"info","message":"Server is running on port 8080","timestamp":"2025-03-02 04:03:10"}
+{"level":"info","message":"Log streaming available on same port, path: /logs","timestamp":"2025-03-02 04:03:10"}
+{"level":"info","message":"Environment: development","timestamp":"2025-03-02 04:03:10"}
+{"level":"info","message":"Cryptocurrency rates added to the exchange rate cache","timestamp":"2025-03-02 04:03:11"}
+{"availableCurrencies":169,"includesCrypto":true,"level":"info","message":"Exchange rates updated and re-based to USD successfully","timestamp":"2025-03-02 04:03:11"}
+{"level":"info","message":"MongoDB Connected: ac-fky7kgt-shard-00-00.cgmoocn.mongodb.net","timestamp":"2025-03-02 04:03:13"}
+{"level":"info","message":"Starting server initialization...","timestamp":"2025-03-02 04:03:21"}
+{"level":"info","message":"Server is running on port 8080","timestamp":"2025-03-02 04:03:21"}
+{"level":"info","message":"Log streaming available on same port, path: /logs","timestamp":"2025-03-02 04:03:21"}
+{"level":"info","message":"Environment: development","timestamp":"2025-03-02 04:03:21"}
+{"level":"info","message":"Cryptocurrency rates added to the exchange rate cache","timestamp":"2025-03-02 04:03:21"}
+{"availableCurrencies":169,"includesCrypto":true,"level":"info","message":"Exchange rates updated and re-based to USD successfully","timestamp":"2025-03-02 04:03:21"}
+{"level":"info","message":"MongoDB Connected: ac-fky7kgt-shard-00-00.cgmoocn.mongodb.net","timestamp":"2025-03-02 04:03:23"}
+{"level":"info","message":"Starting server initialization...","timestamp":"2025-03-02 04:03:29"}
+{"level":"info","message":"Server is running on port 8080","timestamp":"2025-03-02 04:03:29"}
+{"level":"info","message":"Log streaming available on same port, path: /logs","timestamp":"2025-03-02 04:03:29"}
+{"level":"info","message":"Environment: development","timestamp":"2025-03-02 04:03:29"}
+{"level":"info","message":"Cryptocurrency rates added to the exchange rate cache","timestamp":"2025-03-02 04:03:30"}
+{"availableCurrencies":169,"includesCrypto":true,"level":"info","message":"Exchange rates updated and re-based to USD successfully","timestamp":"2025-03-02 04:03:30"}
+{"level":"info","message":"MongoDB Connected: ac-fky7kgt-shard-00-00.cgmoocn.mongodb.net","timestamp":"2025-03-02 04:03:32"}
+{"level":"info","message":"Starting server initialization...","timestamp":"2025-03-02 04:04:03"}
+{"level":"info","message":"Server is running on port 8080","timestamp":"2025-03-02 04:04:03"}
+{"level":"info","message":"Log streaming available on same port, path: /logs","timestamp":"2025-03-02 04:04:03"}
+{"level":"info","message":"Environment: development","timestamp":"2025-03-02 04:04:03"}
+{"level":"info","message":"Cryptocurrency rates added to the exchange rate cache","timestamp":"2025-03-02 04:04:04"}
+{"availableCurrencies":169,"includesCrypto":true,"level":"info","message":"Exchange rates updated and re-based to USD successfully","timestamp":"2025-03-02 04:04:04"}
+{"level":"info","message":"Starting server initialization...","timestamp":"2025-03-02 04:04:08"}
+{"level":"info","message":"Server is running on port 8080","timestamp":"2025-03-02 04:04:08"}
+{"level":"info","message":"Log streaming available on same port, path: /logs","timestamp":"2025-03-02 04:04:08"}
+{"level":"info","message":"Environment: development","timestamp":"2025-03-02 04:04:08"}
+{"level":"info","message":"Cryptocurrency rates added to the exchange rate cache","timestamp":"2025-03-02 04:04:09"}
+{"availableCurrencies":169,"includesCrypto":true,"level":"info","message":"Exchange rates updated and re-based to USD successfully","timestamp":"2025-03-02 04:04:09"}
+{"level":"info","message":"Starting server initialization...","timestamp":"2025-03-02 04:04:11"}
+{"level":"info","message":"Server is running on port 8080","timestamp":"2025-03-02 04:04:11"}
+{"level":"info","message":"Log streaming available on same port, path: /logs","timestamp":"2025-03-02 04:04:11"}
+{"level":"info","message":"Environment: development","timestamp":"2025-03-02 04:04:11"}
+{"level":"info","message":"Cryptocurrency rates added to the exchange rate cache","timestamp":"2025-03-02 04:04:12"}
+{"availableCurrencies":169,"includesCrypto":true,"level":"info","message":"Exchange rates updated and re-based to USD successfully","timestamp":"2025-03-02 04:04:12"}
+{"level":"info","message":"Starting server initialization...","timestamp":"2025-03-02 04:04:14"}
+{"level":"info","message":"Server is running on port 8080","timestamp":"2025-03-02 04:04:14"}
+{"level":"info","message":"Log streaming available on same port, path: /logs","timestamp":"2025-03-02 04:04:14"}
+{"level":"info","message":"Environment: development","timestamp":"2025-03-02 04:04:14"}
+{"level":"info","message":"Cryptocurrency rates added to the exchange rate cache","timestamp":"2025-03-02 04:04:15"}
+{"availableCurrencies":169,"includesCrypto":true,"level":"info","message":"Exchange rates updated and re-based to USD successfully","timestamp":"2025-03-02 04:04:15"}
+{"level":"info","message":"MongoDB Connected: ac-fky7kgt-shard-00-02.cgmoocn.mongodb.net","timestamp":"2025-03-02 04:04:16"}
+{"level":"info","message":"Starting server initialization...","timestamp":"2025-03-02 04:04:45"}
+{"level":"info","message":"Server is running on port 8080","timestamp":"2025-03-02 04:04:45"}
+{"level":"info","message":"Log streaming available on same port, path: /logs","timestamp":"2025-03-02 04:04:45"}
+{"level":"info","message":"Environment: development","timestamp":"2025-03-02 04:04:45"}
+{"level":"info","message":"Cryptocurrency rates added to the exchange rate cache","timestamp":"2025-03-02 04:04:46"}
+{"availableCurrencies":169,"includesCrypto":true,"level":"info","message":"Exchange rates updated and re-based to USD successfully","timestamp":"2025-03-02 04:04:46"}
+{"level":"info","message":"MongoDB Connected: ac-fky7kgt-shard-00-02.cgmoocn.mongodb.net","timestamp":"2025-03-02 04:04:47"}
+{"level":"info","message":"Starting server initialization...","timestamp":"2025-03-02 04:04:52"}
+{"level":"info","message":"Server is running on port 8080","timestamp":"2025-03-02 04:04:52"}
+{"level":"info","message":"Log streaming available on same port, path: /logs","timestamp":"2025-03-02 04:04:52"}
+{"level":"info","message":"Environment: development","timestamp":"2025-03-02 04:04:52"}
+{"level":"info","message":"Cryptocurrency rates added to the exchange rate cache","timestamp":"2025-03-02 04:04:53"}
+{"availableCurrencies":169,"includesCrypto":true,"level":"info","message":"Exchange rates updated and re-based to USD successfully","timestamp":"2025-03-02 04:04:53"}
+{"level":"info","message":"MongoDB Connected: ac-fky7kgt-shard-00-02.cgmoocn.mongodb.net","timestamp":"2025-03-02 04:04:55"}
+{"level":"info","message":"Starting server initialization...","timestamp":"2025-03-02 04:05:30"}
+{"level":"info","message":"Server is running on port 8080","timestamp":"2025-03-02 04:05:30"}
+{"level":"info","message":"Log streaming available on same port, path: /logs","timestamp":"2025-03-02 04:05:30"}
+{"level":"info","message":"Environment: development","timestamp":"2025-03-02 04:05:30"}
+{"level":"info","message":"Cryptocurrency rates added to the exchange rate cache","timestamp":"2025-03-02 04:05:30"}
+{"availableCurrencies":169,"includesCrypto":true,"level":"info","message":"Exchange rates updated and re-based to USD successfully","timestamp":"2025-03-02 04:05:30"}
+{"level":"info","message":"MongoDB Connected: ac-fky7kgt-shard-00-00.cgmoocn.mongodb.net","timestamp":"2025-03-02 04:05:36"}
+{"level":"info","message":"Starting server initialization...","timestamp":"2025-03-02 04:05:50"}
+{"level":"info","message":"Server is running on port 8080","timestamp":"2025-03-02 04:05:50"}
+{"level":"info","message":"Log streaming available on same port, path: /logs","timestamp":"2025-03-02 04:05:50"}
+{"level":"info","message":"Environment: development","timestamp":"2025-03-02 04:05:50"}
+{"level":"info","message":"Cryptocurrency rates added to the exchange rate cache","timestamp":"2025-03-02 04:05:51"}
+{"availableCurrencies":169,"includesCrypto":true,"level":"info","message":"Exchange rates updated and re-based to USD successfully","timestamp":"2025-03-02 04:05:51"}
+{"level":"info","message":"MongoDB Connected: ac-fky7kgt-shard-00-00.cgmoocn.mongodb.net","timestamp":"2025-03-02 04:05:52"}
+{"level":"info","message":"Starting server initialization...","timestamp":"2025-03-02 04:05:54"}
+{"level":"info","message":"Server is running on port 8080","timestamp":"2025-03-02 04:05:54"}
+{"level":"info","message":"Log streaming available on same port, path: /logs","timestamp":"2025-03-02 04:05:54"}
+{"level":"info","message":"Environment: development","timestamp":"2025-03-02 04:05:54"}
+{"level":"info","message":"Starting server initialization...","timestamp":"2025-03-02 04:05:56"}
+{"level":"info","message":"Server is running on port 8080","timestamp":"2025-03-02 04:05:56"}
+{"level":"info","message":"Log streaming available on same port, path: /logs","timestamp":"2025-03-02 04:05:56"}
+{"level":"info","message":"Environment: development","timestamp":"2025-03-02 04:05:56"}
+{"level":"info","message":"MongoDB Connected: ac-fky7kgt-shard-00-00.cgmoocn.mongodb.net","timestamp":"2025-03-02 04:05:58"}
+{"level":"info","message":"Starting server initialization...","timestamp":"2025-03-02 04:06:00"}
+{"level":"info","message":"Server is running on port 8080","timestamp":"2025-03-02 04:06:00"}
+{"level":"info","message":"Log streaming available on same port, path: /logs","timestamp":"2025-03-02 04:06:00"}
+{"level":"info","message":"Environment: development","timestamp":"2025-03-02 04:06:00"}
+{"level":"info","message":"Cryptocurrency rates added to the exchange rate cache","timestamp":"2025-03-02 04:06:01"}
+{"availableCurrencies":169,"includesCrypto":true,"level":"info","message":"Exchange rates updated and re-based to USD successfully","timestamp":"2025-03-02 04:06:01"}
+{"level":"info","message":"MongoDB Connected: ac-fky7kgt-shard-00-00.cgmoocn.mongodb.net","timestamp":"2025-03-02 04:06:02"}
+{"level":"info","message":"Starting server initialization...","timestamp":"2025-03-02 04:06:49"}
+{"level":"info","message":"Server is running on port 8080","timestamp":"2025-03-02 04:06:49"}
+{"level":"info","message":"Log streaming available on same port, path: /logs","timestamp":"2025-03-02 04:06:49"}
+{"level":"info","message":"Environment: development","timestamp":"2025-03-02 04:06:49"}
+{"level":"info","message":"Cryptocurrency rates added to the exchange rate cache","timestamp":"2025-03-02 04:06:50"}
+{"availableCurrencies":169,"includesCrypto":true,"level":"info","message":"Exchange rates updated and re-based to USD successfully","timestamp":"2025-03-02 04:06:50"}
+{"level":"info","message":"MongoDB Connected: ac-fky7kgt-shard-00-00.cgmoocn.mongodb.net","timestamp":"2025-03-02 04:06:57"}
+{"level":"info","message":"Starting server initialization...","timestamp":"2025-03-02 04:07:43"}
+{"level":"info","message":"Server is running on port 8080","timestamp":"2025-03-02 04:07:43"}
+{"level":"info","message":"Log streaming available on same port, path: /logs","timestamp":"2025-03-02 04:07:43"}
+{"level":"info","message":"Environment: development","timestamp":"2025-03-02 04:07:43"}
+{"level":"info","message":"Cryptocurrency rates added to the exchange rate cache","timestamp":"2025-03-02 04:07:44"}
+{"availableCurrencies":169,"includesCrypto":true,"level":"info","message":"Exchange rates updated and re-based to USD successfully","timestamp":"2025-03-02 04:07:44"}
+{"level":"info","message":"MongoDB Connected: ac-fky7kgt-shard-00-00.cgmoocn.mongodb.net","timestamp":"2025-03-02 04:07:45"}
+{"level":"info","message":"Starting server initialization...","timestamp":"2025-03-02 04:07:50"}
+{"level":"info","message":"Server is running on port 8080","timestamp":"2025-03-02 04:07:50"}
+{"level":"info","message":"Log streaming available on same port, path: /logs","timestamp":"2025-03-02 04:07:50"}
+{"level":"info","message":"Environment: development","timestamp":"2025-03-02 04:07:50"}
+{"level":"info","message":"Cryptocurrency rates added to the exchange rate cache","timestamp":"2025-03-02 04:07:51"}
+{"availableCurrencies":169,"includesCrypto":true,"level":"info","message":"Exchange rates updated and re-based to USD successfully","timestamp":"2025-03-02 04:07:51"}
+{"level":"info","message":"MongoDB Connected: ac-fky7kgt-shard-00-00.cgmoocn.mongodb.net","timestamp":"2025-03-02 04:07:52"}
+{"level":"info","message":"Starting server initialization...","timestamp":"2025-03-02 04:08:00"}
+{"level":"info","message":"Server is running on port 8080","timestamp":"2025-03-02 04:08:00"}
+{"level":"info","message":"Log streaming available on same port, path: /logs","timestamp":"2025-03-02 04:08:00"}
+{"level":"info","message":"Environment: development","timestamp":"2025-03-02 04:08:00"}
+{"level":"info","message":"Cryptocurrency rates added to the exchange rate cache","timestamp":"2025-03-02 04:08:01"}
+{"availableCurrencies":169,"includesCrypto":true,"level":"info","message":"Exchange rates updated and re-based to USD successfully","timestamp":"2025-03-02 04:08:01"}
+{"level":"info","message":"MongoDB Connected: ac-fky7kgt-shard-00-00.cgmoocn.mongodb.net","timestamp":"2025-03-02 04:08:02"}
+{"level":"info","message":"Starting server initialization...","timestamp":"2025-03-02 04:08:14"}
+{"level":"info","message":"Server is running on port 8080","timestamp":"2025-03-02 04:08:14"}
+{"level":"info","message":"Log streaming available on same port, path: /logs","timestamp":"2025-03-02 04:08:14"}
+{"level":"info","message":"Environment: development","timestamp":"2025-03-02 04:08:14"}
+{"level":"info","message":"Cryptocurrency rates added to the exchange rate cache","timestamp":"2025-03-02 04:08:15"}
+{"availableCurrencies":169,"includesCrypto":true,"level":"info","message":"Exchange rates updated and re-based to USD successfully","timestamp":"2025-03-02 04:08:15"}
+{"level":"info","message":"Starting server initialization...","timestamp":"2025-03-02 04:08:17"}
+{"level":"info","message":"Server is running on port 8080","timestamp":"2025-03-02 04:08:17"}
+{"level":"info","message":"Log streaming available on same port, path: /logs","timestamp":"2025-03-02 04:08:17"}
+{"level":"info","message":"Environment: development","timestamp":"2025-03-02 04:08:17"}
+{"level":"info","message":"Cryptocurrency rates added to the exchange rate cache","timestamp":"2025-03-02 04:08:18"}
+{"availableCurrencies":169,"includesCrypto":true,"level":"info","message":"Exchange rates updated and re-based to USD successfully","timestamp":"2025-03-02 04:08:18"}
+{"level":"info","message":"MongoDB Connected: ac-fky7kgt-shard-00-00.cgmoocn.mongodb.net","timestamp":"2025-03-02 04:08:25"}
+{"level":"info","message":"Starting server initialization...","timestamp":"2025-03-02 04:08:32"}
+{"level":"info","message":"Server is running on port 8080","timestamp":"2025-03-02 04:08:32"}
+{"level":"info","message":"Log streaming available on same port, path: /logs","timestamp":"2025-03-02 04:08:32"}
+{"level":"info","message":"Environment: development","timestamp":"2025-03-02 04:08:32"}
+{"level":"info","message":"Cryptocurrency rates added to the exchange rate cache","timestamp":"2025-03-02 04:08:33"}
+{"availableCurrencies":169,"includesCrypto":true,"level":"info","message":"Exchange rates updated and re-based to USD successfully","timestamp":"2025-03-02 04:08:33"}
+{"level":"info","message":"MongoDB Connected: ac-fky7kgt-shard-00-00.cgmoocn.mongodb.net","timestamp":"2025-03-02 04:08:34"}
+{"level":"info","message":"Starting server initialization...","timestamp":"2025-03-02 04:09:08"}
+{"level":"info","message":"Server is running on port 8080","timestamp":"2025-03-02 04:09:08"}
+{"level":"info","message":"Log streaming available on same port, path: /logs","timestamp":"2025-03-02 04:09:08"}
+{"level":"info","message":"Environment: development","timestamp":"2025-03-02 04:09:08"}
+{"level":"info","message":"Cryptocurrency rates added to the exchange rate cache","timestamp":"2025-03-02 04:09:09"}
+{"availableCurrencies":169,"includesCrypto":true,"level":"info","message":"Exchange rates updated and re-based to USD successfully","timestamp":"2025-03-02 04:09:09"}
+{"level":"info","message":"MongoDB Connected: ac-fky7kgt-shard-00-00.cgmoocn.mongodb.net","timestamp":"2025-03-02 04:09:10"}
+{"level":"info","message":"Starting server initialization...","timestamp":"2025-03-02 04:09:12"}
+{"level":"info","message":"Server is running on port 8080","timestamp":"2025-03-02 04:09:12"}
+{"level":"info","message":"Log streaming available on same port, path: /logs","timestamp":"2025-03-02 04:09:12"}
+{"level":"info","message":"Environment: development","timestamp":"2025-03-02 04:09:12"}
+{"level":"info","message":"Cryptocurrency rates added to the exchange rate cache","timestamp":"2025-03-02 04:09:13"}
+{"availableCurrencies":169,"includesCrypto":true,"level":"info","message":"Exchange rates updated and re-based to USD successfully","timestamp":"2025-03-02 04:09:13"}
+{"level":"info","message":"MongoDB Connected: ac-fky7kgt-shard-00-00.cgmoocn.mongodb.net","timestamp":"2025-03-02 04:09:14"}
+{"level":"info","message":"Starting server initialization...","timestamp":"2025-03-02 04:09:17"}
+{"level":"info","message":"Server is running on port 8080","timestamp":"2025-03-02 04:09:17"}
+{"level":"info","message":"Log streaming available on same port, path: /logs","timestamp":"2025-03-02 04:09:17"}
+{"level":"info","message":"Environment: development","timestamp":"2025-03-02 04:09:17"}
+{"level":"info","message":"Cryptocurrency rates added to the exchange rate cache","timestamp":"2025-03-02 04:09:17"}
+{"availableCurrencies":169,"includesCrypto":true,"level":"info","message":"Exchange rates updated and re-based to USD successfully","timestamp":"2025-03-02 04:09:17"}
+{"level":"info","message":"MongoDB Connected: ac-fky7kgt-shard-00-00.cgmoocn.mongodb.net","timestamp":"2025-03-02 04:09:19"}
+{"level":"info","message":"Starting server initialization...","timestamp":"2025-03-02 04:09:21"}
+{"level":"info","message":"Server is running on port 8080","timestamp":"2025-03-02 04:09:21"}
+{"level":"info","message":"Log streaming available on same port, path: /logs","timestamp":"2025-03-02 04:09:21"}
+{"level":"info","message":"Environment: development","timestamp":"2025-03-02 04:09:21"}
+{"level":"info","message":"Cryptocurrency rates added to the exchange rate cache","timestamp":"2025-03-02 04:09:23"}
+{"availableCurrencies":169,"includesCrypto":true,"level":"info","message":"Exchange rates updated and re-based to USD successfully","timestamp":"2025-03-02 04:09:23"}
+{"level":"info","message":"MongoDB Connected: ac-fky7kgt-shard-00-00.cgmoocn.mongodb.net","timestamp":"2025-03-02 04:09:23"}
+{"level":"info","message":"Starting server initialization...","timestamp":"2025-03-02 04:09:50"}
+{"level":"info","message":"Server is running on port 8080","timestamp":"2025-03-02 04:09:50"}
+{"level":"info","message":"Log streaming available on same port, path: /logs","timestamp":"2025-03-02 04:09:50"}
+{"level":"info","message":"Environment: development","timestamp":"2025-03-02 04:09:50"}
+{"level":"info","message":"Cryptocurrency rates added to the exchange rate cache","timestamp":"2025-03-02 04:09:51"}
+{"availableCurrencies":169,"includesCrypto":true,"level":"info","message":"Exchange rates updated and re-based to USD successfully","timestamp":"2025-03-02 04:09:51"}
+{"level":"info","message":"MongoDB Connected: ac-fky7kgt-shard-00-00.cgmoocn.mongodb.net","timestamp":"2025-03-02 04:09:55"}
+{"level":"info","message":"Starting server initialization...","timestamp":"2025-03-02 04:10:00"}
+{"level":"info","message":"Server is running on port 8080","timestamp":"2025-03-02 04:10:00"}
+{"level":"info","message":"Log streaming available on same port, path: /logs","timestamp":"2025-03-02 04:10:00"}
+{"level":"info","message":"Environment: development","timestamp":"2025-03-02 04:10:00"}
+{"level":"info","message":"Cryptocurrency rates added to the exchange rate cache","timestamp":"2025-03-02 04:10:01"}
+{"availableCurrencies":169,"includesCrypto":true,"level":"info","message":"Exchange rates updated and re-based to USD successfully","timestamp":"2025-03-02 04:10:01"}
+{"level":"info","message":"MongoDB Connected: ac-fky7kgt-shard-00-00.cgmoocn.mongodb.net","timestamp":"2025-03-02 04:10:02"}
+{"level":"info","message":"Starting server initialization...","timestamp":"2025-03-02 04:10:15"}
+{"level":"info","message":"Server is running on port 8080","timestamp":"2025-03-02 04:10:15"}
+{"level":"info","message":"Log streaming available on same port, path: /logs","timestamp":"2025-03-02 04:10:15"}
+{"level":"info","message":"Environment: development","timestamp":"2025-03-02 04:10:15"}
+{"level":"info","message":"Cryptocurrency rates added to the exchange rate cache","timestamp":"2025-03-02 04:10:16"}
+{"availableCurrencies":169,"includesCrypto":true,"level":"info","message":"Exchange rates updated and re-based to USD successfully","timestamp":"2025-03-02 04:10:16"}
+{"level":"info","message":"MongoDB Connected: ac-fky7kgt-shard-00-00.cgmoocn.mongodb.net","timestamp":"2025-03-02 04:10:17"}
+{"level":"info","message":"Starting server initialization...","timestamp":"2025-03-02 04:10:27"}
+{"level":"info","message":"Server is running on port 8080","timestamp":"2025-03-02 04:10:27"}
+{"level":"info","message":"Log streaming available on same port, path: /logs","timestamp":"2025-03-02 04:10:27"}
+{"level":"info","message":"Environment: development","timestamp":"2025-03-02 04:10:27"}
+{"level":"info","message":"Cryptocurrency rates added to the exchange rate cache","timestamp":"2025-03-02 04:10:28"}
+{"availableCurrencies":169,"includesCrypto":true,"level":"info","message":"Exchange rates updated and re-based to USD successfully","timestamp":"2025-03-02 04:10:28"}
+{"level":"info","message":"MongoDB Connected: ac-fky7kgt-shard-00-00.cgmoocn.mongodb.net","timestamp":"2025-03-02 04:10:29"}
+{"level":"info","message":"Starting server initialization...","timestamp":"2025-03-02 04:10:34"}
+{"level":"info","message":"Server is running on port 8080","timestamp":"2025-03-02 04:10:34"}
+{"level":"info","message":"Log streaming available on same port, path: /logs","timestamp":"2025-03-02 04:10:34"}
+{"level":"info","message":"Environment: development","timestamp":"2025-03-02 04:10:34"}
+{"level":"info","message":"Cryptocurrency rates added to the exchange rate cache","timestamp":"2025-03-02 04:10:35"}
+{"availableCurrencies":169,"includesCrypto":true,"level":"info","message":"Exchange rates updated and re-based to USD successfully","timestamp":"2025-03-02 04:10:35"}
+{"level":"info","message":"MongoDB Connected: ac-fky7kgt-shard-00-00.cgmoocn.mongodb.net","timestamp":"2025-03-02 04:10:37"}
+{"level":"info","message":"Starting server initialization...","timestamp":"2025-03-02 04:10:47"}
+{"level":"info","message":"Server is running on port 8080","timestamp":"2025-03-02 04:10:47"}
+{"level":"info","message":"Log streaming available on same port, path: /logs","timestamp":"2025-03-02 04:10:47"}
+{"level":"info","message":"Environment: development","timestamp":"2025-03-02 04:10:47"}
+{"level":"info","message":"Cryptocurrency rates added to the exchange rate cache","timestamp":"2025-03-02 04:10:47"}
+{"availableCurrencies":169,"includesCrypto":true,"level":"info","message":"Exchange rates updated and re-based to USD successfully","timestamp":"2025-03-02 04:10:47"}
+{"level":"info","message":"MongoDB Connected: ac-fky7kgt-shard-00-00.cgmoocn.mongodb.net","timestamp":"2025-03-02 04:10:49"}
+{"level":"info","message":"Starting server initialization...","timestamp":"2025-03-02 04:10:54"}
+{"level":"info","message":"Server is running on port 8080","timestamp":"2025-03-02 04:10:55"}
+{"level":"info","message":"Log streaming available on same port, path: /logs","timestamp":"2025-03-02 04:10:55"}
+{"level":"info","message":"Environment: development","timestamp":"2025-03-02 04:10:55"}
+{"level":"info","message":"Cryptocurrency rates added to the exchange rate cache","timestamp":"2025-03-02 04:10:56"}
+{"availableCurrencies":169,"includesCrypto":true,"level":"info","message":"Exchange rates updated and re-based to USD successfully","timestamp":"2025-03-02 04:10:56"}
+{"level":"info","message":"MongoDB Connected: ac-fky7kgt-shard-00-00.cgmoocn.mongodb.net","timestamp":"2025-03-02 04:10:57"}
+{"level":"info","message":"Starting server initialization...","timestamp":"2025-03-02 04:10:58"}
+{"level":"info","message":"Server is running on port 8080","timestamp":"2025-03-02 04:10:59"}
+{"level":"info","message":"Log streaming available on same port, path: /logs","timestamp":"2025-03-02 04:10:59"}
+{"level":"info","message":"Environment: development","timestamp":"2025-03-02 04:10:59"}
+{"level":"info","message":"Cryptocurrency rates added to the exchange rate cache","timestamp":"2025-03-02 04:11:00"}
+{"availableCurrencies":169,"includesCrypto":true,"level":"info","message":"Exchange rates updated and re-based to USD successfully","timestamp":"2025-03-02 04:11:00"}
+{"level":"info","message":"MongoDB Connected: ac-fky7kgt-shard-00-00.cgmoocn.mongodb.net","timestamp":"2025-03-02 04:11:01"}
+{"level":"info","message":"Starting server initialization...","timestamp":"2025-03-02 04:11:10"}
+{"level":"info","message":"Server is running on port 8080","timestamp":"2025-03-02 04:11:10"}
+{"level":"info","message":"Log streaming available on same port, path: /logs","timestamp":"2025-03-02 04:11:10"}
+{"level":"info","message":"Environment: development","timestamp":"2025-03-02 04:11:10"}
+{"level":"info","message":"Cryptocurrency rates added to the exchange rate cache","timestamp":"2025-03-02 04:11:11"}
+{"availableCurrencies":169,"includesCrypto":true,"level":"info","message":"Exchange rates updated and re-based to USD successfully","timestamp":"2025-03-02 04:11:11"}
+{"level":"info","message":"Starting server initialization...","timestamp":"2025-03-02 04:11:23"}
+{"level":"info","message":"Server is running on port 8080","timestamp":"2025-03-02 04:11:23"}
+{"level":"info","message":"Log streaming available on same port, path: /logs","timestamp":"2025-03-02 04:11:23"}
+{"level":"info","message":"Environment: development","timestamp":"2025-03-02 04:11:23"}
+{"level":"info","message":"Cryptocurrency rates added to the exchange rate cache","timestamp":"2025-03-02 04:11:24"}
+{"availableCurrencies":169,"includesCrypto":true,"level":"info","message":"Exchange rates updated and re-based to USD successfully","timestamp":"2025-03-02 04:11:24"}
+{"level":"info","message":"Starting server initialization...","timestamp":"2025-03-02 04:11:31"}
+{"level":"info","message":"Server is running on port 8080","timestamp":"2025-03-02 04:11:31"}
+{"level":"info","message":"Log streaming available on same port, path: /logs","timestamp":"2025-03-02 04:11:31"}
+{"level":"info","message":"Environment: development","timestamp":"2025-03-02 04:11:31"}
+{"level":"info","message":"Cryptocurrency rates added to the exchange rate cache","timestamp":"2025-03-02 04:11:33"}
+{"availableCurrencies":169,"includesCrypto":true,"level":"info","message":"Exchange rates updated and re-based to USD successfully","timestamp":"2025-03-02 04:11:33"}
+{"level":"info","message":"Starting server initialization...","timestamp":"2025-03-02 04:11:35"}
+{"level":"info","message":"Server is running on port 8080","timestamp":"2025-03-02 04:11:35"}
+{"level":"info","message":"Log streaming available on same port, path: /logs","timestamp":"2025-03-02 04:11:35"}
+{"level":"info","message":"Environment: development","timestamp":"2025-03-02 04:11:35"}
+{"level":"info","message":"Cryptocurrency rates added to the exchange rate cache","timestamp":"2025-03-02 04:11:36"}
+{"availableCurrencies":169,"includesCrypto":true,"level":"info","message":"Exchange rates updated and re-based to USD successfully","timestamp":"2025-03-02 04:11:36"}
+{"level":"info","message":"MongoDB Connected: ac-fky7kgt-shard-00-00.cgmoocn.mongodb.net","timestamp":"2025-03-02 04:11:40"}
+{"level":"info","message":"Starting server initialization...","timestamp":"2025-03-02 04:13:07"}
+{"level":"info","message":"Server is running on port 8080","timestamp":"2025-03-02 04:13:07"}
+{"level":"info","message":"Log streaming available on same port, path: /logs","timestamp":"2025-03-02 04:13:07"}
+{"level":"info","message":"Environment: development","timestamp":"2025-03-02 04:13:07"}
+{"level":"info","message":"Cryptocurrency rates added to the exchange rate cache","timestamp":"2025-03-02 04:13:08"}
+{"availableCurrencies":169,"includesCrypto":true,"level":"info","message":"Exchange rates updated and re-based to USD successfully","timestamp":"2025-03-02 04:13:08"}
+{"level":"info","message":"Starting server initialization...","timestamp":"2025-03-02 04:13:12"}
+{"level":"info","message":"Server is running on port 8080","timestamp":"2025-03-02 04:13:12"}
+{"level":"info","message":"Log streaming available on same port, path: /logs","timestamp":"2025-03-02 04:13:12"}
+{"level":"info","message":"Environment: development","timestamp":"2025-03-02 04:13:12"}
+{"level":"info","message":"Cryptocurrency rates added to the exchange rate cache","timestamp":"2025-03-02 04:13:13"}
+{"availableCurrencies":169,"includesCrypto":true,"level":"info","message":"Exchange rates updated and re-based to USD successfully","timestamp":"2025-03-02 04:13:13"}
+{"level":"info","message":"MongoDB Connected: ac-fky7kgt-shard-00-00.cgmoocn.mongodb.net","timestamp":"2025-03-02 04:13:15"}
+{"level":"info","message":"Starting server initialization...","timestamp":"2025-03-02 04:13:19"}
+{"level":"info","message":"Server is running on port 8080","timestamp":"2025-03-02 04:13:19"}
+{"level":"info","message":"Log streaming available on same port, path: /logs","timestamp":"2025-03-02 04:13:19"}
+{"level":"info","message":"Environment: development","timestamp":"2025-03-02 04:13:19"}
+{"level":"info","message":"Cryptocurrency rates added to the exchange rate cache","timestamp":"2025-03-02 04:13:20"}
+{"availableCurrencies":169,"includesCrypto":true,"level":"info","message":"Exchange rates updated and re-based to USD successfully","timestamp":"2025-03-02 04:13:20"}
+{"level":"info","message":"MongoDB Connected: ac-fky7kgt-shard-00-00.cgmoocn.mongodb.net","timestamp":"2025-03-02 04:13:22"}
+{"level":"info","message":"Starting server initialization...","timestamp":"2025-03-02 04:13:25"}
+{"level":"info","message":"Server is running on port 8080","timestamp":"2025-03-02 04:13:25"}
+{"level":"info","message":"Log streaming available on same port, path: /logs","timestamp":"2025-03-02 04:13:25"}
+{"level":"info","message":"Environment: development","timestamp":"2025-03-02 04:13:25"}
+{"level":"info","message":"Starting server initialization...","timestamp":"2025-03-02 04:13:28"}
+{"level":"info","message":"Server is running on port 8080","timestamp":"2025-03-02 04:13:28"}
+{"level":"info","message":"Log streaming available on same port, path: /logs","timestamp":"2025-03-02 04:13:28"}
+{"level":"info","message":"Environment: development","timestamp":"2025-03-02 04:13:28"}
+{"level":"info","message":"Cryptocurrency rates added to the exchange rate cache","timestamp":"2025-03-02 04:13:29"}
+{"availableCurrencies":169,"includesCrypto":true,"level":"info","message":"Exchange rates updated and re-based to USD successfully","timestamp":"2025-03-02 04:13:29"}
+{"level":"info","message":"MongoDB Connected: ac-fky7kgt-shard-00-00.cgmoocn.mongodb.net","timestamp":"2025-03-02 04:13:30"}
+{"level":"info","message":"Starting server initialization...","timestamp":"2025-03-02 04:13:40"}
+{"level":"info","message":"Server is running on port 8080","timestamp":"2025-03-02 04:13:40"}
+{"level":"info","message":"Log streaming available on same port, path: /logs","timestamp":"2025-03-02 04:13:40"}
+{"level":"info","message":"Environment: development","timestamp":"2025-03-02 04:13:40"}
+{"level":"info","message":"Cryptocurrency rates added to the exchange rate cache","timestamp":"2025-03-02 04:13:41"}
+{"availableCurrencies":169,"includesCrypto":true,"level":"info","message":"Exchange rates updated and re-based to USD successfully","timestamp":"2025-03-02 04:13:41"}
+{"level":"info","message":"MongoDB Connected: ac-fky7kgt-shard-00-00.cgmoocn.mongodb.net","timestamp":"2025-03-02 04:13:42"}
+{"level":"info","message":"Starting server initialization...","timestamp":"2025-03-02 04:13:50"}
+{"level":"info","message":"Server is running on port 8080","timestamp":"2025-03-02 04:13:50"}
+{"level":"info","message":"Log streaming available on same port, path: /logs","timestamp":"2025-03-02 04:13:50"}
+{"level":"info","message":"Environment: development","timestamp":"2025-03-02 04:13:50"}
+{"level":"info","message":"Cryptocurrency rates added to the exchange rate cache","timestamp":"2025-03-02 04:13:52"}
+{"availableCurrencies":169,"includesCrypto":true,"level":"info","message":"Exchange rates updated and re-based to USD successfully","timestamp":"2025-03-02 04:13:52"}
+{"level":"info","message":"MongoDB Connected: ac-fky7kgt-shard-00-00.cgmoocn.mongodb.net","timestamp":"2025-03-02 04:13:52"}
+{"level":"info","message":"Starting server initialization...","timestamp":"2025-03-02 04:13:56"}
+{"level":"info","message":"Server is running on port 8080","timestamp":"2025-03-02 04:13:56"}
+{"level":"info","message":"Log streaming available on same port, path: /logs","timestamp":"2025-03-02 04:13:56"}
+{"level":"info","message":"Environment: development","timestamp":"2025-03-02 04:13:56"}
+{"level":"info","message":"Cryptocurrency rates added to the exchange rate cache","timestamp":"2025-03-02 04:13:57"}
+{"availableCurrencies":169,"includesCrypto":true,"level":"info","message":"Exchange rates updated and re-based to USD successfully","timestamp":"2025-03-02 04:13:57"}
+{"level":"info","message":"MongoDB Connected: ac-fky7kgt-shard-00-00.cgmoocn.mongodb.net","timestamp":"2025-03-02 04:13:58"}
+{"level":"info","message":"Starting server initialization...","timestamp":"2025-03-02 04:14:18"}
+{"level":"info","message":"Server is running on port 8080","timestamp":"2025-03-02 04:14:18"}
+{"level":"info","message":"Log streaming available on same port, path: /logs","timestamp":"2025-03-02 04:14:18"}
+{"level":"info","message":"Environment: development","timestamp":"2025-03-02 04:14:18"}
+{"level":"info","message":"Cryptocurrency rates added to the exchange rate cache","timestamp":"2025-03-02 04:14:19"}
+{"availableCurrencies":169,"includesCrypto":true,"level":"info","message":"Exchange rates updated and re-based to USD successfully","timestamp":"2025-03-02 04:14:19"}
+{"level":"info","message":"MongoDB Connected: ac-fky7kgt-shard-00-00.cgmoocn.mongodb.net","timestamp":"2025-03-02 04:14:20"}
+{"level":"info","message":"Starting server initialization...","timestamp":"2025-03-02 04:14:36"}
+{"level":"info","message":"Server is running on port 8080","timestamp":"2025-03-02 04:14:36"}
+{"level":"info","message":"Log streaming available on same port, path: /logs","timestamp":"2025-03-02 04:14:36"}
+{"level":"info","message":"Environment: development","timestamp":"2025-03-02 04:14:36"}
+{"level":"info","message":"Starting server initialization...","timestamp":"2025-03-02 04:14:38"}
+{"level":"info","message":"Server is running on port 8080","timestamp":"2025-03-02 04:14:38"}
+{"level":"info","message":"Log streaming available on same port, path: /logs","timestamp":"2025-03-02 04:14:38"}
+{"level":"info","message":"Environment: development","timestamp":"2025-03-02 04:14:38"}
+{"level":"info","message":"Cryptocurrency rates added to the exchange rate cache","timestamp":"2025-03-02 04:14:39"}
+{"availableCurrencies":169,"includesCrypto":true,"level":"info","message":"Exchange rates updated and re-based to USD successfully","timestamp":"2025-03-02 04:14:39"}
+{"level":"info","message":"Starting server initialization...","timestamp":"2025-03-02 04:14:55"}
+{"level":"info","message":"Server is running on port 8080","timestamp":"2025-03-02 04:14:55"}
+{"level":"info","message":"Log streaming available on same port, path: /logs","timestamp":"2025-03-02 04:14:55"}
+{"level":"info","message":"Environment: development","timestamp":"2025-03-02 04:14:55"}
+{"level":"info","message":"Cryptocurrency rates added to the exchange rate cache","timestamp":"2025-03-02 04:14:56"}
+{"availableCurrencies":169,"includesCrypto":true,"level":"info","message":"Exchange rates updated and re-based to USD successfully","timestamp":"2025-03-02 04:14:56"}
+{"level":"info","message":"MongoDB Connected: ac-fky7kgt-shard-00-00.cgmoocn.mongodb.net","timestamp":"2025-03-02 04:14:57"}
+{"level":"info","message":"Starting server initialization...","timestamp":"2025-03-02 04:14:58"}
+{"level":"info","message":"Server is running on port 8080","timestamp":"2025-03-02 04:14:58"}
+{"level":"info","message":"Log streaming available on same port, path: /logs","timestamp":"2025-03-02 04:14:58"}
+{"level":"info","message":"Environment: development","timestamp":"2025-03-02 04:14:58"}
+{"level":"info","message":"Cryptocurrency rates added to the exchange rate cache","timestamp":"2025-03-02 04:14:59"}
+{"availableCurrencies":169,"includesCrypto":true,"level":"info","message":"Exchange rates updated and re-based to USD successfully","timestamp":"2025-03-02 04:14:59"}
+{"level":"info","message":"MongoDB Connected: ac-fky7kgt-shard-00-00.cgmoocn.mongodb.net","timestamp":"2025-03-02 04:15:00"}
+{"level":"info","message":"Starting server initialization...","timestamp":"2025-03-02 04:15:17"}
+{"level":"info","message":"Server is running on port 8080","timestamp":"2025-03-02 04:15:17"}
+{"level":"info","message":"Log streaming available on same port, path: /logs","timestamp":"2025-03-02 04:15:17"}
+{"level":"info","message":"Environment: development","timestamp":"2025-03-02 04:15:17"}
+{"level":"info","message":"Cryptocurrency rates added to the exchange rate cache","timestamp":"2025-03-02 04:15:18"}
+{"availableCurrencies":169,"includesCrypto":true,"level":"info","message":"Exchange rates updated and re-based to USD successfully","timestamp":"2025-03-02 04:15:18"}
+{"level":"info","message":"MongoDB Connected: ac-fky7kgt-shard-00-00.cgmoocn.mongodb.net","timestamp":"2025-03-02 04:15:19"}
+{"level":"info","message":"Starting server initialization...","timestamp":"2025-03-02 04:15:23"}
+{"level":"info","message":"Server is running on port 8080","timestamp":"2025-03-02 04:15:23"}
+{"level":"info","message":"Log streaming available on same port, path: /logs","timestamp":"2025-03-02 04:15:23"}
+{"level":"info","message":"Environment: development","timestamp":"2025-03-02 04:15:23"}
+{"level":"info","message":"Cryptocurrency rates added to the exchange rate cache","timestamp":"2025-03-02 04:15:24"}
+{"availableCurrencies":169,"includesCrypto":true,"level":"info","message":"Exchange rates updated and re-based to USD successfully","timestamp":"2025-03-02 04:15:24"}
+{"level":"info","message":"MongoDB Connected: ac-fky7kgt-shard-00-00.cgmoocn.mongodb.net","timestamp":"2025-03-02 04:15:25"}
+{"level":"info","message":"Starting server initialization...","timestamp":"2025-03-02 04:15:28"}
+{"level":"info","message":"Server is running on port 8080","timestamp":"2025-03-02 04:15:28"}
+{"level":"info","message":"Log streaming available on same port, path: /logs","timestamp":"2025-03-02 04:15:28"}
+{"level":"info","message":"Environment: development","timestamp":"2025-03-02 04:15:28"}
+{"level":"info","message":"Cryptocurrency rates added to the exchange rate cache","timestamp":"2025-03-02 04:15:29"}
+{"availableCurrencies":169,"includesCrypto":true,"level":"info","message":"Exchange rates updated and re-based to USD successfully","timestamp":"2025-03-02 04:15:29"}
+{"level":"info","message":"MongoDB Connected: ac-fky7kgt-shard-00-00.cgmoocn.mongodb.net","timestamp":"2025-03-02 04:15:30"}
+{"level":"info","message":"Starting server initialization...","timestamp":"2025-03-02 04:15:51"}
+{"level":"info","message":"Server is running on port 8080","timestamp":"2025-03-02 04:15:51"}
+{"level":"info","message":"Log streaming available on same port, path: /logs","timestamp":"2025-03-02 04:15:51"}
+{"level":"info","message":"Environment: development","timestamp":"2025-03-02 04:15:51"}
+{"level":"info","message":"Cryptocurrency rates added to the exchange rate cache","timestamp":"2025-03-02 04:15:52"}
+{"availableCurrencies":169,"includesCrypto":true,"level":"info","message":"Exchange rates updated and re-based to USD successfully","timestamp":"2025-03-02 04:15:52"}
+{"level":"info","message":"MongoDB Connected: ac-fky7kgt-shard-00-00.cgmoocn.mongodb.net","timestamp":"2025-03-02 04:15:54"}
+{"level":"info","message":"Starting server initialization...","timestamp":"2025-03-02 04:16:02"}
+{"level":"info","message":"Server is running on port 8080","timestamp":"2025-03-02 04:16:02"}
+{"level":"info","message":"Log streaming available on same port, path: /logs","timestamp":"2025-03-02 04:16:02"}
+{"level":"info","message":"Environment: development","timestamp":"2025-03-02 04:16:02"}
+{"level":"info","message":"Cryptocurrency rates added to the exchange rate cache","timestamp":"2025-03-02 04:16:03"}
+{"availableCurrencies":169,"includesCrypto":true,"level":"info","message":"Exchange rates updated and re-based to USD successfully","timestamp":"2025-03-02 04:16:03"}
+{"level":"info","message":"MongoDB Connected: ac-fky7kgt-shard-00-00.cgmoocn.mongodb.net","timestamp":"2025-03-02 04:16:06"}
+{"level":"info","message":"Starting server initialization...","timestamp":"2025-03-02 04:16:08"}
+{"level":"info","message":"Server is running on port 8080","timestamp":"2025-03-02 04:16:08"}
+{"level":"info","message":"Log streaming available on same port, path: /logs","timestamp":"2025-03-02 04:16:08"}
+{"level":"info","message":"Environment: development","timestamp":"2025-03-02 04:16:08"}
+{"level":"info","message":"Cryptocurrency rates added to the exchange rate cache","timestamp":"2025-03-02 04:16:09"}
+{"availableCurrencies":169,"includesCrypto":true,"level":"info","message":"Exchange rates updated and re-based to USD successfully","timestamp":"2025-03-02 04:16:09"}
+{"level":"info","message":"MongoDB Connected: ac-fky7kgt-shard-00-00.cgmoocn.mongodb.net","timestamp":"2025-03-02 04:16:10"}
+{"level":"info","message":"Starting server initialization...","timestamp":"2025-03-02 04:16:12"}
+{"level":"info","message":"Server is running on port 8080","timestamp":"2025-03-02 04:16:12"}
+{"level":"info","message":"Log streaming available on same port, path: /logs","timestamp":"2025-03-02 04:16:12"}
+{"level":"info","message":"Environment: development","timestamp":"2025-03-02 04:16:12"}
+{"level":"info","message":"Cryptocurrency rates added to the exchange rate cache","timestamp":"2025-03-02 04:16:13"}
+{"availableCurrencies":169,"includesCrypto":true,"level":"info","message":"Exchange rates updated and re-based to USD successfully","timestamp":"2025-03-02 04:16:13"}
+{"level":"info","message":"MongoDB Connected: ac-fky7kgt-shard-00-00.cgmoocn.mongodb.net","timestamp":"2025-03-02 04:16:14"}
+{"level":"info","message":"Starting server initialization...","timestamp":"2025-03-02 04:16:16"}
+{"level":"info","message":"Server is running on port 8080","timestamp":"2025-03-02 04:16:16"}
+{"level":"info","message":"Log streaming available on same port, path: /logs","timestamp":"2025-03-02 04:16:16"}
+{"level":"info","message":"Environment: development","timestamp":"2025-03-02 04:16:16"}
+{"level":"info","message":"Cryptocurrency rates added to the exchange rate cache","timestamp":"2025-03-02 04:16:17"}
+{"availableCurrencies":169,"includesCrypto":true,"level":"info","message":"Exchange rates updated and re-based to USD successfully","timestamp":"2025-03-02 04:16:17"}
+{"level":"info","message":"MongoDB Connected: ac-fky7kgt-shard-00-00.cgmoocn.mongodb.net","timestamp":"2025-03-02 04:16:18"}
+{"level":"info","message":"Starting server initialization...","timestamp":"2025-03-02 04:16:26"}
+{"level":"info","message":"Server is running on port 8080","timestamp":"2025-03-02 04:16:26"}
+{"level":"info","message":"Log streaming available on same port, path: /logs","timestamp":"2025-03-02 04:16:26"}
+{"level":"info","message":"Environment: development","timestamp":"2025-03-02 04:16:26"}
+{"level":"info","message":"Cryptocurrency rates added to the exchange rate cache","timestamp":"2025-03-02 04:16:26"}
+{"availableCurrencies":169,"includesCrypto":true,"level":"info","message":"Exchange rates updated and re-based to USD successfully","timestamp":"2025-03-02 04:16:26"}
+{"level":"info","message":"MongoDB Connected: ac-fky7kgt-shard-00-00.cgmoocn.mongodb.net","timestamp":"2025-03-02 04:16:28"}
+{"level":"info","message":"Starting server initialization...","timestamp":"2025-03-02 04:16:31"}
+{"level":"info","message":"Server is running on port 8080","timestamp":"2025-03-02 04:16:31"}
+{"level":"info","message":"Log streaming available on same port, path: /logs","timestamp":"2025-03-02 04:16:31"}
+{"level":"info","message":"Environment: development","timestamp":"2025-03-02 04:16:31"}
+{"level":"info","message":"Cryptocurrency rates added to the exchange rate cache","timestamp":"2025-03-02 04:16:32"}
+{"availableCurrencies":169,"includesCrypto":true,"level":"info","message":"Exchange rates updated and re-based to USD successfully","timestamp":"2025-03-02 04:16:32"}
+{"level":"info","message":"Starting server initialization...","timestamp":"2025-03-02 04:16:34"}
+{"level":"info","message":"Server is running on port 8080","timestamp":"2025-03-02 04:16:34"}
+{"level":"info","message":"Log streaming available on same port, path: /logs","timestamp":"2025-03-02 04:16:34"}
+{"level":"info","message":"Environment: development","timestamp":"2025-03-02 04:16:34"}
+{"level":"info","message":"Cryptocurrency rates added to the exchange rate cache","timestamp":"2025-03-02 04:16:35"}
+{"availableCurrencies":169,"includesCrypto":true,"level":"info","message":"Exchange rates updated and re-based to USD successfully","timestamp":"2025-03-02 04:16:35"}
+{"level":"info","message":"MongoDB Connected: ac-fky7kgt-shard-00-00.cgmoocn.mongodb.net","timestamp":"2025-03-02 04:16:36"}
+{"level":"info","message":"Starting server initialization...","timestamp":"2025-03-02 04:17:15"}
+{"level":"info","message":"Server is running on port 8080","timestamp":"2025-03-02 04:17:15"}
+{"level":"info","message":"Log streaming available on same port, path: /logs","timestamp":"2025-03-02 04:17:15"}
+{"level":"info","message":"Environment: development","timestamp":"2025-03-02 04:17:15"}
+{"level":"info","message":"Cryptocurrency rates added to the exchange rate cache","timestamp":"2025-03-02 04:17:16"}
+{"availableCurrencies":169,"includesCrypto":true,"level":"info","message":"Exchange rates updated and re-based to USD successfully","timestamp":"2025-03-02 04:17:16"}
+{"level":"info","message":"MongoDB Connected: ac-fky7kgt-shard-00-00.cgmoocn.mongodb.net","timestamp":"2025-03-02 04:17:17"}
+{"level":"info","message":"Starting server initialization...","timestamp":"2025-03-02 04:17:31"}
+{"level":"info","message":"Server is running on port 8080","timestamp":"2025-03-02 04:17:31"}
+{"level":"info","message":"Log streaming available on same port, path: /logs","timestamp":"2025-03-02 04:17:31"}
+{"level":"info","message":"Environment: development","timestamp":"2025-03-02 04:17:31"}
+{"level":"info","message":"Cryptocurrency rates added to the exchange rate cache","timestamp":"2025-03-02 04:17:32"}
+{"availableCurrencies":169,"includesCrypto":true,"level":"info","message":"Exchange rates updated and re-based to USD successfully","timestamp":"2025-03-02 04:17:32"}
+{"level":"info","message":"Starting server initialization...","timestamp":"2025-03-02 04:17:36"}
+{"level":"info","message":"Server is running on port 8080","timestamp":"2025-03-02 04:17:36"}
+{"level":"info","message":"Log streaming available on same port, path: /logs","timestamp":"2025-03-02 04:17:36"}
+{"level":"info","message":"Environment: development","timestamp":"2025-03-02 04:17:36"}
+{"level":"info","message":"Cryptocurrency rates added to the exchange rate cache","timestamp":"2025-03-02 04:17:37"}
+{"availableCurrencies":169,"includesCrypto":true,"level":"info","message":"Exchange rates updated and re-based to USD successfully","timestamp":"2025-03-02 04:17:37"}
+{"level":"info","message":"MongoDB Connected: ac-fky7kgt-shard-00-00.cgmoocn.mongodb.net","timestamp":"2025-03-02 04:17:38"}
+{"level":"info","message":"Starting server initialization...","timestamp":"2025-03-02 04:17:55"}
+{"level":"info","message":"Server is running on port 8080","timestamp":"2025-03-02 04:17:55"}
+{"level":"info","message":"Log streaming available on same port, path: /logs","timestamp":"2025-03-02 04:17:55"}
+{"level":"info","message":"Environment: development","timestamp":"2025-03-02 04:17:55"}
+{"level":"info","message":"Cryptocurrency rates added to the exchange rate cache","timestamp":"2025-03-02 04:17:56"}
+{"availableCurrencies":169,"includesCrypto":true,"level":"info","message":"Exchange rates updated and re-based to USD successfully","timestamp":"2025-03-02 04:17:56"}
+{"level":"info","message":"MongoDB Connected: ac-fky7kgt-shard-00-00.cgmoocn.mongodb.net","timestamp":"2025-03-02 04:17:57"}
+{"level":"info","message":"Starting server initialization...","timestamp":"2025-03-02 04:18:04"}
+{"level":"info","message":"Server is running on port 8080","timestamp":"2025-03-02 04:18:05"}
+{"level":"info","message":"Log streaming available on same port, path: /logs","timestamp":"2025-03-02 04:18:05"}
+{"level":"info","message":"Environment: development","timestamp":"2025-03-02 04:18:05"}
+{"level":"info","message":"Starting server initialization...","timestamp":"2025-03-02 04:18:06"}
+{"level":"info","message":"Server is running on port 8080","timestamp":"2025-03-02 04:18:06"}
+{"level":"info","message":"Log streaming available on same port, path: /logs","timestamp":"2025-03-02 04:18:06"}
+{"level":"info","message":"Environment: development","timestamp":"2025-03-02 04:18:06"}
+{"level":"info","message":"Cryptocurrency rates added to the exchange rate cache","timestamp":"2025-03-02 04:18:07"}
+{"availableCurrencies":169,"includesCrypto":true,"level":"info","message":"Exchange rates updated and re-based to USD successfully","timestamp":"2025-03-02 04:18:07"}
+{"level":"info","message":"MongoDB Connected: ac-fky7kgt-shard-00-00.cgmoocn.mongodb.net","timestamp":"2025-03-02 04:18:08"}
+{"level":"info","message":"Starting server initialization...","timestamp":"2025-03-02 04:18:32"}
+{"level":"info","message":"Server is running on port 8080","timestamp":"2025-03-02 04:18:32"}
+{"level":"info","message":"Log streaming available on same port, path: /logs","timestamp":"2025-03-02 04:18:32"}
+{"level":"info","message":"Environment: development","timestamp":"2025-03-02 04:18:32"}
+{"level":"info","message":"Cryptocurrency rates added to the exchange rate cache","timestamp":"2025-03-02 04:18:33"}
+{"availableCurrencies":169,"includesCrypto":true,"level":"info","message":"Exchange rates updated and re-based to USD successfully","timestamp":"2025-03-02 04:18:33"}
+{"level":"info","message":"MongoDB Connected: ac-fky7kgt-shard-00-00.cgmoocn.mongodb.net","timestamp":"2025-03-02 04:18:34"}
+{"level":"info","message":"Starting server initialization...","timestamp":"2025-03-02 04:18:39"}
+{"level":"info","message":"Server is running on port 8080","timestamp":"2025-03-02 04:18:40"}
+{"level":"info","message":"Log streaming available on same port, path: /logs","timestamp":"2025-03-02 04:18:40"}
+{"level":"info","message":"Environment: development","timestamp":"2025-03-02 04:18:40"}
+{"level":"info","message":"Cryptocurrency rates added to the exchange rate cache","timestamp":"2025-03-02 04:18:41"}
+{"availableCurrencies":169,"includesCrypto":true,"level":"info","message":"Exchange rates updated and re-based to USD successfully","timestamp":"2025-03-02 04:18:41"}
+{"level":"info","message":"MongoDB Connected: ac-fky7kgt-shard-00-00.cgmoocn.mongodb.net","timestamp":"2025-03-02 04:18:42"}
+{"level":"info","message":"Starting server initialization...","timestamp":"2025-03-02 04:18:54"}
+{"level":"info","message":"Server is running on port 8080","timestamp":"2025-03-02 04:18:54"}
+{"level":"info","message":"Log streaming available on same port, path: /logs","timestamp":"2025-03-02 04:18:54"}
+{"level":"info","message":"Environment: development","timestamp":"2025-03-02 04:18:54"}
+{"level":"info","message":"Cryptocurrency rates added to the exchange rate cache","timestamp":"2025-03-02 04:18:55"}
+{"availableCurrencies":169,"includesCrypto":true,"level":"info","message":"Exchange rates updated and re-based to USD successfully","timestamp":"2025-03-02 04:18:55"}
+{"level":"info","message":"Starting server initialization...","timestamp":"2025-03-02 04:19:02"}
+{"level":"info","message":"Server is running on port 8080","timestamp":"2025-03-02 04:19:02"}
+{"level":"info","message":"Log streaming available on same port, path: /logs","timestamp":"2025-03-02 04:19:02"}
+{"level":"info","message":"Environment: development","timestamp":"2025-03-02 04:19:02"}
+{"level":"info","message":"Cryptocurrency rates added to the exchange rate cache","timestamp":"2025-03-02 04:19:03"}
+{"availableCurrencies":169,"includesCrypto":true,"level":"info","message":"Exchange rates updated and re-based to USD successfully","timestamp":"2025-03-02 04:19:03"}
+{"level":"info","message":"MongoDB Connected: ac-fky7kgt-shard-00-00.cgmoocn.mongodb.net","timestamp":"2025-03-02 04:19:04"}
+{"level":"info","message":"Starting server initialization...","timestamp":"2025-03-02 04:19:09"}
+{"level":"info","message":"Server is running on port 8080","timestamp":"2025-03-02 04:19:09"}
+{"level":"info","message":"Log streaming available on same port, path: /logs","timestamp":"2025-03-02 04:19:09"}
+{"level":"info","message":"Environment: development","timestamp":"2025-03-02 04:19:09"}
+{"level":"info","message":"Cryptocurrency rates added to the exchange rate cache","timestamp":"2025-03-02 04:19:10"}
+{"availableCurrencies":169,"includesCrypto":true,"level":"info","message":"Exchange rates updated and re-based to USD successfully","timestamp":"2025-03-02 04:19:10"}
+{"level":"info","message":"MongoDB Connected: ac-fky7kgt-shard-00-00.cgmoocn.mongodb.net","timestamp":"2025-03-02 04:19:11"}
+{"level":"info","message":"Starting server initialization...","timestamp":"2025-03-02 04:19:27"}
+{"level":"info","message":"Server is running on port 8080","timestamp":"2025-03-02 04:19:27"}
+{"level":"info","message":"Log streaming available on same port, path: /logs","timestamp":"2025-03-02 04:19:27"}
+{"level":"info","message":"Environment: development","timestamp":"2025-03-02 04:19:27"}
+{"level":"info","message":"Cryptocurrency rates added to the exchange rate cache","timestamp":"2025-03-02 04:19:27"}
+{"availableCurrencies":169,"includesCrypto":true,"level":"info","message":"Exchange rates updated and re-based to USD successfully","timestamp":"2025-03-02 04:19:27"}
+{"level":"info","message":"MongoDB Connected: ac-fky7kgt-shard-00-00.cgmoocn.mongodb.net","timestamp":"2025-03-02 04:19:29"}
+{"level":"info","message":"Starting server initialization...","timestamp":"2025-03-02 04:19:43"}
+{"level":"info","message":"Server is running on port 8080","timestamp":"2025-03-02 04:19:43"}
+{"level":"info","message":"Log streaming available on same port, path: /logs","timestamp":"2025-03-02 04:19:43"}
+{"level":"info","message":"Environment: development","timestamp":"2025-03-02 04:19:43"}
+{"level":"info","message":"Cryptocurrency rates added to the exchange rate cache","timestamp":"2025-03-02 04:19:44"}
+{"availableCurrencies":169,"includesCrypto":true,"level":"info","message":"Exchange rates updated and re-based to USD successfully","timestamp":"2025-03-02 04:19:44"}
+{"level":"info","message":"Starting server initialization...","timestamp":"2025-03-02 04:19:46"}
+{"level":"info","message":"Server is running on port 8080","timestamp":"2025-03-02 04:19:46"}
+{"level":"info","message":"Log streaming available on same port, path: /logs","timestamp":"2025-03-02 04:19:46"}
+{"level":"info","message":"Environment: development","timestamp":"2025-03-02 04:19:46"}
+{"level":"info","message":"Cryptocurrency rates added to the exchange rate cache","timestamp":"2025-03-02 04:19:46"}
+{"availableCurrencies":169,"includesCrypto":true,"level":"info","message":"Exchange rates updated and re-based to USD successfully","timestamp":"2025-03-02 04:19:46"}
+{"level":"info","message":"Starting server initialization...","timestamp":"2025-03-02 04:19:49"}
+{"level":"info","message":"Server is running on port 8080","timestamp":"2025-03-02 04:19:49"}
+{"level":"info","message":"Log streaming available on same port, path: /logs","timestamp":"2025-03-02 04:19:49"}
+{"level":"info","message":"Environment: development","timestamp":"2025-03-02 04:19:49"}
+{"level":"info","message":"Cryptocurrency rates added to the exchange rate cache","timestamp":"2025-03-02 04:19:50"}
+{"availableCurrencies":169,"includesCrypto":true,"level":"info","message":"Exchange rates updated and re-based to USD successfully","timestamp":"2025-03-02 04:19:50"}
+{"level":"info","message":"MongoDB Connected: ac-fky7kgt-shard-00-00.cgmoocn.mongodb.net","timestamp":"2025-03-02 04:19:51"}
+{"level":"info","message":"Starting server initialization...","timestamp":"2025-03-02 04:20:01"}
+{"level":"info","message":"Server is running on port 8080","timestamp":"2025-03-02 04:20:01"}
+{"level":"info","message":"Log streaming available on same port, path: /logs","timestamp":"2025-03-02 04:20:01"}
+{"level":"info","message":"Environment: development","timestamp":"2025-03-02 04:20:01"}
+{"level":"info","message":"Cryptocurrency rates added to the exchange rate cache","timestamp":"2025-03-02 04:20:02"}
+{"availableCurrencies":169,"includesCrypto":true,"level":"info","message":"Exchange rates updated and re-based to USD successfully","timestamp":"2025-03-02 04:20:02"}
+{"level":"info","message":"Starting server initialization...","timestamp":"2025-03-02 04:20:05"}
+{"level":"info","message":"Server is running on port 8080","timestamp":"2025-03-02 04:20:05"}
+{"level":"info","message":"Log streaming available on same port, path: /logs","timestamp":"2025-03-02 04:20:05"}
+{"level":"info","message":"Environment: development","timestamp":"2025-03-02 04:20:05"}
+{"level":"info","message":"Cryptocurrency rates added to the exchange rate cache","timestamp":"2025-03-02 04:20:06"}
+{"availableCurrencies":169,"includesCrypto":true,"level":"info","message":"Exchange rates updated and re-based to USD successfully","timestamp":"2025-03-02 04:20:06"}
+{"level":"info","message":"MongoDB Connected: ac-fky7kgt-shard-00-00.cgmoocn.mongodb.net","timestamp":"2025-03-02 04:20:07"}
+{"level":"info","message":"Starting server initialization...","timestamp":"2025-03-02 04:20:09"}
+{"level":"info","message":"Server is running on port 8080","timestamp":"2025-03-02 04:20:09"}
+{"level":"info","message":"Log streaming available on same port, path: /logs","timestamp":"2025-03-02 04:20:09"}
+{"level":"info","message":"Environment: development","timestamp":"2025-03-02 04:20:09"}
+{"level":"info","message":"Cryptocurrency rates added to the exchange rate cache","timestamp":"2025-03-02 04:20:10"}
+{"availableCurrencies":169,"includesCrypto":true,"level":"info","message":"Exchange rates updated and re-based to USD successfully","timestamp":"2025-03-02 04:20:10"}
+{"level":"info","message":"MongoDB Connected: ac-fky7kgt-shard-00-00.cgmoocn.mongodb.net","timestamp":"2025-03-02 04:20:15"}
+{"level":"info","message":"Starting server initialization...","timestamp":"2025-03-02 04:20:27"}
+{"level":"info","message":"Server is running on port 8080","timestamp":"2025-03-02 04:20:27"}
+{"level":"info","message":"Log streaming available on same port, path: /logs","timestamp":"2025-03-02 04:20:27"}
+{"level":"info","message":"Environment: development","timestamp":"2025-03-02 04:20:27"}
+{"level":"info","message":"Cryptocurrency rates added to the exchange rate cache","timestamp":"2025-03-02 04:20:28"}
+{"availableCurrencies":169,"includesCrypto":true,"level":"info","message":"Exchange rates updated and re-based to USD successfully","timestamp":"2025-03-02 04:20:28"}
+{"level":"info","message":"Starting server initialization...","timestamp":"2025-03-02 04:20:31"}
+{"level":"info","message":"Server is running on port 8080","timestamp":"2025-03-02 04:20:31"}
+{"level":"info","message":"Log streaming available on same port, path: /logs","timestamp":"2025-03-02 04:20:31"}
+{"level":"info","message":"Environment: development","timestamp":"2025-03-02 04:20:31"}
+{"level":"info","message":"Cryptocurrency rates added to the exchange rate cache","timestamp":"2025-03-02 04:20:32"}
+{"availableCurrencies":169,"includesCrypto":true,"level":"info","message":"Exchange rates updated and re-based to USD successfully","timestamp":"2025-03-02 04:20:32"}
+{"level":"info","message":"MongoDB Connected: ac-fky7kgt-shard-00-00.cgmoocn.mongodb.net","timestamp":"2025-03-02 04:20:33"}
+{"level":"info","message":"Starting server initialization...","timestamp":"2025-03-02 04:20:47"}
+{"level":"info","message":"Server is running on port 8080","timestamp":"2025-03-02 04:20:47"}
+{"level":"info","message":"Log streaming available on same port, path: /logs","timestamp":"2025-03-02 04:20:47"}
+{"level":"info","message":"Environment: development","timestamp":"2025-03-02 04:20:47"}
+{"level":"info","message":"Cryptocurrency rates added to the exchange rate cache","timestamp":"2025-03-02 04:20:48"}
+{"availableCurrencies":169,"includesCrypto":true,"level":"info","message":"Exchange rates updated and re-based to USD successfully","timestamp":"2025-03-02 04:20:48"}
+{"level":"info","message":"MongoDB Connected: ac-fky7kgt-shard-00-00.cgmoocn.mongodb.net","timestamp":"2025-03-02 04:20:49"}
+{"level":"info","message":"Starting server initialization...","timestamp":"2025-03-02 04:20:51"}
+{"level":"info","message":"Server is running on port 8080","timestamp":"2025-03-02 04:20:51"}
+{"level":"info","message":"Log streaming available on same port, path: /logs","timestamp":"2025-03-02 04:20:51"}
+{"level":"info","message":"Environment: development","timestamp":"2025-03-02 04:20:51"}
+{"level":"info","message":"Cryptocurrency rates added to the exchange rate cache","timestamp":"2025-03-02 04:20:52"}
+{"availableCurrencies":169,"includesCrypto":true,"level":"info","message":"Exchange rates updated and re-based to USD successfully","timestamp":"2025-03-02 04:20:52"}
+{"level":"info","message":"MongoDB Connected: ac-fky7kgt-shard-00-00.cgmoocn.mongodb.net","timestamp":"2025-03-02 04:20:53"}
+{"level":"info","message":"Starting server initialization...","timestamp":"2025-03-02 04:22:56"}
+{"level":"info","message":"Server is running on port 8080","timestamp":"2025-03-02 04:22:56"}
+{"level":"info","message":"Log streaming available on same port, path: /logs","timestamp":"2025-03-02 04:22:56"}
+{"level":"info","message":"Environment: development","timestamp":"2025-03-02 04:22:56"}
+{"level":"info","message":"Cryptocurrency rates added to the exchange rate cache","timestamp":"2025-03-02 04:22:57"}
+{"availableCurrencies":169,"includesCrypto":true,"level":"info","message":"Exchange rates updated and re-based to USD successfully","timestamp":"2025-03-02 04:22:57"}
+{"level":"info","message":"Starting server initialization...","timestamp":"2025-03-02 04:23:08"}
+{"level":"info","message":"Server is running on port 8080","timestamp":"2025-03-02 04:23:08"}
+{"level":"info","message":"Log streaming available on same port, path: /logs","timestamp":"2025-03-02 04:23:08"}
+{"level":"info","message":"Environment: development","timestamp":"2025-03-02 04:23:08"}
+{"level":"info","message":"Cryptocurrency rates added to the exchange rate cache","timestamp":"2025-03-02 04:23:09"}
+{"availableCurrencies":169,"includesCrypto":true,"level":"info","message":"Exchange rates updated and re-based to USD successfully","timestamp":"2025-03-02 04:23:09"}
+{"level":"info","message":"MongoDB Connected: ac-fky7kgt-shard-00-00.cgmoocn.mongodb.net","timestamp":"2025-03-02 04:23:17"}
