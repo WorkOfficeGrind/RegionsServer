@@ -127,6 +127,53 @@ const refreshRateCache = async () => {
 };
 
 /**
+ * @desc    Get all cached exchange rates
+ * @route   GET /api/wallets/rates
+ * @access  Private
+ */
+exports.getRates = async (req, res, next) => {
+  try {
+    // This assumes you have a cache of rates in your service
+    const now = Date.now();
+    if (
+      !rateCache.timestamp ||
+      now - rateCache.timestamp > rateCache.expiryTime
+    ) {
+      await refreshRateCache();
+    }
+
+    const { rates } = rateCache;
+
+    logger.debug("Available rates in cache", {
+      availableCurrencies: Object.keys(rates),
+      timestamp: new Date(rateCache.timestamp).toISOString(),
+    });
+
+    // const rates = currencyExchange.getRateCache();
+
+    res.status(200).json({
+      success: true,
+      rates,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    logger.error("Error getting exchange rate:", {
+      fromCurrency,
+      toCurrency,
+      rates: rateCache.rates ? Object.keys(rateCache.rates) : "no rates",
+      timestamp: rateCache.timestamp
+        ? new Date(rateCache.timestamp).toISOString()
+        : "no timestamp",
+      error: error.message,
+    });
+    if (error instanceof CustomError) {
+      throw error;
+    }
+    throw new CustomError(500, "Failed to get exchange rate");
+  }
+};
+
+/**
  * Get the exchange rate from source currency to target currency
  * using rates re-based to USD.
  *

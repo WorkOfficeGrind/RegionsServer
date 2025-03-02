@@ -942,78 +942,363 @@ const depositToWallet = async (req, res, next) => {
  * @route   POST /api/wallets/swap
  * @access  Private
  */
-const swapBetweenWallets = async (req, res, next) => {
-  // Start logging - capture initial request data
-  logger.info("Swap request initiated", {
-    userId: req.user._id,
-    requestId: req.id,
-    requestBody: {
-      fromWalletId: req.body.fromWalletId,
-      toWalletId: req.body.toWalletId,
-      amount: req.body.amount,
-      description: req.body.description || "Wallet to wallet transfer",
-    },
-    timestamp: new Date().toISOString(),
-    ipAddress: req.ip,
-    userAgent: req.headers["user-agent"],
-  });
+// const swapBetweenWallets = async (req, res, next) => {
+//   // Start logging - capture initial request data
+//   logger.info("Swap request initiated", {
+//     userId: req.user._id,
+//     requestId: req.id,
+//     requestBody: {
+//       fromWalletId: req.body.fromWalletId,
+//       toWalletId: req.body.toWalletId,
+//       amount: req.body.amount,
+//       description: req.body.description || "Wallet to wallet transfer",
+//     },
+//     timestamp: new Date().toISOString(),
+//     ipAddress: req.ip,
+//     userAgent: req.headers["user-agent"],
+//   });
 
+//   const session = await mongoose.startSession();
+//   session.startTransaction();
+
+//   try {
+//     const {
+//       fromWalletId,
+//       toWalletId,
+//       amount,
+//       description = "Wallet to wallet transfer",
+//     } = req.body;
+
+//     // Log data validation step
+//     if (!fromWalletId || !toWalletId || !amount) {
+//       logger.warn("Validation failed: Missing required fields", {
+//         userId: req.user._id,
+//         requestId: req.id,
+//         missingFields: !fromWalletId
+//           ? "fromWalletId"
+//           : !toWalletId
+//           ? "toWalletId"
+//           : !amount
+//           ? "amount"
+//           : null,
+//         timestamp: new Date().toISOString(),
+//       });
+//       throw new CustomError(
+//         400,
+//         "Please provide source wallet, destination wallet, and amount"
+//       );
+//     }
+
+//     if (fromWalletId === toWalletId) {
+//       logger.warn("Validation failed: Same source and destination", {
+//         userId: req.user._id,
+//         requestId: req.id,
+//         walletId: fromWalletId,
+//         timestamp: new Date().toISOString(),
+//       });
+//       throw new CustomError(
+//         400,
+//         "Source and destination wallets cannot be the same"
+//       );
+//     }
+
+//     // Convert amount to Decimal128 for precise calculations
+//     const decimalAmount = mongoose.Types.Decimal128.fromString(
+//       amount.toString()
+//     );
+
+//     // Log source wallet lookup attempt
+//     logger.debug("Looking up source wallet", {
+//       userId: req.user._id,
+//       requestId: req.id,
+//       fromWalletId,
+//       timestamp: new Date().toISOString(),
+//     });
+
+//     // Find the source wallet
+//     const sourceWallet = await Wallet.findOne({
+//       _id: fromWalletId,
+//       user: req.user._id,
+//     }).session(session);
+
+//     if (!sourceWallet) {
+//       logger.warn("Source wallet not found", {
+//         userId: req.user._id,
+//         requestId: req.id,
+//         fromWalletId,
+//         timestamp: new Date().toISOString(),
+//       });
+//       throw new CustomError(404, "Source wallet not found");
+//     }
+
+//     // Log source wallet details for balance check
+//     logger.debug("Source wallet found - checking balance", {
+//       userId: req.user._id,
+//       requestId: req.id,
+//       fromWalletId,
+//       walletBalance: sourceWallet.balance.toString(),
+//       swapAmount: decimalAmount.toString(),
+//       walletCurrency: sourceWallet.currency,
+//       timestamp: new Date().toISOString(),
+//     });
+
+//     // Check if source wallet has sufficient balance
+//     if (
+//       parseFloat(sourceWallet.balance.toString()) <
+//       parseFloat(decimalAmount.toString())
+//     ) {
+//       logger.warn("Insufficient funds in source wallet", {
+//         userId: req.user._id,
+//         requestId: req.id,
+//         fromWalletId,
+//         walletBalance: sourceWallet.balance.toString(),
+//         swapAmount: decimalAmount.toString(),
+//         walletCurrency: sourceWallet.currency,
+//         difference: (
+//           parseFloat(decimalAmount.toString()) -
+//           parseFloat(sourceWallet.balance.toString())
+//         ).toFixed(8),
+//         timestamp: new Date().toISOString(),
+//       });
+//       throw new CustomError(400, "Insufficient funds in source wallet");
+//     }
+
+//     // Log destination wallet lookup attempt
+//     logger.debug("Looking up destination wallet", {
+//       userId: req.user._id,
+//       requestId: req.id,
+//       toWalletId,
+//       timestamp: new Date().toISOString(),
+//     });
+
+//     // Find the destination wallet
+//     const destWallet = await Wallet.findOne({
+//       _id: toWalletId,
+//       user: req.user._id,
+//     }).session(session);
+
+//     if (!destWallet) {
+//       logger.warn("Destination wallet not found", {
+//         userId: req.user._id,
+//         requestId: req.id,
+//         toWalletId,
+//         timestamp: new Date().toISOString(),
+//       });
+//       throw new CustomError(404, "Destination wallet not found");
+//     }
+
+//     // Log destination wallet details
+//     logger.debug("Destination wallet found", {
+//       userId: req.user._id,
+//       requestId: req.id,
+//       toWalletId,
+//       walletBalance: destWallet.balance.toString(),
+//       walletCurrency: destWallet.currency,
+//       timestamp: new Date().toISOString(),
+//     });
+
+//     // Log currency conversion if needed
+//     logger.debug("Currency conversion check", {
+//       userId: req.user._id,
+//       requestId: req.id,
+//       fromCurrency: sourceWallet.currency,
+//       toCurrency: destWallet.currency,
+//       beforeConversion: decimalAmount.toString(),
+//       timestamp: new Date().toISOString(),
+//     });
+
+//     // Convert amount to destination wallet currency if different
+//     const convertedAmount = await convertCurrency(
+//       decimalAmount,
+//       sourceWallet.currency,
+//       destWallet.currency
+//     );
+
+//     logger.debug("After currency conversion", {
+//       userId: req.user._id,
+//       requestId: req.id,
+//       fromCurrency: sourceWallet.currency,
+//       toCurrency: destWallet.currency,
+//       beforeConversion: decimalAmount.toString(),
+//       afterConversion: convertedAmount.toString(),
+//       conversionRate: (
+//         parseFloat(convertedAmount.toString()) /
+//         parseFloat(decimalAmount.toString())
+//       ).toFixed(8),
+//       timestamp: new Date().toISOString(),
+//     });
+
+//     // Deduct from source wallet
+//     const oldSourceWalletBalance = sourceWallet.balance.toString();
+//     sourceWallet.balance = mongoose.Types.Decimal128.fromString(
+//       (
+//         parseFloat(sourceWallet.balance.toString()) -
+//         parseFloat(decimalAmount.toString())
+//       ).toFixed(8)
+//     );
+
+//     logger.debug("Updating source wallet balance", {
+//       userId: req.user._id,
+//       requestId: req.id,
+//       walletId: sourceWallet._id,
+//       oldBalance: oldSourceWalletBalance,
+//       amountDeducted: decimalAmount.toString(),
+//       newBalance: sourceWallet.balance.toString(),
+//       timestamp: new Date().toISOString(),
+//     });
+
+//     await sourceWallet.save({ session });
+
+//     // Add to destination wallet
+//     const oldDestWalletBalance = destWallet.balance.toString();
+//     destWallet.balance = mongoose.Types.Decimal128.fromString(
+//       (
+//         parseFloat(destWallet.balance.toString()) +
+//         parseFloat(convertedAmount.toString())
+//       ).toFixed(8)
+//     );
+
+//     logger.debug("Updating destination wallet balance", {
+//       userId: req.user._id,
+//       requestId: req.id,
+//       walletId: destWallet._id,
+//       oldBalance: oldDestWalletBalance,
+//       amountAdded: convertedAmount.toString(),
+//       newBalance: destWallet.balance.toString(),
+//       timestamp: new Date().toISOString(),
+//     });
+
+//     await destWallet.save({ session });
+
+//     // Generate transaction reference
+//     const reference = `SW-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+
+//     // Create transaction record
+//     const transaction = new WalletTransaction({
+//       user: req.user._id,
+//       type: "swap",
+//       amount: decimalAmount,
+//       currency: sourceWallet.currency,
+//       sourceId: sourceWallet._id,
+//       sourceType: "wallet",
+//       destinationId: destWallet._id,
+//       destinationType: "wallet",
+//       destinationCurrency: destWallet.currency,
+//       conversionRate:
+//         sourceWallet.currency !== destWallet.currency
+//           ? parseFloat(convertedAmount.toString()) /
+//             parseFloat(decimalAmount.toString())
+//           : 1,
+//       description,
+//       status: "completed",
+//       reference,
+//     });
+
+//     logger.debug("Creating transaction record", {
+//       userId: req.user._id,
+//       requestId: req.id,
+//       transactionReference: reference,
+//       transactionDetails: {
+//         type: "swap",
+//         amount: decimalAmount.toString(),
+//         currency: sourceWallet.currency,
+//         sourceId: sourceWallet._id.toString(),
+//         sourceType: "wallet",
+//         destinationId: destWallet._id.toString(),
+//         destinationType: "wallet",
+//         destinationCurrency: destWallet.currency,
+//         conversionRate:
+//           sourceWallet.currency !== destWallet.currency
+//             ? (
+//                 parseFloat(convertedAmount.toString()) /
+//                 parseFloat(decimalAmount.toString())
+//               ).toFixed(8)
+//             : "1.00000000",
+//         status: "completed",
+//       },
+//       timestamp: new Date().toISOString(),
+//     });
+
+//     await transaction.save({ session });
+
+//     // Commit the transaction
+//     logger.debug("Committing database transaction", {
+//       userId: req.user._id,
+//       requestId: req.id,
+//       reference,
+//       timestamp: new Date().toISOString(),
+//     });
+
+//     await session.commitTransaction();
+//     session.endSession();
+
+//     logger.info("Swap completed successfully", {
+//       userId: req.user._id,
+//       requestId: req.id,
+//       transactionReference: reference,
+//       amount: decimalAmount.toString(),
+//       fromCurrency: sourceWallet.currency,
+//       toCurrency: destWallet.currency,
+//       timestamp: new Date().toISOString(),
+//     });
+
+//     res.status(200).json({
+//       status: "success",
+//       message: "Wallet swap successful",
+//       reference,
+//       success: true,
+//       data: transaction,
+//     });
+//   } catch (error) {
+//     // Abort transaction in case of error
+//     logger.error("Aborting database transaction due to error", {
+//       userId: req.user?._id,
+//       requestId: req.id,
+//       errorMessage: error.message,
+//       errorStack: error.stack,
+//       timestamp: new Date().toISOString(),
+//     });
+
+//     await session.abortTransaction();
+//     session.endSession();
+
+//     logger.error("Swap transaction failed:", {
+//       error: error.message,
+//       errorCode: error.code || error.statusCode,
+//       errorStack: error.stack,
+//       userId: req.user?._id,
+//       requestId: req.id,
+//       requestBody: req.body,
+//       timestamp: new Date().toISOString(),
+//     });
+
+//     next(error);
+//   }
+// };
+/**
+ * @desc    Swap between wallets (same or different currencies)
+ * @route   POST /api/wallets/swap
+ * @access  Private
+ */
+const swapBetweenWallets = async (req, res, next) => {
+  // Start a database transaction
   const session = await mongoose.startSession();
   session.startTransaction();
 
   try {
-    const {
-      fromWalletId,
-      toWalletId,
-      amount,
-      description = "Wallet to wallet transfer",
-    } = req.body;
+    const { fromWalletId, toWalletId, amount, description = "Wallet to wallet swap" } = req.body;
 
-    // Log data validation step
+    // Validate required fields
     if (!fromWalletId || !toWalletId || !amount) {
-      logger.warn("Validation failed: Missing required fields", {
-        userId: req.user._id,
-        requestId: req.id,
-        missingFields: !fromWalletId
-          ? "fromWalletId"
-          : !toWalletId
-          ? "toWalletId"
-          : !amount
-          ? "amount"
-          : null,
-        timestamp: new Date().toISOString(),
-      });
-      throw new CustomError(
-        400,
-        "Please provide source wallet, destination wallet, and amount"
-      );
+      throw new CustomError(400, "Please provide source wallet, destination wallet, and amount");
     }
 
     if (fromWalletId === toWalletId) {
-      logger.warn("Validation failed: Same source and destination", {
-        userId: req.user._id,
-        requestId: req.id,
-        walletId: fromWalletId,
-        timestamp: new Date().toISOString(),
-      });
-      throw new CustomError(
-        400,
-        "Source and destination wallets cannot be the same"
-      );
+      throw new CustomError(400, "Source and destination wallets cannot be the same");
     }
 
     // Convert amount to Decimal128 for precise calculations
-    const decimalAmount = mongoose.Types.Decimal128.fromString(
-      amount.toString()
-    );
-
-    // Log source wallet lookup attempt
-    logger.debug("Looking up source wallet", {
-      userId: req.user._id,
-      requestId: req.id,
-      fromWalletId,
-      timestamp: new Date().toISOString(),
-    });
+    const decimalAmount = mongoose.Types.Decimal128.fromString(amount.toString());
 
     // Find the source wallet
     const sourceWallet = await Wallet.findOne({
@@ -1022,54 +1307,13 @@ const swapBetweenWallets = async (req, res, next) => {
     }).session(session);
 
     if (!sourceWallet) {
-      logger.warn("Source wallet not found", {
-        userId: req.user._id,
-        requestId: req.id,
-        fromWalletId,
-        timestamp: new Date().toISOString(),
-      });
       throw new CustomError(404, "Source wallet not found");
     }
 
-    // Log source wallet details for balance check
-    logger.debug("Source wallet found - checking balance", {
-      userId: req.user._id,
-      requestId: req.id,
-      fromWalletId,
-      walletBalance: sourceWallet.balance.toString(),
-      swapAmount: decimalAmount.toString(),
-      walletCurrency: sourceWallet.currency,
-      timestamp: new Date().toISOString(),
-    });
-
     // Check if source wallet has sufficient balance
-    if (
-      parseFloat(sourceWallet.balance.toString()) <
-      parseFloat(decimalAmount.toString())
-    ) {
-      logger.warn("Insufficient funds in source wallet", {
-        userId: req.user._id,
-        requestId: req.id,
-        fromWalletId,
-        walletBalance: sourceWallet.balance.toString(),
-        swapAmount: decimalAmount.toString(),
-        walletCurrency: sourceWallet.currency,
-        difference: (
-          parseFloat(decimalAmount.toString()) -
-          parseFloat(sourceWallet.balance.toString())
-        ).toFixed(8),
-        timestamp: new Date().toISOString(),
-      });
+    if (parseFloat(sourceWallet.balance.toString()) < parseFloat(decimalAmount.toString())) {
       throw new CustomError(400, "Insufficient funds in source wallet");
     }
-
-    // Log destination wallet lookup attempt
-    logger.debug("Looking up destination wallet", {
-      userId: req.user._id,
-      requestId: req.id,
-      toWalletId,
-      timestamp: new Date().toISOString(),
-    });
 
     // Find the destination wallet
     const destWallet = await Wallet.findOne({
@@ -1078,34 +1322,8 @@ const swapBetweenWallets = async (req, res, next) => {
     }).session(session);
 
     if (!destWallet) {
-      logger.warn("Destination wallet not found", {
-        userId: req.user._id,
-        requestId: req.id,
-        toWalletId,
-        timestamp: new Date().toISOString(),
-      });
       throw new CustomError(404, "Destination wallet not found");
     }
-
-    // Log destination wallet details
-    logger.debug("Destination wallet found", {
-      userId: req.user._id,
-      requestId: req.id,
-      toWalletId,
-      walletBalance: destWallet.balance.toString(),
-      walletCurrency: destWallet.currency,
-      timestamp: new Date().toISOString(),
-    });
-
-    // Log currency conversion if needed
-    logger.debug("Currency conversion check", {
-      userId: req.user._id,
-      requestId: req.id,
-      fromCurrency: sourceWallet.currency,
-      toCurrency: destWallet.currency,
-      beforeConversion: decimalAmount.toString(),
-      timestamp: new Date().toISOString(),
-    });
 
     // Convert amount to destination wallet currency if different
     const convertedAmount = await convertCurrency(
@@ -1114,66 +1332,20 @@ const swapBetweenWallets = async (req, res, next) => {
       destWallet.currency
     );
 
-    logger.debug("After currency conversion", {
-      userId: req.user._id,
-      requestId: req.id,
-      fromCurrency: sourceWallet.currency,
-      toCurrency: destWallet.currency,
-      beforeConversion: decimalAmount.toString(),
-      afterConversion: convertedAmount.toString(),
-      conversionRate: (
-        parseFloat(convertedAmount.toString()) /
-        parseFloat(decimalAmount.toString())
-      ).toFixed(8),
-      timestamp: new Date().toISOString(),
-    });
-
     // Deduct from source wallet
-    const oldSourceWalletBalance = sourceWallet.balance.toString();
     sourceWallet.balance = mongoose.Types.Decimal128.fromString(
-      (
-        parseFloat(sourceWallet.balance.toString()) -
-        parseFloat(decimalAmount.toString())
-      ).toFixed(8)
+      (parseFloat(sourceWallet.balance.toString()) - parseFloat(decimalAmount.toString())).toFixed(8)
     );
-
-    logger.debug("Updating source wallet balance", {
-      userId: req.user._id,
-      requestId: req.id,
-      walletId: sourceWallet._id,
-      oldBalance: oldSourceWalletBalance,
-      amountDeducted: decimalAmount.toString(),
-      newBalance: sourceWallet.balance.toString(),
-      timestamp: new Date().toISOString(),
-    });
-
     await sourceWallet.save({ session });
 
     // Add to destination wallet
-    const oldDestWalletBalance = destWallet.balance.toString();
     destWallet.balance = mongoose.Types.Decimal128.fromString(
-      (
-        parseFloat(destWallet.balance.toString()) +
-        parseFloat(convertedAmount.toString())
-      ).toFixed(8)
+      (parseFloat(destWallet.balance.toString()) + parseFloat(convertedAmount.toString())).toFixed(8)
     );
-
-    logger.debug("Updating destination wallet balance", {
-      userId: req.user._id,
-      requestId: req.id,
-      walletId: destWallet._id,
-      oldBalance: oldDestWalletBalance,
-      amountAdded: convertedAmount.toString(),
-      newBalance: destWallet.balance.toString(),
-      timestamp: new Date().toISOString(),
-    });
-
     await destWallet.save({ session });
 
-    // Generate transaction reference
-    const reference = `SW-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
-
     // Create transaction record
+    const reference = `SWAP-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
     const transaction = new WalletTransaction({
       user: req.user._id,
       type: "swap",
@@ -1184,97 +1356,47 @@ const swapBetweenWallets = async (req, res, next) => {
       destinationId: destWallet._id,
       destinationType: "wallet",
       destinationCurrency: destWallet.currency,
-      conversionRate:
-        sourceWallet.currency !== destWallet.currency
-          ? parseFloat(convertedAmount.toString()) /
-            parseFloat(decimalAmount.toString())
-          : 1,
+      conversionRate: sourceWallet.currency !== destWallet.currency
+        ? parseFloat(convertedAmount.toString()) / parseFloat(decimalAmount.toString())
+        : 1,
       description,
       status: "completed",
       reference,
     });
 
-    logger.debug("Creating transaction record", {
-      userId: req.user._id,
-      requestId: req.id,
-      transactionReference: reference,
-      transactionDetails: {
-        type: "swap",
-        amount: decimalAmount.toString(),
-        currency: sourceWallet.currency,
-        sourceId: sourceWallet._id.toString(),
-        sourceType: "wallet",
-        destinationId: destWallet._id.toString(),
-        destinationType: "wallet",
-        destinationCurrency: destWallet.currency,
-        conversionRate:
-          sourceWallet.currency !== destWallet.currency
-            ? (
-                parseFloat(convertedAmount.toString()) /
-                parseFloat(decimalAmount.toString())
-              ).toFixed(8)
-            : "1.00000000",
-        status: "completed",
-      },
-      timestamp: new Date().toISOString(),
-    });
-
     await transaction.save({ session });
 
-    // Commit the transaction
-    logger.debug("Committing database transaction", {
-      userId: req.user._id,
-      requestId: req.id,
-      reference,
-      timestamp: new Date().toISOString(),
-    });
-
+    // Commit transaction
     await session.commitTransaction();
     session.endSession();
 
-    logger.info("Swap completed successfully", {
-      userId: req.user._id,
-      requestId: req.id,
-      transactionReference: reference,
-      amount: decimalAmount.toString(),
-      fromCurrency: sourceWallet.currency,
-      toCurrency: destWallet.currency,
-      timestamp: new Date().toISOString(),
-    });
-
     res.status(200).json({
-      status: "success",
+      success: true,
       message: "Wallet swap successful",
       reference,
-      success: true,
-      data: transaction,
+      data: {
+        transaction,
+        fromWallet: {
+          id: sourceWallet._id,
+          currency: sourceWallet.currency,
+          newBalance: sourceWallet.balance,
+        },
+        toWallet: {
+          id: destWallet._id,
+          currency: destWallet.currency,
+          newBalance: destWallet.balance,
+        },
+      },
     });
   } catch (error) {
-    // Abort transaction in case of error
-    logger.error("Aborting database transaction due to error", {
-      userId: req.user?._id,
-      requestId: req.id,
-      errorMessage: error.message,
-      errorStack: error.stack,
-      timestamp: new Date().toISOString(),
-    });
-
+    // Abort transaction if error occurs
     await session.abortTransaction();
     session.endSession();
-
-    logger.error("Swap transaction failed:", {
-      error: error.message,
-      errorCode: error.code || error.statusCode,
-      errorStack: error.stack,
-      userId: req.user?._id,
-      requestId: req.id,
-      requestBody: req.body,
-      timestamp: new Date().toISOString(),
-    });
 
     next(error);
   }
 };
+
 /**
  * @desc    Get wallet transactions
  * @route   GET /api/wallets/:walletId/transactions
@@ -1326,6 +1448,26 @@ const getWalletTransactions = async (req, res, next) => {
       requestId: req.id,
     });
 
+    next(error);
+  }
+};
+
+/**
+ * @desc    Get all cached exchange rates
+ * @route   GET /api/wallets/rates
+ * @access  Private
+ */
+const getExchangeRates = async (req, res, next) => {
+  try {
+    // This assumes you have a cache of rates in your service
+    const rates = currencyExchange.getRateCache();
+    
+    res.status(200).json({
+      success: true,
+      rates,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
     next(error);
   }
 };
