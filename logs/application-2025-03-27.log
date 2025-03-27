@@ -99,3 +99,11 @@
 {"level":"info","message":"Found 1 active investments to process","service":"banking-investment-api","timestamp":"2025-03-27 12:35:01"}
 {"failed":0,"level":"info","matured":0,"message":"Daily growth processing completed","processDate":"2025-03-27T11:35:00.436Z","processed":0,"service":"banking-investment-api","skipped":1,"timestamp":"2025-03-27 12:35:01"}
 {"failed":0,"level":"info","matured":0,"message":"Daily investment growth cron completed","processed":0,"service":"banking-investment-api","skipped":1,"timestamp":"2025-03-27 12:35:01"}
+{"level":"debug","message":"Logging initialized at debug level","service":"banking-investment-api","timestamp":"2025-03-27 12:35:19"}
+{"database":"prime","host":"ac-fky7kgt-shard-00-00.cgmoocn.mongodb.net","level":"info","message":"MongoDB Connected: ac-fky7kgt-shard-00-00.cgmoocn.mongodb.net","service":"banking-investment-api","timestamp":"2025-03-27 12:35:25"}
+{"level":"info","message":"Initializing investment cron jobs","service":"banking-investment-api","timestamp":"2025-03-27 12:35:25"}
+{"level":"info","message":"Registering investment growth cron job","service":"banking-investment-api","timestamp":"2025-03-27 12:35:25"}
+{"level":"info","message":"Investment growth cron job registered successfully","service":"banking-investment-api","timestamp":"2025-03-27 12:35:25"}
+{"level":"info","message":"Registering investment maturity check cron job","service":"banking-investment-api","timestamp":"2025-03-27 12:35:25"}
+{"level":"info","message":"All investment cron jobs initialized successfully","service":"banking-investment-api","timestamp":"2025-03-27 12:35:25"}
+{"level":"info","message":"Server running in development mode on port 5000","service":"banking-investment-api","timestamp":"2025-03-27 12:35:25"}
