@@ -12,7 +12,7 @@ const AccountSchema = new mongoose.Schema(
       type: String,
       enum: ["checking", "savings", "investment", "credit", "loan"],
       // required: [true, "Account type is required"],
-      default: "checking"
+      default: "checking",
     },
     status: {
       type: String,
@@ -42,13 +42,13 @@ const AccountSchema = new mongoose.Schema(
       type: String,
       required: [true, "Account number is required"],
       trim: true,
-      unique: true
+      unique: true,
     },
     routingNumber: {
       type: String,
       required: [true, "Routing number is required"],
       trim: true,
-      unique: true
+      // unique: true
     },
     availableBalance: {
       type: Number,

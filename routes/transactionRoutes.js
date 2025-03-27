@@ -1,8 +1,17 @@
 const express = require("express");
-const { authenticate, verifyPasscode } = require("../middlewares/authMiddleware");
+const {
+  authenticate,
+  verifyPasscode,
+} = require("../middlewares/authMiddleware");
 const { validate, schemas } = require("../middlewares/validator");
 const { verifyPasscodeChallenge } = require("../utils/encryption");
-const { transferBetweenAccounts } = require("../controllers/transactionController");
+const {
+  transferBetweenAccounts,
+  transferWalletToAccount,
+  transferWalletToCard,
+  transferAccountToWallet,
+  transferWalletToWallet,
+} = require("../controllers/transactionController");
 
 const router = express.Router();
 
@@ -19,6 +28,55 @@ router.post(
   validate(schemas.transaction.create),
   verifyPasscode,
   transferBetweenAccounts
+);
+
+/**
+ * @route   POST /api/v1/transactions
+ * @desc    Create a Wallet to Account new transaction
+ * @access  Private
+ */
+router.post(
+  "/wallets/transfer/account",
+  validate(schemas.transaction.wallets.transfer.account),
+  verifyPasscode,
+  transferWalletToAccount
+);
+
+/**
+ * @route   POST /api/v1/transactions
+ * @desc    Create a Wallet to Account new transaction
+ * @access  Private
+ */
+router.post(
+  "/wallets/transfer/card",
+  validate(schemas.transaction.wallets.transfer.card),
+  verifyPasscode,
+  transferWalletToCard
+);
+
+/**
+ * @route   POST /api/v1/transactions
+ * @desc    Create an Account to Wallet new transaction
+ * @access  Private
+ */
+router.post(
+  "/accounts/transfer/wallet",
+  validate(schemas.transaction.accountToWallet.create),
+  verifyPasscode,
+  transferAccountToWallet
+);
+
+
+/**
+ * @route   POST /api/v1/transactions
+ * @desc    Create an Account to Wallet new transaction
+ * @access  Private
+ */
+router.post(
+  "/wallets/transfer/wallet",
+  validate(schemas.transaction.walletToWallet.create),
+  verifyPasscode,
+  transferWalletToWallet
 );
 
 /**

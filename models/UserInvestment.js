@@ -13,7 +13,7 @@ const UserInvestmentSchema = new mongoose.Schema(
       ref: "InvestmentPlan",
       required: true,
     },
-    wallet: {
+    source: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Wallet",
       required: true,
@@ -32,16 +32,16 @@ const UserInvestmentSchema = new mongoose.Schema(
       type: Number,
       required: [true, "Interest rate is required"],
     },
-    investedAmount: {
+    amount: {
       type: Number,
-      required: [true, "Invested amount is required"],
-      min: [1, "Minimum investment amount is 1"],
+      required: [true, "Amount is required"],
+      min: [1, "Amount is required"],
     },
     currentValue: {
       type: Number,
       required: [true, "Current value is required"],
       default: function () {
-        return this.investedAmount;
+        return this.amount;
       },
     },
     investedAt: {
@@ -78,13 +78,23 @@ const UserInvestmentSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
+    transactions: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "InvestmentTransaction",
+      },
+    ],
+    source: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Wallet",
+      required: true,
+    },
+
+    // Add withdrawalHistory array to track withdrawals properly
     withdrawalHistory: [
       {
         amount: Number,
-        date: {
-          type: Date,
-          default: Date.now,
-        },
+        date: Date,
         transactionReference: String,
         fee: Number,
       },
@@ -106,6 +116,10 @@ UserInvestmentSchema.virtual("roi").get(function () {
   return (
     ((this.currentValue - this.investedAmount) / this.investedAmount) * 100
   );
+});
+
+UserInvestmentSchema.virtual("investedAmount").get(function () {
+  return this.amount; // Use amount field as investedAmount
 });
 
 // Virtual for remaining time

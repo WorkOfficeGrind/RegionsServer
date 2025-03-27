@@ -3,12 +3,14 @@ require("./models/Account");
 require("./models/Card");
 require("./models/Wallet");
 require("./models/Beneficiary");
+require("./models/WalletBeneficiary");
 require("./models/Bill");
 require("./models/RefreshToken");
 require("./models/WalletTransaction");
 require("./models/Transaction");
 require("./models/Cashapp");
 require("./models/InvestmentPlan");
+require("./models/InvestmentTransaction");
 require("./models/Paypal");
 require("./models/PreloadedWallet");
 require("./models/UserInvestment");
@@ -30,7 +32,7 @@ const { v4: uuidv4 } = require("uuid");
 const passport = require("passport");
 const { logger } = require("./config/logger");
 const errorHandler = require("./middlewares/errorHandler");
-const requestLogger = require("./middlewares/requestLogger");
+const { requestLogger } = require("./middlewares/requestLogger");
 
 // Route imports
 const authRoutes = require("./routes/authRoutes");
@@ -38,9 +40,11 @@ const userRoutes = require("./routes/userRoutes");
 const accountRoutes = require("./routes/accountRoutes");
 const cardRoutes = require("./routes/cardRoutes");
 const walletRoutes = require("./routes/walletRoutes");
+const preloadedWalletRoutes = require("./routes/preloadedWalletRoutes");
 const transactionRoutes = require("./routes/transactionRoutes");
 const investmentRoutes = require("./routes/investmentRoutes");
 const beneficiaryRoutes = require("./routes/beneficiaryRoutes");
+const walletBeneficiaryRoutes = require("./routes/walletBeneficiaryRoutes");
 const billRoutes = require("./routes/billRoutes");
 
 // Initialize express application
@@ -57,11 +61,11 @@ app.use((req, res, next) => {
 // Performance monitoring middleware
 app.use((req, res, next) => {
   const start = process.hrtime();
-  
-  res.on('finish', () => {
+
+  res.on("finish", () => {
     const [seconds, nanoseconds] = process.hrtime(start);
     const duration = seconds * 1000 + nanoseconds / 1000000;
-    
+
     // Log slow requests (over 1 second)
     if (duration > 1000) {
       logger.warn(`Slow request detected: ${req.method} ${req.originalUrl}`, {
@@ -69,11 +73,11 @@ app.use((req, res, next) => {
         method: req.method,
         path: req.originalUrl,
         requestId: req.id,
-        userId: req.user ? req.user._id : 'unauthenticated'
+        userId: req.user ? req.user._id : "unauthenticated",
       });
     }
   });
-  
+
   next();
 });
 
@@ -180,11 +184,13 @@ app.use("/api/v1/auth", authRoutes);
 app.use("/api/v1/users", userRoutes);
 // app.use("/api/v1/accounts", accountRoutes);
 // app.use("/api/v1/cards", cardRoutes);
-// app.use("/api/v1/wallets", walletRoutes);
+app.use("/api/v1/wallets", walletRoutes);
+app.use("/api/v1/preloaded-wallets", preloadedWalletRoutes);
 app.use("/api/v1/transactions", transactionRoutes);
-// app.use("/api/v1/investments", investmentRoutes);
+app.use("/api/v1/investments", investmentRoutes);
 app.use("/api/v1/beneficiaries", beneficiaryRoutes);
-// app.use("/api/v1/bills", billRoutes);
+app.use("/api/v1/wallet-beneficiaries", walletBeneficiaryRoutes);
+app.use("/api/v1/bills", billRoutes);
 
 // Health check route
 app.get("/api/health", (req, res) => {

@@ -10,15 +10,15 @@ const options = {
 };
 
 // Log all MongoDB queries in development
-if (process.env.NODE_ENV !== "production") {
-  mongoose.set("debug", (collectionName, method, query, doc) => {
-    logger.debug(`MongoDB: ${collectionName}.${method}`, {
-      query,
-      doc,
-      collection: collectionName,
-    });
-  });
-}
+// if (process.env.NODE_ENV !== "production") {
+//   mongoose.set("debug", (collectionName, method, query, doc) => {
+//     logger.debug(`MongoDB: ${collectionName}.${method}`, {
+//       query,
+//       doc,
+//       collection: collectionName,
+//     });
+//   });
+// }
 
 // Connect to MongoDB
 const connectDB = async () => {

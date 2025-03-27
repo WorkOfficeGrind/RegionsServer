@@ -15,6 +15,7 @@ const {
   generateChallengeToken,
   validateChallengeToken,
 } = require("../utils/encryption");
+const { populate } = require("../models/Transaction");
 
 // Default banking information
 const DEFAULT_BANK_INFO = {
@@ -155,6 +156,8 @@ const createDefaultAccountAndWallet = async (
       balance: 0,
       ledgerBalance: 0,
       name: walletName,
+      image:
+        "https://res.cloudinary.com/dvvgaf1l9/image/upload/v1742350933/10PennyFund/important/bitcoin_awvbci.png",
       status: "active",
       type: "crypto",
       isDefault: true,
@@ -221,9 +224,19 @@ exports.register = async (req, res) => {
 
     if (existingUser) {
       if (existingUser.email === email.toLowerCase()) {
-        return apiResponse.badRequest(res, "Email already in use");
+        return apiResponse.badRequest(
+          res,
+          "Bad Request",
+          "Email already in use",
+          "EMAIL_IN_USE"
+        );
       }
-      return apiResponse.badRequest(res, "Username already taken");
+      return apiResponse.badRequest(
+        res,
+        "Bad Request",
+        "Username already taken",
+        "USERNAME_TAKEN"
+      );
     }
 
     // Create new user
@@ -295,36 +308,41 @@ exports.register = async (req, res) => {
       requestId: req.id,
     });
 
-    // Return user data and tokens
-    return apiResponse.created(res, "User registered successfully", {
-      user: {
-        _id: user._id,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        fullName: user.fullName,
-        username: user.username,
-        email: user.email,
-        phone: user.phone,
-        role: user.role,
-        status: user.status,
-      },
-      accountDetails: {
-        accountNumber: account.accountNumber,
-        maskedAccountNumber: account.maskedAccountNumber,
-        type: account.type,
-        bank: account.bank,
-        routingNumber: account.routingNumber,
-      },
-      wallet: {
-        _id: wallet._id,
-        currency: wallet.currency,
-        name: wallet.name,
-        address: wallet.address,
-        isDefault: wallet.isDefault,
-      },
-      token,
-      refreshToken: refreshToken.token,
-    });
+    // Return user data and tokens using apiResponse utility
+    return apiResponse.created(
+      res,
+      "Registration Successful",
+      "User registered successfully",
+      {
+        user: {
+          _id: user._id,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          fullName: user.fullName,
+          username: user.username,
+          email: user.email,
+          phone: user.phone,
+          role: user.role,
+          status: user.status,
+        },
+        accountDetails: {
+          accountNumber: account.accountNumber,
+          maskedAccountNumber: account.maskedAccountNumber,
+          type: account.type,
+          bank: account.bank,
+          routingNumber: account.routingNumber,
+        },
+        wallet: {
+          _id: wallet._id,
+          currency: wallet.currency,
+          name: wallet.name,
+          address: wallet.address,
+          isDefault: wallet.isDefault,
+        },
+        token,
+        refreshToken: refreshToken.token,
+      }
+    );
   } catch (error) {
     // Abort transaction on error
     await session.abortTransaction();
@@ -336,7 +354,13 @@ exports.register = async (req, res) => {
       requestId: req.id,
     });
 
-    return apiResponse.error(res, 500, "Error registering user");
+    return apiResponse.error(
+      res,
+      500,
+      "Registration Failed",
+      "Error registering user",
+      "REGISTRATION_ERROR"
+    );
   }
 };
 
@@ -367,7 +391,9 @@ exports.login = async (req, res) => {
 
       return apiResponse.unauthorized(
         res,
-        "Invalid email/username or password"
+        "Authentication Failed",
+        "Invalid email/username or password",
+        "INVALID_CREDENTIALS"
       );
     }
 
@@ -382,7 +408,9 @@ exports.login = async (req, res) => {
 
       return apiResponse.forbidden(
         res,
-        `Your account is ${user.status}. Please contact support.`
+        "Account Restricted",
+        `Your account is ${user.status}.`,
+        "ACCOUNT_RESTRICTED"
       );
     }
 
@@ -407,11 +435,24 @@ exports.login = async (req, res) => {
         select: "-createdIp -lastAccessedIp",
         populate: {
           path: "transactions",
+          options: { sort: { processedAt: -1 } },
+          populate: [
+            { path: "sourceUser" }, // Populate the sourceUser field
+            { path: "beneficiary" }, // Populate the beneficiary field
+          ],
         },
       })
       .populate({
         path: "wallets",
         select: "-securitySettings.twoFactorSecret",
+        populate: {
+          path: "transactions",
+          options: { sort: { completedAt: -1 } },
+          populate: [
+            { path: "source" }, // Populate the sourceUser field
+            { path: "beneficiary" }, // Populate the beneficiary field
+          ],
+        },
       })
       .populate({
         path: "cards",
@@ -426,11 +467,25 @@ exports.login = async (req, res) => {
         // select: "name bank accountNumber routingNumber nickname isFavorite",
       })
       .populate({
+        path: "walletBeneficiaries",
+        // select: "name bank accountNumber routingNumber nickname isFavorite",
+      })
+      .populate({
+        path: "investments",
+        populate: {
+          path: "plan",
+          // select: "accountNumber maskedAccountNumber type name bank",
+        },
+        // select: "name bank accountNumber routingNumber nickname isFavorite",
+      })
+      .populate({
         path: "bills",
+        options: { sort: { processedAt: -1 } },
         select: "title amount dueDate status provider paid account",
       })
       .populate({
         path: "pendingWallets",
+        options: { sort: { processedAt: -1 } },
         select:
           "user currency status requestDate priority preloadedAccount processingNotes processedBy processedAt notificationSent notificationDate",
       });
@@ -442,42 +497,49 @@ exports.login = async (req, res) => {
       requestId: req.id,
     });
 
-    // Return user data and tokens
-    return apiResponse.success(res, 200, "Login successful", {
-      user: {
-        _id: populatedUser._id,
-        firstName: populatedUser.firstName,
-        lastName: populatedUser.lastName,
-        fullName: populatedUser.fullName,
-        username: populatedUser.username,
-        email: populatedUser.email,
-        phone: populatedUser.phone,
-        role: populatedUser.role,
-        status: populatedUser.status,
-        picture: populatedUser.picture,
+    // Return user data and tokens using apiResponse utility
+    return apiResponse.success(
+      res,
+      200,
+      "Login Successful",
+      "Authentication successful",
+      {
+        user: {
+          _id: populatedUser._id,
+          firstName: populatedUser.firstName,
+          lastName: populatedUser.lastName,
+          fullName: populatedUser.fullName,
+          username: populatedUser.username,
+          email: populatedUser.email,
+          phone: populatedUser.phone,
+          role: populatedUser.role,
+          status: populatedUser.status,
+          picture: populatedUser.picture,
 
-        // Include populated references
-        accounts: populatedUser.accounts,
-        wallets: populatedUser.wallets,
-        cards: populatedUser.cards,
-        beneficiaries: populatedUser.beneficiaries,
-        bills: populatedUser.bills,
-        pendingWallets: populatedUser.pendingWallets,
-        // pendingWallets: [{ id: 1 }, { id: 2 }],
+          // Include populated references
+          accounts: populatedUser.accounts,
+          wallets: populatedUser.wallets,
+          cards: populatedUser.cards,
+          beneficiaries: populatedUser.beneficiaries,
+          investments: populatedUser.investments,
+          walletBeneficiaries: populatedUser.walletBeneficiaries,
+          bills: populatedUser.bills,
+          pendingWallets: populatedUser.pendingWallets,
 
-        // Include additional fields that are not sensitive
-        lastLogin: populatedUser.lastLogin,
-        createdAt: populatedUser.createdAt,
-        updatedAt: populatedUser.updatedAt,
-        address: populatedUser.address,
-        dateOfBirth: populatedUser.dateOfBirth,
-        kycStatus: populatedUser.kycStatus,
-        preferences: populatedUser.preferences,
-        notificationSettings: populatedUser.notificationSettings,
-      },
-      token,
-      refreshToken: refreshToken.token,
-    });
+          // Include additional fields that are not sensitive
+          lastLogin: populatedUser.lastLogin,
+          createdAt: populatedUser.createdAt,
+          updatedAt: populatedUser.updatedAt,
+          address: populatedUser.address,
+          dateOfBirth: populatedUser.dateOfBirth,
+          kycStatus: populatedUser.kycStatus,
+          preferences: populatedUser.preferences,
+          notificationSettings: populatedUser.notificationSettings,
+        },
+        token,
+        refreshToken: refreshToken.token,
+      }
+    );
   } catch (error) {
     logger.error("Login error", {
       error: error.message,
@@ -485,11 +547,15 @@ exports.login = async (req, res) => {
       requestId: req.id,
     });
 
-    return apiResponse.error(res, 500, "Error during login");
+    return apiResponse.error(
+      res,
+      500,
+      "Login Failed",
+      "Error during login",
+      "LOGIN_ERROR"
+    );
   }
 };
-
-// Keep other functions unchanged
 
 /**
  * Refresh access token
@@ -501,7 +567,12 @@ exports.refreshToken = async (req, res) => {
     const { refreshToken } = req.body;
 
     if (!refreshToken) {
-      return apiResponse.badRequest(res, "Refresh token is required");
+      return apiResponse.badRequest(
+        res,
+        "Bad Request",
+        "Refresh token is required",
+        "REFRESH_TOKEN_REQUIRED"
+      );
     }
 
     // Find the refresh token in database
@@ -514,7 +585,12 @@ exports.refreshToken = async (req, res) => {
         requestId: req.id,
       });
 
-      return apiResponse.unauthorized(res, "Invalid or expired refresh token");
+      return apiResponse.unauthorized(
+        res,
+        "Unauthorized",
+        "Invalid or expired refresh token",
+        "INVALID_REFRESH_TOKEN"
+      );
     }
 
     // Get the user
@@ -528,7 +604,12 @@ exports.refreshToken = async (req, res) => {
         requestId: req.id,
       });
 
-      return apiResponse.unauthorized(res, "User not found");
+      return apiResponse.unauthorized(
+        res,
+        "Unauthorized",
+        "User not found",
+        "USER_NOT_FOUND"
+      );
     }
 
     // Check if account is active
@@ -542,7 +623,9 @@ exports.refreshToken = async (req, res) => {
 
       return apiResponse.forbidden(
         res,
-        `Your account is ${user.status}. Please contact support.`
+        "Account Restricted",
+        `Your account is ${user.status}. Please contact support.`,
+        "ACCOUNT_RESTRICTED"
       );
     }
 
@@ -566,11 +649,17 @@ exports.refreshToken = async (req, res) => {
       requestId: req.id,
     });
 
-    // Return new tokens
-    return apiResponse.success(res, 200, "Token refreshed successfully", {
-      token,
-      refreshToken: newRefreshToken.token,
-    });
+    // Return new tokens using apiResponse utility
+    return apiResponse.success(
+      res,
+      200,
+      "Token Refreshed",
+      "Token refreshed successfully",
+      {
+        token,
+        refreshToken: newRefreshToken.token,
+      }
+    );
   } catch (error) {
     logger.error("Token refresh error", {
       error: error.message,
@@ -578,7 +667,13 @@ exports.refreshToken = async (req, res) => {
       requestId: req.id,
     });
 
-    return apiResponse.error(res, 500, "Error refreshing token");
+    return apiResponse.error(
+      res,
+      500,
+      "Token Refresh Failed",
+      "Error refreshing token",
+      "TOKEN_REFRESH_ERROR"
+    );
   }
 };
 
@@ -607,7 +702,12 @@ exports.logout = async (req, res) => {
       }
     }
 
-    return apiResponse.success(res, 200, "Logout successful");
+    return apiResponse.success(
+      res,
+      200,
+      "Logout Successful",
+      "User logged out successfully"
+    );
   } catch (error) {
     logger.error("Logout error", {
       error: error.message,
@@ -615,11 +715,16 @@ exports.logout = async (req, res) => {
       requestId: req.id,
     });
 
-    return apiResponse.error(res, 500, "Error during logout");
+    return apiResponse.error(
+      res,
+      500,
+      "Logout Failed",
+      "Error during logout",
+      "LOGOUT_ERROR"
+    );
   }
 };
 
-// Keep the rest of your code (getMe, setPasscode, verifyPasscode, etc) unchanged
 /**
  * Get current logged in user
  * @param {Object} req - Express request object
@@ -634,11 +739,24 @@ exports.getMe = async (req, res) => {
         select: "-createdIp -lastAccessedIp",
         populate: {
           path: "transactions",
+          options: { sort: { processedAt: -1 } },
+          populate: [
+            { path: "sourceUser" }, // Populate the sourceUser field
+            { path: "beneficiary" }, // Populate the beneficiary field
+          ],
         },
       })
       .populate({
         path: "wallets",
         select: "-securitySettings.twoFactorSecret",
+        populate: {
+          path: "transactions",
+          options: { sort: { completedAt: -1 } },
+          populate: [
+            { path: "source" }, // Populate the sourceUser field
+            { path: "beneficiary" }, // Populate the beneficiary field
+          ],
+        },
       })
       .populate({
         path: "cards",
@@ -653,17 +771,36 @@ exports.getMe = async (req, res) => {
         // select: "name bank accountNumber routingNumber nickname isFavorite",
       })
       .populate({
+        path: "walletBeneficiaries",
+        // select: "name bank accountNumber routingNumber nickname isFavorite",
+      })
+      .populate({
+        path: "investments",
+        populate: {
+          path: "plan",
+          // select: "accountNumber maskedAccountNumber type name bank",
+        },
+        // select: "name bank accountNumber routingNumber nickname isFavorite",
+      })
+      .populate({
         path: "bills",
+        options: { sort: { processedAt: -1 } },
         select: "title amount dueDate status provider paid account",
       })
       .populate({
         path: "pendingWallets",
+        options: { sort: { processedAt: -1 } },
         select:
           "user currency status requestDate priority preloadedAccount processingNotes processedBy processedAt notificationSent notificationDate",
       });
 
     if (!user) {
-      return apiResponse.notFound(res, "User not found");
+      return apiResponse.notFound(
+        res,
+        "Not Found",
+        "User not found",
+        "USER_NOT_FOUND"
+      );
     }
 
     logger.info("User profile retrieved", {
@@ -674,6 +811,7 @@ exports.getMe = async (req, res) => {
     return apiResponse.success(
       res,
       200,
+      "Profile Retrieved",
       "User profile retrieved successfully",
       {
         user: {
@@ -693,9 +831,10 @@ exports.getMe = async (req, res) => {
           wallets: user.wallets,
           cards: user.cards,
           beneficiaries: user.beneficiaries,
+          investments: user.investments,
+          walletBeneficiaries: user.walletBeneficiaries,
           bills: user.bills,
           pendingWallets: user.pendingWallets,
-          // pendingWallets: [{ id: 1 }, { id: 2 }],
 
           // Include additional fields that are not sensitive
           lastLogin: user.lastLogin,
@@ -717,7 +856,13 @@ exports.getMe = async (req, res) => {
       requestId: req.id,
     });
 
-    return apiResponse.error(res, 500, "Error retrieving user profile");
+    return apiResponse.error(
+      res,
+      500,
+      "Profile Retrieval Failed",
+      "Error retrieving user profile",
+      "PROFILE_ERROR"
+    );
   }
 };
 
@@ -727,6 +872,7 @@ exports.getMe = async (req, res) => {
  * @param {Object} res - Express response object
  */
 exports.setPasscode = async (req, res) => {
+  // console.log('lll', req.body)
   try {
     const { passcode } = req.body;
 
@@ -734,7 +880,12 @@ exports.setPasscode = async (req, res) => {
     const user = await User.findById(req.user._id).select("+passcodeHash");
 
     if (!user) {
-      return apiResponse.notFound(res, "User not found");
+      return apiResponse.notFound(
+        res,
+        "Not Found",
+        "User not found",
+        "USER_NOT_FOUND"
+      );
     }
 
     // Hash the passcode
@@ -749,7 +900,12 @@ exports.setPasscode = async (req, res) => {
       requestId: req.id,
     });
 
-    return apiResponse.success(res, 200, "Passcode set successfully");
+    return apiResponse.success(
+      res,
+      200,
+      "Passcode Set",
+      "Passcode set successfully"
+    );
   } catch (error) {
     logger.error("Error setting passcode", {
       userId: req.user._id,
@@ -758,92 +914,22 @@ exports.setPasscode = async (req, res) => {
       requestId: req.id,
     });
 
-    return apiResponse.error(res, 500, "Error setting passcode");
+    return apiResponse.error(
+      res,
+      500,
+      "Passcode Set Failed",
+      "Error setting passcode",
+      "PASSCODE_ERROR"
+    );
   }
 };
 
 /**
- * Verify user passcode
+ * Verify user passcode with challenge token
  * @param {Object} req - Express request object
  * @param {Object} res - Express response object
+ * @param {Function} next - Express next middleware function
  */
-// exports.verifyPasscode = async (req, res) => {
-//   try {
-//     const { passcode } = req.body;
-
-//     // Get user
-//     const user = await User.findById(req.user._id).select("+passcodeHash");
-
-//     if (!user) {
-//       return apiResponse.notFound(res, "User not found");
-//     }
-
-//     // Check if passcode is set
-//     if (!user.passcodeHash) {
-//       return apiResponse.badRequest(res, "Passcode not set");
-//     }
-
-//     // Check if passcode attempts are left
-//     if (user.passcodeAttemptLeft <= 0) {
-//       return apiResponse.forbidden(
-//         res,
-//         "Account locked due to too many passcode attempts"
-//       );
-//     }
-
-//     // Verify passcode
-//     const isMatch = await user.matchPasscode(passcode);
-
-//     if (!isMatch) {
-//       // Decrement attempts
-//       user.passcodeAttemptLeft -= 1;
-
-//       // If no attempts left, lock account
-//       if (user.passcodeAttemptLeft <= 0) {
-//         user.status = "locked";
-
-//         logger.warn("Account locked due to passcode attempts", {
-//           userId: user._id,
-//           requestId: req.id,
-//         });
-//       }
-
-//       await user.save();
-
-//       logger.warn("Invalid passcode attempt", {
-//         userId: user._id,
-//         attemptsLeft: user.passcodeAttemptLeft,
-//         requestId: req.id,
-//       });
-
-//       return apiResponse.badRequest(
-//         res,
-//         `Invalid passcode. ${user.passcodeAttemptLeft} attempts left.`
-//       );
-//     }
-
-//     // Reset attempts on successful verification
-//     user.passcodeAttemptLeft = config.security.passcodeMaxAttempts;
-//     await user.save();
-
-//     logger.info("Passcode verified successfully", {
-//       userId: user._id,
-//       requestId: req.id,
-//     });
-
-//     return apiResponse.success(res, 200, "Passcode verified successfully");
-//   } catch (error) {
-//     logger.error("Error verifying passcode", {
-//       userId: req.user._id,
-//       error: error.message,
-//       stack: error.stack,
-//       requestId: req.id,
-//     });
-
-//     return apiResponse.error(res, 500, "Error verifying passcode");
-//   }
-// };
-
 exports.verifyPasscode = async (req, res, next) => {
   try {
     const { challengeToken, passcodeVerification } = req.body;
@@ -853,7 +939,9 @@ exports.verifyPasscode = async (req, res, next) => {
     if (!challengeToken || !passcodeVerification) {
       return apiResponse.badRequest(
         res,
-        "Challenge token and passcode verification are required"
+        "Bad Request",
+        "Challenge token and passcode verification are required",
+        "MISSING_VERIFICATION_FIELDS"
       );
     }
 
@@ -865,26 +953,43 @@ exports.verifyPasscode = async (req, res, next) => {
         requestId: req.id,
       });
 
-      return apiResponse.badRequest(res, `Invalid or expired challenge token`);
+      return apiResponse.badRequest(
+        res,
+        "Invalid Token",
+        "Invalid or expired challenge token",
+        "INVALID_CHALLENGE_TOKEN"
+      );
     }
 
     // Get user with passcode hash
     const user = await User.findById(userId).select("+passcodeHash");
 
     if (!user) {
-      return apiResponse.notFound(res, "User not found");
+      return apiResponse.notFound(
+        res,
+        "Not Found",
+        "User not found",
+        "USER_NOT_FOUND"
+      );
     }
 
     // Check if passcode is set
     if (!user.passcodeHash) {
-      return apiResponse.badRequest(res, "Passcode not set");
+      return apiResponse.badRequest(
+        res,
+        "Bad Request",
+        "Passcode not set",
+        "PASSCODE_NOT_SET"
+      );
     }
 
     // Check if passcode attempts are left
     if (user.passcodeAttemptLeft <= 0) {
       return apiResponse.forbidden(
         res,
-        "Account locked due to too many passcode attempts"
+        "Account Locked",
+        "Account locked due to too many passcode attempts",
+        "PASSCODE_ATTEMPTS_EXCEEDED"
       );
     }
 
@@ -919,7 +1024,9 @@ exports.verifyPasscode = async (req, res, next) => {
 
       return apiResponse.badRequest(
         res,
-        `Invalid passcode. ${user.passcodeAttemptLeft} attempts left.`
+        "Invalid Passcode",
+        `Invalid passcode. ${user.passcodeAttemptLeft} attempts left.`,
+        "INVALID_PASSCODE"
       );
     }
 
@@ -946,7 +1053,13 @@ exports.verifyPasscode = async (req, res, next) => {
       requestId: req.id,
     });
 
-    return apiResponse.error(res, 500, "Error verifying passcode");
+    return apiResponse.error(
+      res,
+      500,
+      "Verification Failed",
+      "Error verifying passcode",
+      "PASSCODE_VERIFICATION_ERROR"
+    );
   }
 };
 
@@ -967,6 +1080,7 @@ exports.forgotPassword = async (req, res) => {
       return apiResponse.success(
         res,
         200,
+        "Reset Instructions Sent",
         "Password reset instructions sent if email exists"
       );
     }
@@ -997,7 +1111,12 @@ exports.forgotPassword = async (req, res) => {
       requestId: req.id,
     });
 
-    return apiResponse.success(res, 200, "Password reset instructions sent");
+    return apiResponse.success(
+      res,
+      200,
+      "Reset Instructions Sent",
+      "Password reset instructions sent"
+    );
   } catch (error) {
     logger.error("Error requesting password reset", {
       error: error.message,
@@ -1005,7 +1124,13 @@ exports.forgotPassword = async (req, res) => {
       requestId: req.id,
     });
 
-    return apiResponse.error(res, 500, "Error requesting password reset");
+    return apiResponse.error(
+      res,
+      500,
+      "Reset Request Failed",
+      "Error requesting password reset",
+      "PASSWORD_RESET_ERROR"
+    );
   }
 };
 
@@ -1031,7 +1156,12 @@ exports.resetPassword = async (req, res) => {
     });
 
     if (!user) {
-      return apiResponse.badRequest(res, "Invalid or expired token");
+      return apiResponse.badRequest(
+        res,
+        "Invalid Token",
+        "Invalid or expired token",
+        "INVALID_RESET_TOKEN"
+      );
     }
 
     // Set new password
@@ -1050,7 +1180,12 @@ exports.resetPassword = async (req, res) => {
       requestId: req.id,
     });
 
-    return apiResponse.success(res, 200, "Password reset successful");
+    return apiResponse.success(
+      res,
+      200,
+      "Password Reset",
+      "Password reset successful"
+    );
   } catch (error) {
     logger.error("Error resetting password", {
       error: error.message,
@@ -1058,7 +1193,13 @@ exports.resetPassword = async (req, res) => {
       requestId: req.id,
     });
 
-    return apiResponse.error(res, 500, "Error resetting password");
+    return apiResponse.error(
+      res,
+      500,
+      "Reset Failed",
+      "Error resetting password",
+      "PASSWORD_RESET_ERROR"
+    );
   }
 };
 
@@ -1075,7 +1216,12 @@ exports.updatePassword = async (req, res) => {
     const user = await User.findById(req.user._id).select("+password");
 
     if (!user) {
-      return apiResponse.notFound(res, "User not found");
+      return apiResponse.notFound(
+        res,
+        "Not Found",
+        "User not found",
+        "USER_NOT_FOUND"
+      );
     }
 
     // Check current password
@@ -1085,7 +1231,12 @@ exports.updatePassword = async (req, res) => {
         requestId: req.id,
       });
 
-      return apiResponse.badRequest(res, "Current password is incorrect");
+      return apiResponse.badRequest(
+        res,
+        "Invalid Password",
+        "Current password is incorrect",
+        "INVALID_CURRENT_PASSWORD"
+      );
     }
 
     // Update password
@@ -1100,7 +1251,12 @@ exports.updatePassword = async (req, res) => {
       requestId: req.id,
     });
 
-    return apiResponse.success(res, 200, "Password updated successfully");
+    return apiResponse.success(
+      res,
+      200,
+      "Password Updated",
+      "Password updated successfully"
+    );
   } catch (error) {
     logger.error("Error updating password", {
       userId: req.user._id,
@@ -1109,10 +1265,21 @@ exports.updatePassword = async (req, res) => {
       requestId: req.id,
     });
 
-    return apiResponse.error(res, 500, "Error updating password");
+    return apiResponse.error(
+      res,
+      500,
+      "Update Failed",
+      "Error updating password",
+      "PASSWORD_UPDATE_ERROR"
+    );
   }
 };
 
+/**
+ * Generate secure request token for sensitive operations
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ */
 exports.generateSecureRequestToken = (req, res) => {
   try {
     const userId = req.user._id;
@@ -1120,7 +1287,12 @@ exports.generateSecureRequestToken = (req, res) => {
 
     // Validate required action
     if (!action) {
-      return apiResponse.badRequest(res, "Action is required");
+      return apiResponse.badRequest(
+        res,
+        "Bad Request",
+        "Action is required",
+        "ACTION_REQUIRED"
+      );
     }
 
     // Generate challenge token for this user/action
@@ -1132,9 +1304,15 @@ exports.generateSecureRequestToken = (req, res) => {
       requestId: req.id,
     });
 
-    return apiResponse.success(res, 200, "Challenge token generated", {
-      challengeToken,
-    });
+    return apiResponse.success(
+      res,
+      200,
+      "Token Generated",
+      "Challenge token generated",
+      {
+        challengeToken,
+      }
+    );
   } catch (error) {
     logger.error("Error generating challenge token", {
       userId: req.user?._id,
@@ -1143,6 +1321,12 @@ exports.generateSecureRequestToken = (req, res) => {
       requestId: req.id,
     });
 
-    return apiResponse.error(res, 500, "Error generating challenge token");
+    return apiResponse.error(
+      res,
+      500,
+      "Token Generation Failed",
+      "Error generating challenge token",
+      "TOKEN_GENERATION_ERROR"
+    );
   }
 };

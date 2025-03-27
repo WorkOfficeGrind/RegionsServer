@@ -10,7 +10,7 @@ const passport = require("../config/passport");
  * Authenticates user and adds user object to req
  */
 const authenticate = (req, res, next) => {
-  
+  // console.log("pppp", req.body);
   passport.authenticate("jwt", { session: false }, (err, user, info) => {
     if (err) {
       logger.error("Authentication error", {
@@ -58,6 +58,89 @@ const authenticate = (req, res, next) => {
 
     return next();
   })(req, res, next);
+};
+
+const hasRole = (roles = []) => {
+  return (req, res, next) => {
+    passport.authenticate("jwt", { session: false }, (err, user, info) => {
+      if (err) {
+        logger.error("Authentication error", {
+          error: err.message,
+          stack: err.stack,
+          requestId: req.id,
+        });
+        return next(err);
+      }
+
+      if (!user) {
+        logger.warn("Authentication failed", {
+          info: info ? info.message : "No user found",
+          ip: req.ip,
+          requestId: req.id,
+        });
+
+        return res.status(401).json({
+          status: "error",
+          message: info ? info.message : "Authentication required",
+        });
+      }
+
+      // Check if user is active
+      if (user.status !== "active") {
+        logger.warn("Access attempt by inactive user", {
+          userId: user._id,
+          status: user.status,
+          requestId: req.id,
+        });
+
+        return res.status(403).json({
+          status: "error",
+          message: "Account is not active. Please contact support.",
+        });
+      }
+
+      req.user = user;
+
+      logger.info("User authenticated", {
+        userId: user._id,
+        username: user.username,
+        requestId: req.id,
+      });
+
+      // Ensure roles is an array
+      const allowedRoles = Array.isArray(roles) ? roles : [roles];
+
+      // Get user's role
+      const userRole = req.user.role;
+
+      logger.debug("Role check", {
+        userId: req.user._id,
+        userRole,
+        allowedRoles,
+        requestId: req.id,
+      });
+
+      // Allow access if user is admin or has a required role
+      if (userRole === "admin" || allowedRoles.includes(userRole)) {
+        return next();
+      }
+
+      // If role check fails, log and return forbidden
+      logger.warn("Unauthorized role access attempt", {
+        userId: req.user._id,
+        userRole,
+        allowedRoles,
+        path: req.originalUrl,
+        method: req.method,
+        requestId: req.id,
+      });
+
+      return apiResponse.forbidden(
+        res,
+        "You don't have permission to perform this action"
+      );
+    })(req, res, next);
+  };
 };
 
 /**
@@ -161,258 +244,277 @@ const verifyResourceOwnership = (model) => async (req, res, next) => {
   }
 };
 
-/**
- * Middleware to verify user passcode
- * Requires authentication middleware to be run first
- */
-// const verifyPasscode = async (req, res, next) => {
-//   try {
-//     // Get passcode from custom header
-//     const passcodeSecurity = req.headers["x-passcode-auth"];
-//     const userId = req.user._id;
-
-//     logger.debug("Passcode verification attempt", {
-//       userId,
-//       hasPasscodeHeader: !!passcodeSecurity,
-//       requestId: req.id,
-//     });
-
-//     if (!passcodeSecurity) {
-//       return apiResponse.badRequest(
-//         res,
-//         "Passcode header is required for this operation"
-//       );
-//     }
-
-//     // Get user and explicitly select the passcodeHash, passcodeAttemptLeft, and status fields
-//     const user = await User.findById(userId).select(
-//       "+passcodeHash passcodeAttemptLeft status"
-//     );
-
-//     if (!user) {
-//       return apiResponse.notFound(res, "User not found");
-//     }
-
-//     // Check if user has set a passcode
-//     if (!user.passcodeHash) {
-//       return apiResponse.badRequest(
-//         res,
-//         "Passcode not set. Please set a passcode first."
-//       );
-//     }
-
-//     // Check if user is allowed to attempt passcode verification
-//     if (user.passcodeAttemptLeft <= 0 || user.status !== "active") {
-//       return apiResponse.forbidden(
-//         res,
-//         "Passcode attempts exhausted. Account is locked."
-//       );
-//     }
-
-//     // Log detailed info about user's passcode status (only in development)
-//     if (process.env.NODE_ENV === "development") {
-//       logger.debug("Passcode verification details", {
-//         userId,
-//         hasPasscodeHash: !!user.passcodeHash,
-//         passcodeAttemptLeft: user.passcodeAttemptLeft,
-//         status: user.status,
-//         requestId: req.id,
-//       });
-//     }
-
-//     // Compare passcode hashes
-//     if (passcodeSecurity !== user.passcodeHash) {
-//       // Deduct one attempt
-//       user.passcodeAttemptLeft -= 1;
-
-//       // If attempts are exhausted, lock the account
-//       if (user.passcodeAttemptLeft <= 0) {
-//         user.status = "passcode_locked";
-//       }
-
-//       await user.save();
-
-//       if (process.env.NODE_ENV === "development") {
-//         logger.debug("Passcode hash mismatch", {
-//           userId,
-//           headerHashPrefix: passcodeSecurity.substring(0, 8) + "...",
-//           storedHashPrefix: user.passcodeHash
-//             ? user.passcodeHash.substring(0, 8) + "..."
-//             : "undefined",
-//           remainingAttempts: user.passcodeAttemptLeft,
-//           requestId: req.id,
-//         });
-//       }
-
-//       return apiResponse.unauthorized(
-//         res,
-//         `Invalid passcode. ${user.passcodeAttemptLeft} attempts left.`
-//       );
-//     }
-
-//     // If passcode is confirmed, reset attempts to max value if needed and ensure account status is active
-//     const maxAttempts = config.security.passcodeMaxAttempts || 5;
-
-//     if (
-//       user.passcodeAttemptLeft < maxAttempts ||
-//       user.status === "passcode_locked"
-//     ) {
-//       user.passcodeAttemptLeft = maxAttempts;
-
-//       // Only update status if it's passcode_locked
-//       if (user.status === "passcode_locked") {
-//         user.status = "active";
-//       }
-
-//       await user.save();
-//     }
-
-//     logger.debug("Passcode verification successful", {
-//       userId,
-//       requestId: req.id,
-//     });
-
-//     next();
-//   } catch (error) {
-//     logger.error("Passcode verification error:", {
-//       error: error.message,
-//       stack: error.stack,
-//       userId: req.user?._id,
-//       requestId: req.id,
-//     });
-
-//     return apiResponse.error(res, 500, "Error verifying passcode");
-//   }
-// };
-
 const verifyPasscode = async (req, res, next) => {
+  const requestStartTime = Date.now();
+  const requestId = req.id;
+  const userId = req.user?._id;
+
+  // console.log("e enter", req.user._id);
+
+  logger.info("Passcode verification started", {
+    userId,
+    requestId,
+    endpoint: `${req.method} ${req.originalUrl}`,
+    clientIP: req.ip,
+    userAgent: req.headers["user-agent"],
+  });
+
+  // Track session state
+  let sessionActive = false;
   const session = await mongoose.startSession();
-  session.startTransaction();
 
   try {
-    const passcodeSecurity = req.headers["x-passcode-auth"];
-    const userId = req.user._id;
+    session.startTransaction();
+    sessionActive = true;
+    logger.debug("MongoDB transaction started", { requestId });
 
-    logger.debug("Passcode verification attempt", {
+    const passcodeSecurity = req.headers["x-passcode-auth"];
+
+    logger.debug("Passcode verification attempt details", {
       userId,
       hasPasscodeHeader: !!passcodeSecurity,
-      requestId: req.id,
+      headerLength: passcodeSecurity ? passcodeSecurity.length : 0,
+      requestId,
+      tokenPresent: !!req.headers.authorization,
+      tokenPrefix: req.headers.authorization
+        ? req.headers.authorization.substring(0, 10) + "..."
+        : "none",
     });
 
     if (!passcodeSecurity) {
+      logger.warn("Missing passcode header", { userId, requestId });
       await session.abortTransaction();
       session.endSession();
+      sessionActive = false;
       return apiResponse.badRequest(
         res,
+        "Bad Request",
         "Passcode header is required for this operation"
       );
     }
 
     const user = await User.findById(userId)
       .select("+passcodeHash passcodeAttemptLeft status")
-      .session(session); // Ensure session is used
+      .session(session);
 
     if (!user) {
+      logger.warn("User not found during passcode verification", {
+        userId,
+        requestId,
+        userIdType: typeof userId,
+      });
       await session.abortTransaction();
       session.endSession();
+      sessionActive = false;
       return apiResponse.notFound(res, "User not found");
     }
 
+    logger.debug("User found for passcode verification", {
+      userId,
+      requestId,
+      hasPasscodeHash: !!user.passcodeHash,
+      passcodeAttemptLeft: user.passcodeAttemptLeft,
+      userStatus: user.status,
+    });
+
     if (!user.passcodeHash) {
+      logger.warn("User has no passcode hash set", { userId, requestId });
       await session.abortTransaction();
       session.endSession();
+      sessionActive = false;
       return apiResponse.badRequest(
         res,
+        "Bad Request",
         "Passcode not set. Please set a passcode first."
       );
     }
 
     if (user.passcodeAttemptLeft <= 0 || user.status !== "active") {
+      logger.warn("Account locked or attempts exhausted", {
+        userId,
+        requestId,
+        passcodeAttemptLeft: user.passcodeAttemptLeft,
+        userStatus: user.status,
+      });
       await session.abortTransaction();
       session.endSession();
+      sessionActive = false;
       return apiResponse.forbidden(
         res,
+        "Forbidden",
         "Passcode attempts exhausted. Account is locked."
       );
     }
 
-    const isMatch = await user.matchPasscode(passcodeSecurity);
+    // Log before matching passcode
+    logger.debug("Attempting to match passcode", {
+      userId,
+      requestId,
+      passcodeAttemptLeft: user.passcodeAttemptLeft,
+    });
 
-
-
-
+    let isMatch = false;
+    try {
+      isMatch = await user.matchPasscode(passcodeSecurity);
+      logger.debug("Passcode match result", {
+        userId,
+        requestId,
+        isMatch,
+      });
+    } catch (matchError) {
+      logger.error("Error during passcode matching", {
+        userId,
+        requestId,
+        error: matchError.message,
+        stack: matchError.stack,
+      });
+      throw matchError; // Re-throw to be caught by the outer try-catch
+    }
 
     if (!isMatch) {
       user.passcodeAttemptLeft -= 1;
 
+      logger.warn("Passcode verification failed", {
+        userId,
+        requestId,
+        remainingAttempts: user.passcodeAttemptLeft,
+        headerHashPrefix: passcodeSecurity
+          ? passcodeSecurity.substring(0, 8) + "..."
+          : "undefined",
+        storedHashPrefix: user.passcodeHash
+          ? user.passcodeHash.substring(0, 8) + "..."
+          : "undefined",
+      });
+
       if (user.passcodeAttemptLeft <= 0) {
         user.status = "passcode_locked";
+        logger.warn("Account locked due to passcode attempts exhaustion", {
+          userId,
+          requestId,
+        });
       }
 
-      await user.save({ session });
-
-      if (process.env.NODE_ENV === "development") {
-        logger.debug("Passcode hash mismatch", {
+      // Save the updated user with decremented attempts
+      try {
+        await user.save({ session });
+        logger.debug("User attempts updated successfully", {
           userId,
-          headerHashPrefix: passcodeSecurity.substring(0, 8) + "...",
-          storedHashPrefix: user.passcodeHash
-            ? user.passcodeHash.substring(0, 8) + "..."
-            : "undefined",
-          remainingAttempts: user.passcodeAttemptLeft,
-          requestId: req.id,
+          requestId,
+          newAttemptCount: user.passcodeAttemptLeft,
+          newStatus: user.status,
         });
+      } catch (saveError) {
+        logger.error("Error saving user after failed passcode attempt", {
+          userId,
+          requestId,
+          error: saveError.message,
+          stack: saveError.stack,
+        });
+        throw saveError; // Re-throw to be caught by the outer try-catch
       }
 
       await session.commitTransaction();
       session.endSession();
+      sessionActive = false;
 
-      return apiResponse.unauthorized(
+      return apiResponse.unvalidated(
         res,
-        `Invalid passcode. ${user.passcodeAttemptLeft} attempts left.`
+        "Unauthorized",
+        `Invalid passcode. ${user.passcodeAttemptLeft} attempt${
+          user.passcodeAttemptLeft === 1 ? "" : "s"
+        } left.`
       );
     }
 
     // If passcode is correct, reset attempts and unlock the account if needed
     const maxAttempts = config.security.passcodeMaxAttempts || 5;
+    logger.debug("Passcode verification successful", {
+      userId,
+      requestId,
+      currentAttempts: user.passcodeAttemptLeft,
+      maxAttempts,
+      currentStatus: user.status,
+    });
 
     if (
       user.passcodeAttemptLeft < maxAttempts ||
       user.status === "passcode_locked"
     ) {
+      const oldStatus = user.status;
+      const oldAttempts = user.passcodeAttemptLeft;
+
       user.passcodeAttemptLeft = maxAttempts;
 
       if (user.status === "passcode_locked") {
         user.status = "active";
       }
 
-      await user.save({ session });
+      try {
+        await user.save({ session });
+        logger.info(
+          "User attempts/status reset after successful verification",
+          {
+            userId,
+            requestId,
+            oldStatus,
+            newStatus: user.status,
+            oldAttempts,
+            newAttempts: user.passcodeAttemptLeft,
+          }
+        );
+      } catch (saveError) {
+        logger.error("Error resetting user attempts/status", {
+          userId,
+          requestId,
+          error: saveError.message,
+          stack: saveError.stack,
+        });
+        throw saveError; // Re-throw to be caught by the outer try-catch
+      }
     }
 
     await session.commitTransaction();
     session.endSession();
+    sessionActive = false;
 
-    logger.debug("Passcode verification successful", {
+    const processingTime = Date.now() - requestStartTime;
+    logger.info("Passcode verification completed successfully", {
       userId,
-      requestId: req.id,
+      requestId,
+      processingTime: `${processingTime}ms`,
     });
 
     next();
   } catch (error) {
-    await session.abortTransaction();
-    session.endSession();
-
-    logger.error("Passcode verification error:", {
+    logger.error("Passcode verification critical error", {
+      userId,
+      requestId,
       error: error.message,
       stack: error.stack,
-      userId: req.user?._id,
-      requestId: req.id,
+      errorName: error.name,
+      errorCode: error.code,
+      processingTime: `${Date.now() - requestStartTime}ms`,
     });
 
-    return apiResponse.error(res, 500, "Error verifying passcode");
+    // Ensure transaction is aborted if still active
+    if (sessionActive) {
+      try {
+        await session.abortTransaction();
+        session.endSession();
+        logger.debug("Transaction aborted due to error", { requestId });
+      } catch (sessionError) {
+        logger.error("Error aborting transaction", {
+          requestId,
+          error: sessionError.message,
+        });
+      }
+    }
+
+    return apiResponse.error(res, 500, "Error verifying passcode", {
+      errorId: requestId,
+    });
   }
 };
-
-
 
 /**
  * Middleware to authorize users based on roles
@@ -420,7 +522,7 @@ const verifyPasscode = async (req, res, next) => {
  * @param {string|string[]} roles - Role or array of roles allowed to access the route
  * @returns {Function} - Express middleware function
  */
-const hasRole = (roles) => {
+const hasRole1 = (roles) => {
   return (req, res, next) => {
     try {
       // Make sure user object exists (auth middleware should have set this)

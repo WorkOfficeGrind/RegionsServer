@@ -1,5 +1,6 @@
 const mongoose = require("mongoose");
 const { logger } = require("../config/logger");
+const { sanitizeRequestBody } = require("./requestLogger");
 
 // Error classification helper
 const classifyError = (err) => {
