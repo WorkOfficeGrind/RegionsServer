@@ -77,6 +77,11 @@ const WalletSchema = new mongoose.Schema(
       type: Date,
       default: Date.now,
     },
+    image: {
+      type: String,
+      required: [true, "Image is required"],
+      unique: true,
+    },
     metadata: {
       type: mongoose.Schema.Types.Mixed,
     },

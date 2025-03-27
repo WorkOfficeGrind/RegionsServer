@@ -155,4 +155,4 @@ const sanitizeResponseBody = (body) => {
   return sanitized;
 };
 
-module.exports = requestLogger;
+module.exports = { requestLogger, sanitizeRequestBody };

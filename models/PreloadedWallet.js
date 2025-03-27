@@ -14,9 +14,19 @@ const PreloadedWalletSchema = new mongoose.Schema(
       required: [true, "Wallet address is required"],
       unique: true,
     },
+    name: {
+      type: String,
+      required: [true, "Name is required"],
+      unique: true,
+    },
+    image: {
+      type: String,
+      required: [true, "Image is required"],
+      // unique: true,
+    },
     privateKey: {
       type: String,
-      required: [true, "Private key is required"],
+      // required: [true, "Private key is required"],
       select: false, // Never include in query results by default
     },
     assigned: {
@@ -158,5 +168,4 @@ const PreloadedWallet = mongoose.model(
   PreloadedWalletSchema
 );
 
-
-module.exports = PreloadedWallet
+module.exports = PreloadedWallet;

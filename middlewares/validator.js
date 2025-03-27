@@ -8,7 +8,7 @@ const { logger } = require("../config/logger");
  */
 // const validate = (schema, property = "body") => {
 //   return (req, res, next) => {
-    
+
 //     const dataToValidate = req[property];
 //     const { error, value } = schema.validate(dataToValidate, {
 //       abortEarly: false, // Return all errors, not just the first one
@@ -47,11 +47,9 @@ const { logger } = require("../config/logger");
 
 // Common validations
 
-
 // In your validator.js file, modify the validate function
 const validate = (schema, property = "body") => {
   return (req, res, next) => {
-    
     const dataToValidate = req[property];
     const { error, value } = schema.validate(dataToValidate, {
       abortEarly: false, // Return all errors, not just the first one
@@ -122,9 +120,6 @@ const commonValidations = {
     sort: Joi.string(),
   },
 };
-
-
-
 
 // Schemas for different validation scenarios
 const schemas = {
@@ -237,6 +232,7 @@ const schemas = {
   },
 
   // Transaction schemas
+
   transaction: {
     create: Joi.object({
       type: Joi.string()
@@ -268,6 +264,59 @@ const schemas = {
       // narration: Joi.string(),
       newBeneficiary: Joi.object(),
     }),
+
+    wallets: {
+      transfer: {
+        account: Joi.object({
+          sourceWalletId: commonValidations.objectId.required(),
+          destinationAccountId: commonValidations.objectId.required(),
+          amount: Joi.string()
+            .pattern(/^(?!0$)(?!0\.0*$)(\d+|\d+\.\d{1,8})$/)
+            .required(),
+        }),
+        card: Joi.object({
+          sourceWalletId: commonValidations.objectId.required(),
+          destinationCardId: commonValidations.objectId.required(),
+          amount: Joi.string()
+            .pattern(/^(?!0$)(?!0\.0*$)(\d+|\d+\.\d{1,8})$/)
+            .required(),
+        }),
+      },
+    },
+
+    accountToWallet: {
+      create: Joi.object({
+        amount: Joi.number()
+          .required()
+          .positive()
+          .precision(8) // Allows up to 8 decimal places
+          .message({
+            "number.base": "Amount must be a valid number",
+            "number.empty": "Amount is required",
+            "number.positive": "Amount must be greater than 0",
+            // "number.precision": "Amount cannot have more than 8 decimal places",
+          }),
+        sourceAccountId: commonValidations.objectId.required(),
+        destinationWalletId: commonValidations.objectId.required(),
+      }),
+    },
+
+    walletToWallet: {
+      create: Joi.object({
+        amount: Joi.number()
+          .required()
+          .positive()
+          .precision(8) // Allows up to 8 decimal places
+          .message({
+            "number.base": "Amount must be a valid number",
+            "number.empty": "Amount is required",
+            "number.positive": "Amount must be greater than 0",
+            // "number.precision": "Amount cannot have more than 8 decimal places",
+          }),
+        sourceWalletId: commonValidations.objectId.required(),
+        destinationWalletId: commonValidations.objectId.required(),
+      }),
+    },
 
     query: Joi.object({
       type: Joi.string().valid(
@@ -346,12 +395,12 @@ const schemas = {
   bill: {
     create: Joi.object({
       title: Joi.string().trim().required(),
-      customName: Joi.string().trim(),
+      customName: Joi.string().optional().allow(""),
       amount: commonValidations.positiveNumber.required(),
       dueDate: commonValidations.date.required(),
       accountNumber: Joi.string().trim(),
       provider: Joi.string().trim().required(),
-      paymentMethod: commonValidations.objectId,
+      paymentMethod: commonValidations.accountId,
       paymentMethodType: Joi.string().valid("Account", "Card", "Wallet"),
       isEbillEnrolled: commonValidations.boolean,
       isRecurring: commonValidations.boolean,
@@ -381,7 +430,6 @@ const schemas = {
         "credit_card",
         "other"
       ),
-      notes: Joi.string().trim(),
     }),
 
     update: Joi.object({
@@ -498,6 +546,14 @@ const schemas = {
         "other"
       ),
       ...commonValidations.pagination,
+    }),
+  },
+
+  walletBeneficiary: {
+    create: Joi.object({
+      name: Joi.string().trim().required(),
+      address: Joi.string().trim().required(),
+      currency: Joi.string().trim().required(),
     }),
   },
 

@@ -7,6 +7,7 @@
  * Send success response
  * @param {Object} res - Express response object
  * @param {number} statusCode - HTTP status code
+ * @param {string} title - Success title
  * @param {string} message - Success message
  * @param {Object} data - Response data
  * @param {Object} meta - Additional metadata (pagination, etc.)
@@ -14,13 +15,16 @@
 const success = (
   res,
   statusCode = 200,
-  message = "Success",
+  title = "Success",
+  message = "Operation Successful",
   data = {},
   meta = {}
 ) => {
   const response = {
-    status: "success",
+    success: true,
+    title,
     message,
+    data,
   };
 
   // Add data if provided (if not empty)
@@ -40,13 +44,23 @@ const success = (
  * Send error response
  * @param {Object} res - Express response object
  * @param {number} statusCode - HTTP status code
+ * @param {string} title - Error title
  * @param {string} message - Error message
- * @param {Object} errors - Detailed error information
+ * @param {string} errorCode - Error code for debugging
  */
-const error = (res, statusCode = 500, message = "Error", errors = null) => {
+const error = (
+  res,
+  statusCode = 500,
+  title = "Error",
+  message = "An error occurred",
+  errorCode = "SERVER_ERROR",
+  errors = null
+) => {
   const response = {
-    status: "error",
+    success: false,
+    title,
     message,
+    errorCode,
   };
 
   // Add detailed errors if provided
@@ -59,71 +73,95 @@ const error = (res, statusCode = 500, message = "Error", errors = null) => {
 
 /**
  * Send created response (HTTP 201)
- * @param {Object} res - Express response object
- * @param {string} message - Success message
- * @param {Object} data - Response data
  */
-const created = (res, message = "Resource created successfully", data = {}) => {
-  return success(res, 201, message, data);
+const created = (
+  res,
+  title = "Created",
+  message = "Resource created successfully",
+  data = {}
+) => {
+  return success(res, 201, title, message, data);
 };
 
 /**
  * Send updated response
- * @param {Object} res - Express response object
- * @param {string} message - Success message
- * @param {Object} data - Response data
  */
-const updated = (res, message = "Resource updated successfully", data = {}) => {
-  return success(res, 200, message, data);
+const updated = (
+  res,
+  title = "Updated",
+  message = "Resource updated successfully",
+  data = {}
+) => {
+  return success(res, 200, title, message, data);
 };
 
 /**
  * Send deleted response
- * @param {Object} res - Express response object
- * @param {string} message - Success message
  */
-const deleted = (res, message = "Resource deleted successfully") => {
-  return success(res, 200, message);
+const deleted = (
+  res,
+  title = "Deleted",
+  message = "Resource deleted successfully"
+) => {
+  return success(res, 200, title, message);
 };
 
 /**
  * Send not found response
- * @param {Object} res - Express response object
- * @param {string} message - Error message
  */
-const notFound = (res, message = "Resource not found") => {
-  return error(res, 404, message);
+const notFound = (
+    res,
+  title = "Not Found",
+  message = "Resource not found",
+  errorCode = "NOT_FOUND"
+ ) => {
+  return error(res, 404, title, message, errorCode);
 };
 
 /**
  * Send bad request response
- * @param {Object} res - Express response object
- * @param {string} message - Error message
- * @param {Object} errors - Detailed error information
  */
-const badRequest = (res, message = "Invalid request", errors = null) => {
-  return error(res, 400, message, errors);
+const badRequest = (
+  res,
+  title = "Bad Request",
+  message = "Invalid request",
+  errorCode = "BAD_REQUEST"
+) => {
+  return error(res, 400, title, message, errorCode);
 };
 
 /**
  * Send unauthorized response
- * @param {Object} res - Express response object
- * @param {string} message - Error message
  */
-const unauthorized = (res, message = "Authentication required") => {
-  return error(res, 401, message);
+const unauthorized = (
+  res,
+  title = "Unauthorized",
+  message = "Authentication required",
+  errorCode = "UNAUTHORIZED"
+) => {
+  return error(res, 401, title, message, errorCode);
+};
+
+
+const unvalidated = (
+  res,
+  title = "Unvalidated",
+  message = "Authentication required",
+  errorCode = "UNVALIDATED"
+) => {
+  return error(res, 403, title, message, errorCode);
 };
 
 /**
  * Send forbidden response
- * @param {Object} res - Express response object
- * @param {string} message - Error message
  */
 const forbidden = (
   res,
-  message = "You do not have permission to perform this action"
+  title = "Forbidden",
+  message = "You do not have permission to perform this action",
+  errorCode = "FORBIDDEN"
 ) => {
-  return error(res, 403, message);
+  return error(res, 403, title, message, errorCode);
 };
 
 /**
@@ -153,6 +191,7 @@ module.exports = {
   notFound,
   badRequest,
   unauthorized,
+  unvalidated,
   forbidden,
   paginationMeta,
 };

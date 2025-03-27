@@ -13,7 +13,8 @@ const TransactionSchema = new mongoose.Schema(
       enum: [
         "deposit",
         "withdrawal",
-        "transfer",
+        "credit",
+        "debit",
         "payment",
         "refund",
         "exchange",
@@ -76,7 +77,17 @@ const TransactionSchema = new mongoose.Schema(
     },
     reference: {
       type: String,
-      unique: true,
+      // unique: true,
+      required: true,
+    },
+    sourceUser: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+    },
+    beneficiary: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
       required: true,
     },
     fee: {
@@ -104,6 +115,7 @@ const TransactionSchema = new mongoose.Schema(
     deviceInfo: mongoose.Schema.Types.Mixed,
   },
   {
+    versionKey: false,
     timestamps: true,
     toJSON: { virtuals: true },
     toObject: { virtuals: true },

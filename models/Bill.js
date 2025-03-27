@@ -1,5 +1,6 @@
 const mongoose = require("mongoose");
 const { logger } = require("../config/logger");
+const { required } = require("joi");
 
 const BillSchema = new mongoose.Schema(
   {
@@ -43,11 +44,12 @@ const BillSchema = new mongoose.Schema(
       trim: true,
     },
     paymentMethod: {
-      type: mongoose.Schema.Types.ObjectId,
-      refPath: "paymentMethodType",
+      type: String,
+      required: true,
     },
     paymentMethodType: {
       type: String,
+      required: [true, "Payment method is required"],
       enum: ["Account", "Card", "Wallet"],
     },
     isEbillEnrolled: {

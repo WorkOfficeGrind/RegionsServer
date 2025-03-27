@@ -11,6 +11,8 @@ const WalletTransactionSchema = new mongoose.Schema(
     type: {
       type: String,
       enum: [
+        "credit",
+        "debit",
         "deposit",
         "withdrawal",
         "transfer",
@@ -31,11 +33,12 @@ const WalletTransactionSchema = new mongoose.Schema(
       required: [true, "Currency is required"],
       uppercase: true,
     },
-    sourceId: {
+    source: {
       type: mongoose.Schema.Types.ObjectId,
       refPath: "sourceType",
       required: true,
     },
+
     sourceType: {
       type: String,
       required: [true, "Source type is required"],
@@ -46,17 +49,17 @@ const WalletTransactionSchema = new mongoose.Schema(
       required: [true, "Source currency is required"],
       uppercase: true,
     },
-    destinationId: {
+    beneficiary: {
       type: mongoose.Schema.Types.ObjectId,
-      refPath: "destinationType",
+      refPath: "beneficiaryType",
       required: true,
     },
-    destinationType: {
+    beneficiaryType: {
       type: String,
       required: [true, "Destination type is required"],
-      enum: ["Wallet", "Account", "Card", "external"],
+      enum: ["Wallet", "Account", "Card", "UserInvestment", "external"],
     },
-    destinationCurrency: {
+    beneficiaryCurrency: {
       type: String,
       required: [true, "Destination currency is required"],
       uppercase: true,

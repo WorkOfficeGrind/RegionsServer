@@ -212,6 +212,44 @@ const walletService = {
   },
 
   /**
+   * Search  wallets by currency
+   * @param {String} currency - Currency to search for
+   * @param {Number} page - Page number for pagination
+   * @param {Number} limit - Number of items per page
+   * @returns {Object} - Results and pagination info
+   */
+  async searchByCurrency(currency, page, limit) {
+    // Convert string parameters to numbers
+    const pageNum = parseInt(page, 10);
+    const limitNum = parseInt(limit, 10);
+
+    // Calculate skip value for pagination
+    const skip = (pageNum - 1) * limitNum;
+
+    // Create case-insensitive search
+    const query = { currency: new RegExp(currency, "i") };
+
+    // Execute query with pagination
+    const results = await Wallet.find(query)
+      .skip(skip)
+      .limit(limitNum)
+      .sort({ createdAt: -1 });
+
+    // Get total count for pagination
+    const total = await Wallet.countDocuments(query);
+
+    return {
+      results,
+      pagination: {
+        page: pageNum,
+        limit: limitNum,
+        total,
+        pages: Math.ceil(total / limitNum),
+      },
+    };
+  },
+
+  /**
    * Update wallet details
    * @param {string} walletId - Wallet ID
    * @param {string} userId - User ID (for authorization)

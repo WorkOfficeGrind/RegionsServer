@@ -109,10 +109,22 @@ const UserSchema = new mongoose.Schema(
         ref: "Wallet",
       },
     ],
+    investments: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "UserInvestment",
+      },
+    ],
     beneficiaries: [
       {
         type: mongoose.Schema.Types.ObjectId,
         ref: "Beneficiary",
+      },
+    ],
+    walletBeneficiaries: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "WalletBeneficiary",
       },
     ],
     pendingWallets: [
@@ -136,6 +148,7 @@ const UserSchema = new mongoose.Schema(
         "inactive",
         "suspended",
         "locked",
+        "passcode_locked",
         "pendingVerification",
       ],
       default: "pendingVerification",
@@ -165,11 +178,11 @@ UserSchema.virtual("name").get(function () {
 });
 
 // Virtual for user's investments
-UserSchema.virtual("investments", {
-  ref: "UserInvestment",
-  localField: "_id",
-  foreignField: "user",
-});
+// UserSchema.virtual("investments", {
+//   ref: "UserInvestment",
+//   localField: "_id",
+//   foreignField: "user",
+// });
 
 // Middleware: pre-save hooks
 UserSchema.pre("save", async function (next) {

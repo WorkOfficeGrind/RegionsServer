@@ -35,8 +35,8 @@ const CardSchema = new mongoose.Schema(
     number: {
       type: String,
       required: [true, "Card number is required"],
-      select: false, 
-      unique: true
+      select: false,
+      unique: true,
     },
     month: {
       type: String,

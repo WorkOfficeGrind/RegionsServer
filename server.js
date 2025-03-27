@@ -4,6 +4,8 @@ const app = require("./app");
 const connectDB = require("./config/db");
 const { logger } = require("./config/logger");
 
+const server = http.createServer(app);
+
 // Handle uncaught exceptions
 process.on("uncaughtException", (err) => {
   logger.error("UNCAUGHT EXCEPTION! 💥 Shutting down...", {
@@ -38,7 +40,6 @@ process.on("SIGTERM", () => {
 connectDB().then(() => {
   // Start server
   const PORT = process.env.PORT || 5000;
-  const server = http.createServer(app);
 
   server.listen(PORT, () => {
     logger.info(

@@ -71,6 +71,65 @@ const walletController = {
     }
   },
 
+    /**
+     * Search  wallets by currency
+     * @param {Object} req - Express request object
+     * @param {Object} res - Express response object
+     */
+    async searchByCurrency(req, res) {
+      try {
+        const { currency } = req.query;
+        const { limit = 20, page = 1 } = req.query;
+  
+        // Validate currency parameter
+        if (!currency) {
+          return apiResponse.badRequest(
+            res,
+            "Bad Request",
+            "Currency parameter is required"
+          );
+        }
+  
+        const result = await walletService.searchByCurrency(
+          currency,
+          page,
+          limit
+        );
+  
+        logger.info("Wallets searched by currency", {
+          currency,
+          count: result.results.length,
+          totalCount: result.pagination.total,
+          requestId: req.id,
+        });
+  
+        return apiResponse.success(
+          res,
+          200,
+          "Success",
+          "Wallets retrieved successfully",
+          {
+            wallets: result.results,
+            pagination: result.pagination,
+          }
+        );
+      } catch (error) {
+        logger.error("Error searching wallets by currency", {
+          currency: req.query.currency,
+          error: error.message,
+          stack: error.stack,
+          requestId: req.id,
+        });
+  
+        return apiResponse.error(
+          res,
+          500,
+          "Error",
+          "Error searching wallets"
+        );
+      }
+    },
+
   /**
    * Create a new wallet
    * @param {Object} req - Express request object
@@ -253,6 +312,7 @@ const walletController = {
       return apiResponse.error(res, 500, "Error updating wallet");
     }
   },
+
 
   /**
    * Withdraw funds from wallet (requires passcode)

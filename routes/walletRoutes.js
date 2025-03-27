@@ -9,14 +9,15 @@ const {
   verifyPasscode,
   hasRole,
   authorize,
+  authenticate,
 } = require("../middlewares/authMiddleware");
 const { validate } = require("../middlewares/validator");
 
 // Validation schemas
 const createWalletSchema = Joi.object({
   currency: Joi.string().required(),
-  address: Joi.string().optional(),
-  name: Joi.string().optional(),
+  // address: Joi.string().optional(),
+  // name: Joi.string().optional(),
 });
 
 const updateWalletSchema = Joi.object({
@@ -37,17 +38,22 @@ router.get("/", authorize(), walletController.getUserWallets);
 // // Get wallet by ID
 router.get("/:walletId", authorize(), walletController.getWalletById);
 
+router.get("/search/wallet", authenticate, walletController.searchByCurrency);
+
+
 // // Create new wallet
 router.post(
   "/",
-  authorize(),
+  authenticate,
+  // authorize(),
+  verifyPasscode,
   validate(createWalletSchema),
   walletController.createWallet
 );
 
 // // Update wallet (limited fields for regular users)
 router.patch(
-  '/:walletId',
+  "/:walletId",
   authorize(),
   validate(updateWalletSchema),
   walletController.updateWallet
@@ -55,16 +61,16 @@ router.patch(
 
 // // Set default wallet
 router.post(
-  '/:walletId/set-default',
+  "/:walletId/set-default",
   authorize(),
   walletController.setDefaultWallet
 );
 
 // // Admin update wallet (all fields)
 router.patch(
-  '/:walletId/admin',
+  "/:walletId/admin",
   authorize(),
-  hasRole(['admin', 'manager']),
+  hasRole(["admin", "manager"]),
   walletController.adminUpdateWallet
 );
 
@@ -72,7 +78,7 @@ router.patch(
 
 // // Withdraw funds
 router.post(
-  '/:walletId/withdraw',
+  "/:walletId/withdraw",
   authorize(),
   verifyPasscode,
   walletController.withdrawFunds
@@ -80,7 +86,7 @@ router.post(
 
 // // Transfer between wallets
 router.post(
-  '/transfer',
+  "/transfer",
   authorize(),
   verifyPasscode,
   walletController.transferBetweenWallets
@@ -88,7 +94,7 @@ router.post(
 
 // // Get wallet transaction history
 router.get(
-  '/:walletId/transactions',
+  "/:walletId/transactions",
   authorize(),
   walletController.getWalletTransactions
 );
