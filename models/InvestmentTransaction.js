@@ -31,7 +31,7 @@ const InvestmentTransactionSchema = new mongoose.Schema(
     sourceType: {
       type: String,
       required: [true, "Source type is required"],
-      enum: ["Wallet", "Account", "Card", "external"],
+      enum: ["Wallet", "Account", "Card", "UserInvestment", "external"],
     },
     sourceCurrency: {
       type: String,

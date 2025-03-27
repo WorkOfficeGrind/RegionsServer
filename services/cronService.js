@@ -1,5 +1,5 @@
 const cron = require("node-cron");
-const investmentGrowthService = require("./investmentGrowthService");
+const investmentGrowthService = require("./investmentService");
 const { logger } = require("../config/logger");
 
 /**
@@ -12,8 +12,8 @@ const registerInvestmentGrowthCron = () => {
   
   // Schedule the job to run at 2:00 AM daily
   cron.schedule(
-    "* * * * *",
-    // "0 2 * * *",
+    // "*/5 * * * *",
+    "0 2 * * *",
     async () => {
       logger.info("Running daily investment growth cron job");
 
