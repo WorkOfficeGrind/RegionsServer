@@ -2,6 +2,7 @@ require("dotenv").config();
 const http = require("http");
 const app = require("./app");
 const connectDB = require("./config/db");
+const cronService = require("./services/cronService");
 const { logger } = require("./config/logger");
 
 const server = http.createServer(app);
@@ -38,6 +39,8 @@ process.on("SIGTERM", () => {
 
 // Connect to MongoDB
 connectDB().then(() => {
+  cronService.initCronJobs();
+
   // Start server
   const PORT = process.env.PORT || 5000;
 

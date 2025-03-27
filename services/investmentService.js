@@ -204,9 +204,21 @@ const processDailyGrowth = async (investment, currentDate = new Date()) => {
 
     investment.transactions.push(transaction._id);
 
-    // Update metadata for next processing
-    investment.metadata.lastGrowthDate = currentDate;
-    investment.metadata.nextGrowthIndex = nextGrowthIndex + 1;
+    // IMPORTANT CHANGE: Explicitly log what we're updating
+    logger.debug("Updating investment metadata", {
+      investmentId: investment._id,
+      oldIndex: nextGrowthIndex,
+      newIndex: nextGrowthIndex + 1,
+      oldDate: new Date(lastGrowthDate).toISOString(),
+      newDate: new Date(currentDate).toISOString(),
+    });
+
+    // Update metadata for next processing - make a new object to ensure changes are tracked
+    investment.metadata = {
+      ...investment.metadata,
+      lastGrowthDate: currentDate,
+      nextGrowthIndex: nextGrowthIndex + 1,
+    };
 
     // Check if investment has reached maturity
     if (nextGrowthIndex + 1 >= growthSchedule.length) {
@@ -218,8 +230,29 @@ const processDailyGrowth = async (investment, currentDate = new Date()) => {
       });
     }
 
-    // Save the investment
-    await investment.save({ session });
+    // CHANGE: Use direct update for greater certainty
+    const updateResult = await UserInvestment.findByIdAndUpdate(
+      investment._id,
+      {
+        $set: {
+          currentValue: investment.currentValue,
+          "metadata.lastGrowthDate": currentDate,
+          "metadata.nextGrowthIndex": nextGrowthIndex + 1,
+          status: investment.status,
+          $push: { transactions: transaction._id },
+        },
+      },
+      {
+        new: true,
+        session,
+      }
+    );
+
+    logger.debug("Database update result", {
+      investmentId: investment._id,
+      updated: !!updateResult,
+      newMetadata: updateResult?.metadata,
+    });
 
     // Commit the transaction
     await session.commitTransaction();
@@ -233,6 +266,10 @@ const processDailyGrowth = async (investment, currentDate = new Date()) => {
       previousValue: oldValue,
       newValue: investment.currentValue,
       transactionRef,
+      metadataUpdated: {
+        lastGrowthDate: currentDate,
+        nextGrowthIndex: nextGrowthIndex + 1,
+      },
     });
 
     return {
