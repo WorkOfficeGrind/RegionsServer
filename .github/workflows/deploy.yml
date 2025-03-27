@@ -1,0 +1,38 @@
+name: Deploy Node.js App
+
+on:
+  push:
+    branches:
+      - main  # Change if your main branch has a different name
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Set Up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18  # Adjust based on your project
+
+      - name: Install Dependencies
+        run: npm install
+
+      - name: Run Tests (Optional)
+        run: npm test
+
+      - name: Deploy to Server (VPS Example)
+        if: success()
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.SERVER_IP }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            cd /path/to/your/app
+            git pull origin main
+            npm install
+            pm2 restart app  # or node server.js
