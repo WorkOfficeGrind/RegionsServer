@@ -1897,10 +1897,10 @@ exports.addUserInvestment = async (req, res, next) => {
         timestamp: new Date().toISOString(),
         providedFields: { planId, amount, sourceWalletId },
       });
-      
+
       await session.abortTransaction();
       session.endSession();
-      
+
       return apiResponse.badRequest(
         res,
         "Bad Request",
@@ -1918,10 +1918,10 @@ exports.addUserInvestment = async (req, res, next) => {
         requestId: req.id,
         timestamp: new Date().toISOString(),
       });
-      
+
       await session.abortTransaction();
       session.endSession();
-      
+
       return apiResponse.notFound(res, "Investment plan not found");
     }
 
@@ -1933,10 +1933,10 @@ exports.addUserInvestment = async (req, res, next) => {
         requestId: req.id,
         timestamp: new Date().toISOString(),
       });
-      
+
       await session.abortTransaction();
       session.endSession();
-      
+
       return apiResponse.badRequest(res, "Investment plan is not active");
     }
 
@@ -1956,16 +1956,19 @@ exports.addUserInvestment = async (req, res, next) => {
         requestId: req.id,
         timestamp: new Date().toISOString(),
       });
-      
+
       await session.abortTransaction();
       session.endSession();
-      
+
       return apiResponse.notFound(res, "Source wallet not found");
     }
 
     // Convert amount to USD for comparison with minInvestment if wallet currency is different
     let usdAmount = numericAmount;
-    if (sourceWallet.currency !== "USD" && sourceWallet.currency !== plan.currency) {
+    if (
+      sourceWallet.currency !== "USD" &&
+      sourceWallet.currency !== plan.currency
+    ) {
       // Use the convertToUSD function from your existing code
       try {
         const decimalAmount = mongoose.Types.Decimal128.fromString(
@@ -1998,10 +2001,10 @@ exports.addUserInvestment = async (req, res, next) => {
           requestId: req.id,
           timestamp: new Date().toISOString(),
         });
-        
+
         await session.abortTransaction();
         session.endSession();
-        
+
         return apiResponse.serverError(res, "Error converting currency");
       }
     }
@@ -2017,10 +2020,10 @@ exports.addUserInvestment = async (req, res, next) => {
         requestId: req.id,
         timestamp: new Date().toISOString(),
       });
-      
+
       await session.abortTransaction();
       session.endSession();
-      
+
       return apiResponse.badRequest(
         res,
         "Minimum investment amount not met",
@@ -2038,10 +2041,10 @@ exports.addUserInvestment = async (req, res, next) => {
         requestId: req.id,
         timestamp: new Date().toISOString(),
       });
-      
+
       await session.abortTransaction();
       session.endSession();
-      
+
       return apiResponse.badRequest(res, "Insufficient funds in source wallet");
     }
 
@@ -2103,11 +2106,14 @@ exports.addUserInvestment = async (req, res, next) => {
           requestId: req.id,
           timestamp: new Date().toISOString(),
         });
-        
+
         await session.abortTransaction();
         session.endSession();
-        
-        return apiResponse.serverError(res, "Error converting currency for investment");
+
+        return apiResponse.serverError(
+          res,
+          "Error converting currency for investment"
+        );
       }
     }
 
@@ -2129,7 +2135,7 @@ exports.addUserInvestment = async (req, res, next) => {
       earlyWithdrawalFee: plan.earlyWithdrawalFee || 0,
       transactions: [], // Will be populated with the initial transaction
       withdrawalHistory: [],
-      metadata: {} // Will store the growth schedule
+      metadata: {}, // Will store the growth schedule
     });
 
     await newInvestment.save({ session });
@@ -2202,56 +2208,61 @@ exports.addUserInvestment = async (req, res, next) => {
     // Add transactions to the investment's transactions array
     newInvestment.transactions.push(walletDebitTransaction._id);
     newInvestment.transactions.push(investmentTransaction._id);
-    
+
     // Generate and store realistic daily growth schedule
     // Calculate maturity period in days
     const startDate = newInvestment.investedAt;
     const endDate = newInvestment.maturityDate;
-    const maturityPeriodDays = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24));
-    
+    const maturityPeriodDays = Math.ceil(
+      (endDate - startDate) / (1000 * 60 * 60 * 24)
+    );
+
     // Calculate total expected return
-    const totalExpectedReturn = investmentAmount * (averageReturn / 100) * (maturityPeriodDays / 365);
-    
+    const totalExpectedReturn =
+      investmentAmount * (averageReturn / 100) * (maturityPeriodDays / 365);
+
     // Generate random daily returns with normal distribution
     const dailyReturns = [];
     let totalGeneratedReturn = 0;
     const avgDailyReturn = totalExpectedReturn / maturityPeriodDays;
     const volatility = 0.6; // Moderate volatility for realistic fluctuation
     const maxVariance = avgDailyReturn * volatility * 2;
-    
+
     // First, generate random daily returns
     for (let i = 0; i < maturityPeriodDays; i++) {
       // Generate a random number with normal-ish distribution (using Box-Muller transform)
-      let u = 0, v = 0;
+      let u = 0,
+        v = 0;
       while (u === 0) u = Math.random();
       while (v === 0) v = Math.random();
-      let standardNormal = Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v);
-      
+      let standardNormal =
+        Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v);
+
       // Adjust the normal distribution to have our desired mean and variance
-      let dailyReturn = avgDailyReturn + (standardNormal * (maxVariance / 4));
-      
+      let dailyReturn = avgDailyReturn + standardNormal * (maxVariance / 4);
+
       // Ensure we don't have negative returns on most days (small chance is ok for realism)
       if (dailyReturn < -avgDailyReturn * 0.2) {
         dailyReturn = -avgDailyReturn * 0.2;
       }
-      
+
       dailyReturns.push(dailyReturn);
       totalGeneratedReturn += dailyReturn;
     }
-    
+
     // Adjust returns to ensure they sum to the expected total return
     const adjustmentFactor = totalExpectedReturn / totalGeneratedReturn;
-    const adjustedDailyReturns = dailyReturns.map(dailyReturn => 
+    const adjustedDailyReturns = dailyReturns.map((dailyReturn) =>
       parseFloat((dailyReturn * adjustmentFactor).toFixed(8))
     );
-    
+
     // Store the growth schedule in investment metadata
     newInvestment.metadata = {
       growthSchedule: adjustedDailyReturns,
       lastGrowthDate: newInvestment.investedAt,
-      nextGrowthIndex: 0
+      nextGrowthIndex: 0,
     };
-    
+
     await newInvestment.save({ session });
 
     // Add transaction to the wallet's transactions array
@@ -2311,7 +2322,7 @@ exports.addUserInvestment = async (req, res, next) => {
 
     next(error);
   }
-}
+};
 
 /**
  * @desc    Get investment projection to maturity
@@ -2485,6 +2496,7 @@ exports.processInvestmentGrowth = async (req, res, next) => {
       {
         previousValue: result.previousValue,
         growthAmount: result.growthAmount,
+        percentageIncrease: result.percentageIncrease, // Add this
         newValue: result.newValue,
         transaction: result.transaction,
         investment: await UserInvestment.findById(investmentId),
@@ -2976,6 +2988,187 @@ exports.redeemInvestment = async (req, res, next) => {
       timestamp: new Date().toISOString(),
     });
 
+    next(error);
+  }
+};
+
+/**
+ * @desc    Get investment growth history with percentage increases
+ * @route   GET /api/investments/:investmentId/growth-history
+ * @access  Private
+ */
+exports.getInvestmentGrowthHistory = async (req, res, next) => {
+  try {
+    const { investmentId } = req.params;
+
+    logger.info("Fetching investment growth history", {
+      userId: req.user._id,
+      investmentId,
+      requestId: req.id,
+      timestamp: new Date().toISOString(),
+    });
+
+    // Find the investment with populated transactions
+    const investment = await UserInvestment.findOne({
+      _id: investmentId,
+      user: req.user._id,
+    }).populate({
+      path: "transactions",
+      match: { type: "return" },
+      options: { sort: { createdAt: 1 } },
+    });
+
+    if (!investment) {
+      return apiResponse.notFound(res, "Investment not found");
+    }
+
+    // Extract growth transactions and augment with percentage data
+    const growthHistory = investment.transactions.map((transaction) => {
+      // Extract percentage from metadata or description if not in metadata
+      let percentageIncrease = transaction.metadata?.percentageIncrease;
+      if (percentageIncrease === undefined && transaction.description) {
+        const percentMatch = transaction.description.match(/of\s([-\d.]+)%/);
+        if (percentMatch && percentMatch[1]) {
+          percentageIncrease = parseFloat(percentMatch[1]);
+        }
+      }
+
+      return {
+        date: transaction.createdAt,
+        amount: transaction.amount,
+        currency: transaction.currency,
+        percentageIncrease: percentageIncrease || 0,
+        description: transaction.description,
+        day: transaction.metadata?.day || 0,
+      };
+    });
+
+    // Calculate cumulative growth
+    const initialAmount = investment.amount;
+    let runningTotal = initialAmount;
+    const cumulativeGrowth = growthHistory.map((record) => {
+      runningTotal += record.amount;
+      return {
+        ...record,
+        cumulativeValue: runningTotal,
+        totalGrowthPercentage:
+          ((runningTotal - initialAmount) / initialAmount) * 100,
+      };
+    });
+
+    return apiResponse.success(
+      res,
+      200,
+      "Growth History Retrieved",
+      "Investment growth history retrieved successfully",
+      {
+        investment: {
+          _id: investment._id,
+          planName: investment.plan?.name || "Investment Plan",
+          initialAmount,
+          currentValue: investment.currentValue,
+          investedAt: investment.investedAt,
+          maturityDate: investment.maturityDate,
+          status: investment.status,
+        },
+        growthHistory: cumulativeGrowth,
+      }
+    );
+  } catch (error) {
+    logger.error("Error retrieving investment growth history", {
+      userId: req.user._id,
+      investmentId: req.params.investmentId,
+      error: error.message,
+      stack: error.stack,
+      requestId: req.id,
+      timestamp: new Date().toISOString(),
+    });
+    next(error);
+  }
+};
+
+/**
+ * @desc    Get investment projection to maturity
+ * @route   GET /api/investments/:investmentId/projection
+ * @access  Private
+ */
+exports.getInvestmentProjection = async (req, res, next) => {
+  try {
+    const { investmentId } = req.params;
+
+    // Find the investment
+    const investment = await UserInvestment.findOne({
+      _id: investmentId,
+      user: req.user._id,
+    }).populate("plan");
+
+    if (!investment) {
+      return apiResponse.notFound(res, "Investment not found");
+    }
+
+    // Get the growth schedule from metadata
+    const growthSchedule = investment.metadata?.growthSchedule || [];
+    const nextGrowthIndex = investment.metadata?.nextGrowthIndex || 0;
+
+    // Calculate remaining growth
+    const remainingGrowth = growthSchedule.slice(nextGrowthIndex);
+    const currentValue = parseFloat(investment.currentValue);
+
+    // Generate projection dates and values
+    const projection = [];
+    let projectedValue = currentValue;
+
+    for (let i = 0; i < remainingGrowth.length; i++) {
+      const growthDate = new Date();
+      growthDate.setDate(growthDate.getDate() + i + 1); // Start from tomorrow
+
+      projectedValue += remainingGrowth[i];
+      const percentIncrease =
+        (remainingGrowth[i] / (projectedValue - remainingGrowth[i])) * 100;
+
+      projection.push({
+        date: growthDate.toISOString().split("T")[0],
+        projectedValue: parseFloat(projectedValue.toFixed(2)),
+        dailyGrowth: remainingGrowth[i],
+        percentIncrease: percentIncrease.toFixed(2),
+      });
+    }
+
+    const maturityProjection = {
+      initialValue: investment.amount,
+      currentValue,
+      projectedFinalValue:
+        projection.length > 0
+          ? projection[projection.length - 1].projectedValue
+          : currentValue,
+      totalProjectedReturn:
+        projection.length > 0
+          ? projection[projection.length - 1].projectedValue - investment.amount
+          : currentValue - investment.amount,
+      remainingDaysToMaturity: remainingGrowth.length,
+      projection:
+        projection.length > 50
+          ? [...projection.slice(0, 10), ...projection.slice(-10)] // First 10 days and last 10 days
+          : projection, // Full projection if less than 50 days
+    };
+
+    return apiResponse.success(
+      res,
+      200,
+      "Projection Retrieved",
+      "Investment projection retrieved successfully",
+      {
+        investment: {
+          _id: investment._id,
+          label: investment.label,
+          planName: investment.plan.name,
+          investedAt: investment.investedAt,
+          maturityDate: investment.maturityDate,
+        },
+        maturityProjection,
+      }
+    );
+  } catch (error) {
     next(error);
   }
 };
