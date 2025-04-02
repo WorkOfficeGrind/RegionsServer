@@ -107,3 +107,20 @@
 {"level":"info","message":"Registering investment maturity check cron job","service":"banking-investment-api","timestamp":"2025-03-27 12:35:25"}
 {"level":"info","message":"All investment cron jobs initialized successfully","service":"banking-investment-api","timestamp":"2025-03-27 12:35:25"}
 {"level":"info","message":"Server running in development mode on port 5000","service":"banking-investment-api","timestamp":"2025-03-27 12:35:25"}
+{"level":"info","message":"MongoDB reconnected","service":"banking-investment-api","timestamp":"2025-03-27 13:18:16"}
+{"level":"info","message":"MongoDB reconnected","service":"banking-investment-api","timestamp":"2025-03-27 13:18:18"}
+{"level":"warn","message":"MongoDB disconnected","service":"banking-investment-api","timestamp":"2025-03-27 13:18:28"}
+{"level":"info","message":"MongoDB reconnected","service":"banking-investment-api","timestamp":"2025-03-27 13:18:29"}
+{"level":"info","message":"MongoDB reconnected","service":"banking-investment-api","timestamp":"2025-03-27 14:15:21"}
+{"level":"info","message":"MongoDB reconnected","service":"banking-investment-api","timestamp":"2025-03-27 14:15:23"}
+{"level":"warn","message":"MongoDB disconnected","service":"banking-investment-api","timestamp":"2025-03-27 14:15:34"}
+{"level":"info","message":"MongoDB reconnected","service":"banking-investment-api","timestamp":"2025-03-27 14:15:38"}
+{"level":"warn","message":"MongoDB disconnected","service":"banking-investment-api","timestamp":"2025-03-27 14:58:24"}
+{"level":"info","message":"MongoDB reconnected","service":"banking-investment-api","timestamp":"2025-03-27 14:58:24"}
+{"level":"info","message":"MongoDB reconnected","service":"banking-investment-api","timestamp":"2025-03-27 15:12:25"}
+{"level":"warn","message":"MongoDB disconnected","service":"banking-investment-api","timestamp":"2025-03-27 15:12:38"}
+{"level":"info","message":"MongoDB reconnected","service":"banking-investment-api","timestamp":"2025-03-27 15:12:38"}
+{"level":"info","message":"MongoDB reconnected","service":"banking-investment-api","timestamp":"2025-03-27 16:09:32"}
+{"level":"info","message":"MongoDB reconnected","service":"banking-investment-api","timestamp":"2025-03-27 16:09:32"}
+{"level":"warn","message":"MongoDB disconnected","service":"banking-investment-api","timestamp":"2025-03-27 16:09:43"}
+{"level":"info","message":"MongoDB reconnected","service":"banking-investment-api","timestamp":"2025-03-27 16:09:44"}

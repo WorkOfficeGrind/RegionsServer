@@ -12,8 +12,8 @@ const registerInvestmentGrowthCron = () => {
   
   // Schedule the job to run at 2:00 AM daily
   cron.schedule(
-    // "*/5 * * * *",
-    "0 2 * * *",
+    "*/5 * * * *",
+    // "0 2 * * *",
     async () => {
       logger.info("Running daily investment growth cron job");
 

@@ -169,30 +169,44 @@ const processDailyGrowth = async (investment, currentDate = new Date()) => {
     const oldValue = investment.currentValue;
     investment.currentValue = parseFloat(oldValue) + growthAmount;
 
+    const previousValue = parseFloat(oldValue);
+    const percentageIncrease =
+      previousValue > 0 ? (growthAmount / previousValue) * 100 : 0;
+
     // Generate reference for transaction
     const transactionRef = `INVGROW-${Date.now()}-${crypto
       .randomBytes(4)
       .toString("hex")}`;
 
     // Create transaction record for the growth
-    const transaction = new InvestmentTransaction({
-      user: investment.user,
-      type: "return",
-      amount: Math.abs(growthAmount), // Absolute value, since it can be negative on some days
-      currency: investment.currency,
-      source: investment._id, // Investment is the source
-      sourceType: "UserInvestment",
-      sourceCurrency: investment.currency,
-      beneficiary: investment._id, // Investment is also the beneficiary
-      beneficiaryType: "UserInvestment",
-      beneficiaryCurrency: investment.currency,
-      description:
-        growthAmount >= 0
-          ? `Daily investment growth (Day ${nextGrowthIndex + 1})`
-          : `Daily investment fluctuation (Day ${nextGrowthIndex + 1})`,
-      status: "completed",
-      reference: transactionRef,
-    });
+  const transaction = new InvestmentTransaction({
+    user: investment.user,
+    type: "return",
+    amount: Math.abs(growthAmount),
+    currency: investment.currency,
+    source: investment._id,
+    sourceType: "UserInvestment",
+    sourceCurrency: investment.currency,
+    beneficiary: investment._id,
+    beneficiaryType: "UserInvestment",
+    beneficiaryCurrency: investment.currency,
+    description:
+      growthAmount >= 0
+        ? `Daily investment growth of ${percentageIncrease.toFixed(2)}% (Day ${
+            nextGrowthIndex + 1
+          })`
+        : `Daily investment fluctuation of ${percentageIncrease.toFixed(
+            2
+          )}% (Day ${nextGrowthIndex + 1})`,
+    status: "completed",
+    reference: transactionRef,
+    metadata: {
+      day: nextGrowthIndex + 1,
+      percentageIncrease,
+      absoluteGrowth: growthAmount,
+      previousValue,
+    },
+  });
 
     // Save the transaction
     await transaction.save({ session });
@@ -277,8 +291,9 @@ const processDailyGrowth = async (investment, currentDate = new Date()) => {
       message: "Daily growth processed successfully",
       investmentId: investment._id,
       growthAmount,
-      previousValue: oldValue,
+      previousValue,
       newValue: investment.currentValue,
+      percentageIncrease,
       transaction,
       hasReachedMaturity: investment.status === "matured",
     };

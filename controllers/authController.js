@@ -490,6 +490,40 @@ exports.login = async (req, res) => {
           "user currency status requestDate priority preloadedAccount processingNotes processedBy processedAt notificationSent notificationDate",
       });
 
+      if (populatedUser.investments && populatedUser.investments.length > 0) {
+        for (let investment of populatedUser.investments) {
+          // Include the growth schedule metadata directly
+          // The frontend already has getInvestmentTrend to process this
+
+          // Optionally add some additional data that might be useful
+          if (
+            investment.metadata?.growthSchedule &&
+            investment.metadata?.nextGrowthIndex !== undefined
+          ) {
+            const { growthSchedule, nextGrowthIndex } = investment.metadata;
+
+            // Add today's expected growth amount
+            if (nextGrowthIndex < growthSchedule.length) {
+              investment.nextGrowthAmount = growthSchedule[nextGrowthIndex];
+              investment.nextGrowthPercentage =
+                (growthSchedule[nextGrowthIndex] / investment.currentValue) *
+                100;
+            }
+
+            // Include last processed growth (yesterday's growth)
+            if (nextGrowthIndex > 0) {
+              investment.lastGrowthAmount = growthSchedule[nextGrowthIndex - 1];
+
+              // Calculate percentage based on value before yesterday's growth
+              const valueBeforeLastGrowth =
+                investment.currentValue - investment.lastGrowthAmount;
+              investment.lastGrowthPercentage =
+                (investment.lastGrowthAmount / valueBeforeLastGrowth) * 100;
+            }
+          }
+        }
+      }
+
     logger.info("User logged in", {
       userId: user._id,
       username: user.username,
