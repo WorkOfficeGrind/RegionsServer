@@ -23,6 +23,11 @@ const InvestmentTransactionSchema = new mongoose.Schema(
       required: [true, "Currency is required"],
       uppercase: true,
     },
+    sourceAmount: {
+      type: Number,
+      required: [true, "Source amount is required"],
+      min: [0.00001, "Source amount must be greater than 0"],
+    },
     source: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Wallet",

@@ -346,8 +346,9 @@ exports.createInvestment = async (req, res, next) => {
     const transaction = new InvestmentTransaction({
       user: req.user._id,
       type: "investment",
-      amount: decimalAmount,
+      amount: investmentAmount,
       currency: sourceWallet.currency,
+      sourceAmount: decimalAmount,
       source: sourceWallet._id,
       sourceType: "Wallet",
       sourceCurrency: sourceWallet.currency,
@@ -1134,9 +1135,10 @@ exports.withdrawInvestment = async (req, res, next) => {
     const transaction = new InvestmentTransaction({
       user: req.user._id,
       type: "return",
-      amount: convertedAmount,
+      amount: decimalAmount,
       currency: destinationWallet.currency,
       source: investment._id,
+      sourceAmount: convertedAmount,
       sourceType: "UserInvestment",
       sourceCurrency: investment.currency,
       beneficiary: destinationWallet._id,
@@ -1148,6 +1150,8 @@ exports.withdrawInvestment = async (req, res, next) => {
       status: "completed",
       reference,
     });
+
+    
 
     await transaction.save({ session });
 
@@ -1452,9 +1456,10 @@ exports.cancelInvestment = async (req, res, next) => {
     const transaction = new InvestmentTransaction({
       user: req.user._id,
       type: "return",
-      amount: refundAmount,
+      amount: investment.amount,
       currency: destinationWallet.currency,
       source: investment._id,
+      sourceAmount: refundAmount,
       sourceType: "UserInvestment",
       sourceCurrency: investment.currency,
       beneficiary: destinationWallet._id,
@@ -1465,6 +1470,7 @@ exports.cancelInvestment = async (req, res, next) => {
       reference,
     });
 
+    
     await transaction.save({ session });
 
     // Add transaction to investment

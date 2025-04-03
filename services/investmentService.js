@@ -185,6 +185,7 @@ const processDailyGrowth = async (investment, currentDate = new Date()) => {
       amount: Math.abs(growthAmount),
       currency: investment.currency,
       source: investment._id,
+      sourceAmount: Math.abs(growthAmount),
       sourceType: "UserInvestment",
       sourceCurrency: investment.currency,
       beneficiary: investment._id,
@@ -207,6 +208,8 @@ const processDailyGrowth = async (investment, currentDate = new Date()) => {
         previousValue,
       },
     });
+
+    
 
     // Save the transaction
     await transaction.save({ session });

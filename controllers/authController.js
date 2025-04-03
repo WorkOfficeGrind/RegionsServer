@@ -472,12 +472,19 @@ exports.login = async (req, res) => {
       })
       .populate({
         path: "investments",
-        populate: {
-          path: "plan",
-          // select: "accountNumber maskedAccountNumber type name bank",
-        },
+        populate: [
+          {
+            path: "plan",
+            // select: "accountNumber maskedAccountNumber type name bank",
+          },
+          {
+            path: "transactions", // Populating transactions inside investments
+            // select: "amount date status", // Adjust based on your schema
+          },
+        ],
         // select: "name bank accountNumber routingNumber nickname isFavorite",
       })
+
       .populate({
         path: "bills",
         options: { sort: { processedAt: -1 } },
@@ -810,10 +817,16 @@ exports.getMe = async (req, res) => {
       })
       .populate({
         path: "investments",
-        populate: {
-          path: "plan",
-          // select: "accountNumber maskedAccountNumber type name bank",
-        },
+        populate: [
+          {
+            path: "plan",
+            // select: "accountNumber maskedAccountNumber type name bank",
+          },
+          {
+            path: "transactions", // Populating transactions inside investments
+            // select: "amount date status", // Adjust based on your schema
+          },
+        ],
         // select: "name bank accountNumber routingNumber nickname isFavorite",
       })
       .populate({
