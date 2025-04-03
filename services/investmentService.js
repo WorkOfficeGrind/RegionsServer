@@ -179,34 +179,34 @@ const processDailyGrowth = async (investment, currentDate = new Date()) => {
       .toString("hex")}`;
 
     // Create transaction record for the growth
-  const transaction = new InvestmentTransaction({
-    user: investment.user,
-    type: "return",
-    amount: Math.abs(growthAmount),
-    currency: investment.currency,
-    source: investment._id,
-    sourceType: "UserInvestment",
-    sourceCurrency: investment.currency,
-    beneficiary: investment._id,
-    beneficiaryType: "UserInvestment",
-    beneficiaryCurrency: investment.currency,
-    description:
-      growthAmount >= 0
-        ? `Daily investment growth of ${percentageIncrease.toFixed(2)}% (Day ${
-            nextGrowthIndex + 1
-          })`
-        : `Daily investment fluctuation of ${percentageIncrease.toFixed(
-            2
-          )}% (Day ${nextGrowthIndex + 1})`,
-    status: "completed",
-    reference: transactionRef,
-    metadata: {
-      day: nextGrowthIndex + 1,
-      percentageIncrease,
-      absoluteGrowth: growthAmount,
-      previousValue,
-    },
-  });
+    const transaction = new InvestmentTransaction({
+      user: investment.user,
+      type: "return",
+      amount: Math.abs(growthAmount),
+      currency: investment.currency,
+      source: investment._id,
+      sourceType: "UserInvestment",
+      sourceCurrency: investment.currency,
+      beneficiary: investment._id,
+      beneficiaryType: "UserInvestment",
+      beneficiaryCurrency: investment.currency,
+      description:
+        growthAmount >= 0
+          ? `Daily investment growth of ${percentageIncrease.toFixed(
+              2
+            )}% (Day ${nextGrowthIndex + 1})`
+          : `Daily investment fluctuation of ${percentageIncrease.toFixed(
+              2
+            )}% (Day ${nextGrowthIndex + 1})`,
+      status: "completed",
+      reference: transactionRef,
+      metadata: {
+        day: nextGrowthIndex + 1,
+        percentageIncrease,
+        absoluteGrowth: growthAmount,
+        previousValue,
+      },
+    });
 
     // Save the transaction
     await transaction.save({ session });
@@ -228,11 +228,11 @@ const processDailyGrowth = async (investment, currentDate = new Date()) => {
     });
 
     // Update metadata for next processing - make a new object to ensure changes are tracked
-    investment.metadata = {
-      ...investment.metadata,
-      lastGrowthDate: currentDate,
-      nextGrowthIndex: nextGrowthIndex + 1,
-    };
+    // investment.metadata = {
+    //   ...investment.metadata,
+    //   lastGrowthDate: currentDate,
+    //   nextGrowthIndex: nextGrowthIndex + 1,
+    // };
 
     // Check if investment has reached maturity
     if (nextGrowthIndex + 1 >= growthSchedule.length) {
@@ -249,12 +249,13 @@ const processDailyGrowth = async (investment, currentDate = new Date()) => {
       investment._id,
       {
         $set: {
+          previousValue: oldValue, // Add this line to store the previous value
           currentValue: investment.currentValue,
           "metadata.lastGrowthDate": currentDate,
           "metadata.nextGrowthIndex": nextGrowthIndex + 1,
           status: investment.status,
-          $push: { transactions: transaction._id },
         },
+        $push: { transactions: transaction._id },
       },
       {
         new: true,
@@ -319,6 +320,97 @@ const processDailyGrowth = async (investment, currentDate = new Date()) => {
  * @param {Date} processDate - The date to process growth for (defaults to now)
  * @returns {Promise} Processing results
  */
+// const processAllInvestmentsGrowth = async (processDate = new Date()) => {
+//   try {
+//     logger.info("Starting daily growth processing for all active investments", {
+//       processDate: processDate.toISOString(),
+//       timestamp: new Date().toISOString(),
+//     });
+
+//     // Get all active investments
+//     const activeInvestments = await UserInvestment.find({
+//       status: "active",
+//       maturityDate: { $gt: processDate },
+//     });
+
+//     logger.info(
+//       `Found ${activeInvestments.length} active investments to process`
+//     );
+
+//     const results = {
+//       processed: 0,
+//       skipped: 0,
+//       matured: 0,
+//       failed: 0,
+//       details: [],
+//     };
+
+//     // Process each investment
+//     for (const investment of activeInvestments) {
+//       try {
+//         const result = await processDailyGrowth(investment, processDate);
+
+//         if (result.success) {
+//           results.processed++;
+//           if (result.hasReachedMaturity) {
+//             results.matured++;
+//           }
+//         } else {
+//           results.skipped++;
+//         }
+
+//         results.details.push({
+//           investmentId: investment._id,
+//           userId: investment.user,
+//           success: result.success,
+//           message: result.message,
+//         });
+//       } catch (error) {
+//         results.failed++;
+//         results.details.push({
+//           investmentId: investment._id,
+//           userId: investment.user,
+//           success: false,
+//           message: error.message,
+//         });
+
+//         logger.error(
+//           `Failed to process growth for investment ${investment._id}`,
+//           {
+//             error: error.message,
+//             investmentId: investment._id,
+//             userId: investment.user,
+//           }
+//         );
+//       }
+//     }
+
+//     logger.info("Daily growth processing completed", {
+//       processDate: processDate.toISOString(),
+//       processed: results.processed,
+//       skipped: results.skipped,
+//       matured: results.matured,
+//       failed: results.failed,
+//       timestamp: new Date().toISOString(),
+//     });
+
+//     return results;
+//   } catch (error) {
+//     logger.error("Error in batch processing of investment growth:", {
+//       error: error.message,
+//       stack: error.stack,
+//       timestamp: new Date().toISOString(),
+//     });
+
+//     throw error;
+//   }
+// };
+/**
+ * Process daily growth for all active investments
+ *
+ * @param {Date} processDate - The date to process growth for (defaults to now)
+ * @returns {Promise} Processing results
+ */
 const processAllInvestmentsGrowth = async (processDate = new Date()) => {
   try {
     logger.info("Starting daily growth processing for all active investments", {
@@ -335,6 +427,18 @@ const processAllInvestmentsGrowth = async (processDate = new Date()) => {
     logger.info(
       `Found ${activeInvestments.length} active investments to process`
     );
+
+    // Log details of each investment for debugging
+    activeInvestments.forEach((investment, index) => {
+      logger.debug(`Investment ${index + 1} details:`, {
+        investmentId: investment._id,
+        userId: investment.user,
+        hasMetadata: !!investment.metadata,
+        lastGrowthDate: investment.metadata?.lastGrowthDate,
+        nextGrowthIndex: investment.metadata?.nextGrowthIndex,
+        scheduleLength: investment.metadata?.growthSchedule?.length,
+      });
+    });
 
     const results = {
       processed: 0,
@@ -406,6 +510,101 @@ const processAllInvestmentsGrowth = async (processDate = new Date()) => {
 };
 
 /**
+ * Force update all active investments' lastGrowthDate to allow processing
+ * This is a utility function for troubleshooting
+ */
+const forceResetAllInvestmentsLastGrowthDate = async () => {
+  try {
+    logger.info("Force resetting lastGrowthDate for all active investments");
+
+    // Set date to yesterday
+    const yesterdayDate = new Date();
+    yesterdayDate.setDate(yesterdayDate.getDate() - 1);
+
+    // Update all active investments
+    const result = await UserInvestment.updateMany(
+      { status: "active" },
+      { $set: { "metadata.lastGrowthDate": yesterdayDate } }
+    );
+
+    logger.info("Forced reset completed", {
+      matched: result.matchedCount,
+      modified: result.modifiedCount,
+    });
+
+    return result;
+  } catch (error) {
+    logger.error("Error in force resetting growth dates:", {
+      error: error.message,
+      stack: error.stack,
+    });
+    throw error;
+  }
+};
+
+/**
+ * Force add growth schedule to investments missing it
+ * This is a utility function for troubleshooting
+ */
+const fixInvestmentsMissingMetadata = async () => {
+  try {
+    logger.info("Finding investments with missing metadata");
+
+    // Find all active investments with missing growth schedules
+    const brokenInvestments = await UserInvestment.find({
+      status: "active",
+      $or: [
+        { metadata: { $exists: false } },
+        { "metadata.growthSchedule": { $exists: false } },
+      ],
+    });
+
+    logger.info(
+      `Found ${brokenInvestments.length} investments with missing metadata`
+    );
+
+    // Fix each investment
+    const results = {
+      total: brokenInvestments.length,
+      success: 0,
+      failed: 0,
+      details: [],
+    };
+
+    for (const investment of brokenInvestments) {
+      try {
+        await initializeInvestmentGrowth(investment);
+        results.success++;
+        results.details.push({
+          investmentId: investment._id,
+          status: "fixed",
+        });
+      } catch (error) {
+        results.failed++;
+        results.details.push({
+          investmentId: investment._id,
+          status: "failed",
+          error: error.message,
+        });
+      }
+    }
+
+    logger.info("Fix operation completed", {
+      totalFixed: results.success,
+      totalFailed: results.failed,
+    });
+
+    return results;
+  } catch (error) {
+    logger.error("Error in fixing investments with missing metadata:", {
+      error: error.message,
+      stack: error.stack,
+    });
+    throw error;
+  }
+};
+
+/**
  * Manually initialize growth schedule for existing investments (migration utility)
  */
 const migrateExistingInvestments = async () => {
@@ -456,6 +655,8 @@ module.exports = {
   initializeInvestmentGrowth,
   processDailyGrowth,
   processAllInvestmentsGrowth,
+  forceResetAllInvestmentsLastGrowthDate,
+  fixInvestmentsMissingMetadata,
   migrateExistingInvestments,
   generateInvestmentGrowthSchedule,
 };
