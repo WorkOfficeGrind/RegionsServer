@@ -16,7 +16,7 @@ const registerInvestmentGrowthCron = () => {
   // Schedule the job to run every 5 minutes for testing
   // In production, use "0 2 * * *" for daily at 2 AM
   cron.schedule(
-    "*/5 * * * *",
+    "0 2 * * *",
     async () => {
       logger.info("Running daily investment growth cron job");
 
@@ -25,10 +25,13 @@ const registerInvestmentGrowthCron = () => {
         const processDate = new Date();
         logger.debug("Cron job triggered at", {
           dateTime: processDate.toISOString(),
-          timestamp: processDate.getTime()
+          timestamp: processDate.getTime(),
         });
 
-        const results = await investmentGrowthService.processAllInvestmentsGrowth(processDate);
+        const results =
+          await investmentGrowthService.processAllInvestmentsGrowth(
+            processDate
+          );
 
         logger.info("Daily investment growth cron completed", {
           processed: results.processed,
@@ -41,10 +44,10 @@ const registerInvestmentGrowthCron = () => {
         // If all investments were skipped, log detailed info
         if (results.skipped > 0 && results.processed === 0) {
           logger.debug("All investments were skipped, detailed reasons:", {
-            details: results.details.map(d => ({
+            details: results.details.map((d) => ({
               investmentId: d.investmentId,
-              reason: d.message
-            }))
+              reason: d.message,
+            })),
           });
         }
       } catch (error) {
