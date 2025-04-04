@@ -16,7 +16,7 @@ const registerInvestmentGrowthCron = () => {
   // Schedule the job to run every 5 minutes for testing
   // In production, use "0 2 * * *" for daily at 2 AM
   cron.schedule(
-    "0 2 * * *",
+    "0 3 * * *",
     async () => {
       logger.info("Running daily investment growth cron job");
 
