@@ -3,6 +3,7 @@ const InvestmentPlan = require("../models/InvestmentPlan");
 const UserInvestment = require("../models/UserInvestment");
 const InvestmentTransaction = require("../models/InvestmentTransaction");
 const Wallet = require("../models/Wallet");
+const WalletTransaction = require("../models/WalletTransaction");
 const { logger } = require("../config/logger");
 const apiResponse = require("../utils/apiResponse");
 const { toUSDrates, fromUSDrates } = require("../utils/constants");
@@ -121,11 +122,11 @@ exports.createInvestment = async (req, res, next) => {
       amount: req.body.amount,
       sourceWalletId: req.body.sourceWalletId,
       compoundFrequency: req.body.compoundFrequency,
-      label: req.body.label
+      label: req.body.label,
     },
     timestamp: new Date().toISOString(),
     ipAddress: req.ip,
-    userAgent: req.headers["user-agent"]
+    userAgent: req.headers["user-agent"],
   });
 
   // Start a database transaction
@@ -133,26 +134,28 @@ exports.createInvestment = async (req, res, next) => {
   session.startTransaction();
 
   try {
-    const { 
-      planId, 
-      amount, 
-      sourceWalletId, 
-      compoundFrequency = 'monthly',
-      label
+    const {
+      planId,
+      amount,
+      sourceWalletId,
+      compoundFrequency = "monthly",
+      label,
     } = req.body;
-    
+
     // Convert amount to Decimal128 for precise calculations
-    const decimalAmount = mongoose.Types.Decimal128.fromString(amount.toString());
-    
+    const decimalAmount = mongoose.Types.Decimal128.fromString(
+      amount.toString()
+    );
+
     // Validate investment plan
     const plan = await InvestmentPlan.findById(planId).session(session);
-    
+
     if (!plan || !plan.isActive) {
       logger.warn("Invalid or inactive investment plan", {
         userId: req.user._id,
         requestId: req.id,
         planId,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       });
       await session.abortTransaction();
       return apiResponse.badRequest(res, "Invalid or inactive investment plan");
@@ -161,22 +164,25 @@ exports.createInvestment = async (req, res, next) => {
     // Find source wallet
     const sourceWallet = await Wallet.findOne({
       _id: sourceWalletId,
-      user: req.user._id
+      user: req.user._id,
     }).session(session);
-    
+
     if (!sourceWallet) {
       logger.warn("Source wallet not found", {
         userId: req.user._id,
         requestId: req.id,
         sourceWalletId,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       });
       await session.abortTransaction();
       return apiResponse.badRequest(res, "Source wallet not found");
     }
-    
+
     // Check if source wallet has sufficient balance
-    if (parseFloat(sourceWallet.balance.toString()) < parseFloat(decimalAmount.toString())) {
+    if (
+      parseFloat(sourceWallet.balance.toString()) <
+      parseFloat(decimalAmount.toString())
+    ) {
       logger.warn("Insufficient funds in source wallet", {
         userId: req.user._id,
         requestId: req.id,
@@ -184,26 +190,26 @@ exports.createInvestment = async (req, res, next) => {
         sourceBalance: sourceWallet.balance.toString(),
         investmentAmount: decimalAmount.toString(),
         difference: (
-          parseFloat(decimalAmount.toString()) - 
+          parseFloat(decimalAmount.toString()) -
           parseFloat(sourceWallet.balance.toString())
         ).toFixed(8),
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       });
       await session.abortTransaction();
       return apiResponse.badRequest(res, "Insufficient funds in source wallet");
     }
-    
+
     // Convert amount from source wallet currency to plan currency for minimum investment check
     let investmentAmountInPlanCurrency;
     try {
       if (sourceWallet.currency !== plan.currency) {
         // Convert to plan currency (typically USD) for comparison with minimum
         investmentAmountInPlanCurrency = await convertCurrency(
-          decimalAmount, 
-          sourceWallet.currency, 
+          decimalAmount,
+          sourceWallet.currency,
           plan.currency
         );
-        
+
         logger.debug("Currency conversion for minimum investment check", {
           userId: req.user._id,
           requestId: req.id,
@@ -211,7 +217,7 @@ exports.createInvestment = async (req, res, next) => {
           toCurrency: plan.currency,
           beforeConversion: decimalAmount.toString(),
           afterConversion: investmentAmountInPlanCurrency.toString(),
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString(),
         });
       } else {
         investmentAmountInPlanCurrency = decimalAmount;
@@ -224,12 +230,12 @@ exports.createInvestment = async (req, res, next) => {
         toCurrency: plan.currency,
         amount: decimalAmount.toString(),
         error: error.message,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       });
       await session.abortTransaction();
       return apiResponse.serverError(res, "Error converting currency");
     }
-    
+
     // Debug log to verify conversion
     logger.debug("Comparing investment amount with minimum", {
       userId: req.user._id,
@@ -239,11 +245,13 @@ exports.createInvestment = async (req, res, next) => {
       originalAmount: decimalAmount.toString(),
       convertedAmount: investmentAmountInPlanCurrency.toString(),
       minimumRequired: plan.minInvestment,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
-    
+
     // Check minimum investment amount AFTER converting to plan currency (usually USD)
-    if (parseFloat(investmentAmountInPlanCurrency.toString()) < plan.minInvestment) {
+    if (
+      parseFloat(investmentAmountInPlanCurrency.toString()) < plan.minInvestment
+    ) {
       logger.warn("Investment amount below minimum", {
         userId: req.user._id,
         requestId: req.id,
@@ -253,29 +261,31 @@ exports.createInvestment = async (req, res, next) => {
         originalAmount: decimalAmount.toString(),
         convertedAmount: investmentAmountInPlanCurrency.toString(),
         minimumRequired: plan.minInvestment,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       });
       await session.abortTransaction();
       return apiResponse.badRequest(
-        res, 
+        res,
         `Minimum investment amount is ${plan.minInvestment} ${plan.currency}`
       );
     }
-    
+
     // Create the investment - here we preserve the original currency or convert if needed
     // We're already converted to plan currency above, so use that value
     let investmentAmount = investmentAmountInPlanCurrency;
-    
+
     // Calculate maturity date based on plan duration
     const investedAt = new Date();
     const maturityDate = new Date();
-    
+
     // Ensure plan.maturityPeriod is a number
-    const maturityPeriod = typeof plan.maturityPeriod === 'number' ? plan.maturityPeriod : 
-                           (parseInt(plan.maturityPeriod, 10) || 30); // Default to 30 days if invalid
-    
+    const maturityPeriod =
+      typeof plan.maturityPeriod === "number"
+        ? plan.maturityPeriod
+        : parseInt(plan.maturityPeriod, 10) || 30; // Default to 30 days if invalid
+
     maturityDate.setDate(maturityDate.getDate() + maturityPeriod);
-    
+
     // Validate that maturityDate is valid
     if (isNaN(maturityDate.getTime())) {
       logger.error("Invalid maturity date calculation", {
@@ -284,12 +294,15 @@ exports.createInvestment = async (req, res, next) => {
         investedAt: investedAt.toISOString(),
         maturityPeriod,
         planId: plan._id,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       });
       await session.abortTransaction();
-      return apiResponse.badRequest(res, "Could not calculate valid maturity date");
+      return apiResponse.badRequest(
+        res,
+        "Could not calculate valid maturity date"
+      );
     }
-      
+
     // Create the investment
     const userInvestment = new UserInvestment({
       user: req.user._id,
@@ -309,10 +322,10 @@ exports.createInvestment = async (req, res, next) => {
       lastInterestCalculatedAt: investedAt,
       interestPaidOut: 0,
     });
-    
+
     // Save the investment
     await userInvestment.save({ session });
-    
+
     logger.debug("User investment created", {
       userId: req.user._id,
       requestId: req.id,
@@ -320,15 +333,18 @@ exports.createInvestment = async (req, res, next) => {
       planId,
       amount: investmentAmount.toString(),
       maturityDate,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
-    
+
     // Deduct from wallet
     const oldWalletBalance = sourceWallet.balance.toString();
     sourceWallet.balance = mongoose.Types.Decimal128.fromString(
-      (parseFloat(sourceWallet.balance.toString()) - parseFloat(decimalAmount.toString())).toFixed(8)
+      (
+        parseFloat(sourceWallet.balance.toString()) -
+        parseFloat(decimalAmount.toString())
+      ).toFixed(8)
     );
-    
+
     logger.debug("Deducting from wallet", {
       userId: req.user._id,
       requestId: req.id,
@@ -336,11 +352,11 @@ exports.createInvestment = async (req, res, next) => {
       oldBalance: oldWalletBalance,
       deductedAmount: decimalAmount.toString(),
       newBalance: sourceWallet.balance.toString(),
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
-    
+
     await sourceWallet.save({ session });
-    
+
     // Create transaction record
     const reference = `INV-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
     const transaction = new InvestmentTransaction({
@@ -359,39 +375,39 @@ exports.createInvestment = async (req, res, next) => {
       status: "completed",
       reference,
     });
-    
+
     await transaction.save({ session });
-    
+
     // Add transaction to investment
     userInvestment.transactions.push(transaction._id);
     await userInvestment.save({ session });
-    
+
     // Get the user and add the investment to their investments array
-    const User = mongoose.model('User');
+    const User = mongoose.model("User");
     const user = await User.findById(req.user._id).session(session);
-    
+
     // Initialize investments array if it doesn't exist
     if (!user.investments) {
       user.investments = [];
     }
-    
+
     // Add the investment ID to the user's investments array
     user.investments.push(userInvestment._id);
-    
+
     logger.debug("Adding investment to user's investments array", {
       userId: user._id,
       requestId: req.id,
       investmentId: userInvestment._id,
       investmentsCount: user.investments.length,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
-    
+
     await user.save({ session });
-    
+
     // Commit the transaction
     await session.commitTransaction();
     session.endSession();
-    
+
     logger.info("Investment created successfully", {
       userId: req.user._id,
       requestId: req.id,
@@ -400,15 +416,17 @@ exports.createInvestment = async (req, res, next) => {
       planId,
       amount: investmentAmount.toString(),
       reference,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
-    
+
     // Fetch the populated investment to return
-    const populatedInvestment = await UserInvestment.findById(userInvestment._id)
-      .populate('plan')
-      .populate('source')
-      .populate('transactions');
-    
+    const populatedInvestment = await UserInvestment.findById(
+      userInvestment._id
+    )
+      .populate("plan")
+      .populate("source")
+      .populate("transactions");
+
     // Return successful response
     return apiResponse.success(
       res,
@@ -418,7 +436,7 @@ exports.createInvestment = async (req, res, next) => {
       {
         investment: populatedInvestment,
         transaction,
-        reference
+        reference,
       }
     );
   } catch (error) {
@@ -428,7 +446,7 @@ exports.createInvestment = async (req, res, next) => {
       requestId: req.id,
       errorMessage: error.message,
       errorStack: error.stack,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
 
     await session.abortTransaction();
@@ -441,7 +459,7 @@ exports.createInvestment = async (req, res, next) => {
       userId: req.user?._id,
       requestId: req.id,
       requestBody: req.body,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
 
     next(error);
@@ -482,13 +500,12 @@ exports.getUserInvestments = async (req, res, next) => {
       .sort(sortBy)
       .exec();
 
-       const normalizedInvestments = investments.map((investment) => {
-         if (!investment.previousValue && investment.previousValue !== 0) {
-           investment.previousValue = investment.currentValue;
-         }
-         return investment;
-       });
-
+    const normalizedInvestments = investments.map((investment) => {
+      if (!investment.previousValue && investment.previousValue !== 0) {
+        investment.previousValue = investment.currentValue;
+      }
+      return investment;
+    });
 
     logger.debug("User investments fetched", {
       userId: req.user._id,
@@ -582,10 +599,10 @@ exports.getInvestmentDetails = async (req, res, next) => {
       }
     }
 
-      if (!investment.previousValue && investment.previousValue !== 0) {
-        investment.previousValue = investment.currentValue;
-        await investment.save();
-      }
+    if (!investment.previousValue && investment.previousValue !== 0) {
+      investment.previousValue = investment.currentValue;
+      await investment.save();
+    }
 
     logger.debug("Investment details fetched", {
       userId: req.user._id,
@@ -904,13 +921,346 @@ exports.processInvestmentGrowth = async (req, res, next) => {
 };
 
 /**
- * @desc    Withdraw funds from an investment
+ * @desc    Add liquidity to an existing investment
+ * @route   POST /api/investments/:id/add-liquidity
+ * @access  Private
+ */
+exports.addLiquidityToInvestment = async (req, res, next) => {
+  // Start logging - capture initial request data
+  logger.info("Add liquidity to investment request initiated", {
+    userId: req.user._id,
+    requestId: req.id,
+    investmentId: req.params.id,
+    requestBody: {
+      amount: req.body.amount,
+      sourceWalletId: req.body.sourceWalletId,
+    },
+    timestamp: new Date().toISOString(),
+    ipAddress: req.ip,
+    userAgent: req.headers["user-agent"],
+  });
+
+  // Start a database transaction
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
+  try {
+    const { id } = req.params;
+    const { amount, sourceWalletId } = req.body;
+
+    // Convert amount to Decimal128 for precise calculations
+    const decimalAmount = mongoose.Types.Decimal128.fromString(
+      amount.toString()
+    );
+
+    // Find the investment
+    const investment = await UserInvestment.findOne({
+      _id: id,
+      user: req.user._id,
+      status: "active", // Only active investments can receive additional liquidity
+    })
+      .populate("plan")
+      .session(session);
+
+    if (!investment) {
+      logger.warn("Investment not found or not active", {
+        userId: req.user._id,
+        requestId: req.id,
+        investmentId: id,
+        timestamp: new Date().toISOString(),
+      });
+      await session.abortTransaction();
+      return apiResponse.notFound(res, "Active investment not found");
+    }
+
+    // Find source wallet
+    const sourceWallet = await Wallet.findOne({
+      _id: sourceWalletId,
+      user: req.user._id,
+    }).session(session);
+
+    if (!sourceWallet) {
+      logger.warn("Source wallet not found", {
+        userId: req.user._id,
+        requestId: req.id,
+        sourceWalletId,
+        timestamp: new Date().toISOString(),
+      });
+      await session.abortTransaction();
+      return apiResponse.badRequest(res, "Source wallet not found");
+    }
+
+    // Check if source wallet has sufficient balance
+    if (
+      parseFloat(sourceWallet.balance.toString()) <
+      parseFloat(decimalAmount.toString())
+    ) {
+      logger.warn("Insufficient funds in source wallet", {
+        userId: req.user._id,
+        requestId: req.id,
+        sourceWalletId: sourceWallet._id,
+        sourceBalance: sourceWallet.balance.toString(),
+        investmentAmount: decimalAmount.toString(),
+        difference: (
+          parseFloat(decimalAmount.toString()) -
+          parseFloat(sourceWallet.balance.toString())
+        ).toFixed(8),
+        timestamp: new Date().toISOString(),
+      });
+      await session.abortTransaction();
+      return apiResponse.badRequest(res, "Insufficient funds in source wallet");
+    }
+
+    // Convert amount from source wallet currency to investment currency if needed
+    let additionalAmountInInvestmentCurrency;
+    try {
+      if (sourceWallet.currency !== investment.currency) {
+        additionalAmountInInvestmentCurrency = await convertCurrency(
+          decimalAmount,
+          sourceWallet.currency,
+          investment.currency
+        );
+
+        logger.debug("Currency conversion for add liquidity", {
+          userId: req.user._id,
+          requestId: req.id,
+          fromCurrency: sourceWallet.currency,
+          toCurrency: investment.currency,
+          beforeConversion: decimalAmount.toString(),
+          afterConversion: additionalAmountInInvestmentCurrency.toString(),
+          timestamp: new Date().toISOString(),
+        });
+      } else {
+        additionalAmountInInvestmentCurrency = decimalAmount;
+      }
+    } catch (error) {
+      logger.error("Currency conversion error during add liquidity", {
+        userId: req.user._id,
+        requestId: req.id,
+        fromCurrency: sourceWallet.currency,
+        toCurrency: investment.currency,
+        amount: decimalAmount.toString(),
+        error: error.message,
+        timestamp: new Date().toISOString(),
+      });
+      await session.abortTransaction();
+      return apiResponse.serverError(res, "Error converting currency");
+    }
+
+    // Calculate current value before adding liquidity
+    if (investment.status === "active") {
+      try {
+        await investment.calculateInterest();
+        logger.debug("Interest calculated before adding liquidity", {
+          userId: req.user._id,
+          requestId: req.id,
+          investmentId: id,
+          currentValue: investment.currentValue.toString(),
+          timestamp: new Date().toISOString(),
+        });
+      } catch (error) {
+        logger.error("Error calculating interest before adding liquidity:", {
+          error: error.message,
+          stack: error.stack,
+          userId: req.user._id,
+          requestId: req.id,
+          investmentId: id,
+          timestamp: new Date().toISOString(),
+        });
+        await session.abortTransaction();
+        return apiResponse.serverError(
+          res,
+          "Error calculating current investment value"
+        );
+      }
+    }
+
+    // Store old values for logging and record keeping
+    const oldAmount = parseFloat(investment.amount.toString());
+    const oldCurrentValue = parseFloat(investment.currentValue.toString());
+    const additionalAmount = parseFloat(
+      additionalAmountInInvestmentCurrency.toString()
+    );
+
+    // Update the investment with new values
+    investment.amount = mongoose.Types.Decimal128.fromString(
+      (oldAmount + additionalAmount).toFixed(8)
+    );
+    investment.currentValue = mongoose.Types.Decimal128.fromString(
+      (oldCurrentValue + additionalAmount).toFixed(8)
+    );
+
+    // Make sure to update previousValue to maintain correct growth tracking
+    if (
+      !investment.previousValue ||
+      parseFloat(investment.previousValue.toString()) === 0
+    ) {
+      // investment.previousValue = oldCurrentValue;
+      investment.previousValue = investment.currentValue;
+    }
+
+    // Generate reference for transaction
+    const reference = `INV-ADD-${Date.now()}-${Math.floor(
+      Math.random() * 1000
+    )}`;
+
+    // Deduct from wallet
+    const oldWalletBalance = sourceWallet.balance.toString();
+    sourceWallet.balance = mongoose.Types.Decimal128.fromString(
+      (
+        parseFloat(sourceWallet.balance.toString()) -
+        parseFloat(decimalAmount.toString())
+      ).toFixed(8)
+    );
+
+    logger.debug("Deducting from wallet", {
+      userId: req.user._id,
+      requestId: req.id,
+      walletId: sourceWallet._id,
+      oldBalance: oldWalletBalance,
+      deductedAmount: decimalAmount.toString(),
+      newBalance: sourceWallet.balance.toString(),
+      timestamp: new Date().toISOString(),
+    });
+
+    await sourceWallet.save({ session });
+
+    // Create debit transaction for wallet
+    const walletTransaction = new WalletTransaction({
+      user: req.user._id,
+      type: "debit",
+      amount: decimalAmount,
+      currency: sourceWallet.currency,
+      source: sourceWallet._id,
+      sourceType: "Wallet",
+      sourceCurrency: sourceWallet.currency,
+      beneficiary: investment._id,
+      beneficiaryType: "UserInvestment",
+      beneficiaryCurrency: investment.currency,
+      conversionRate:
+        sourceWallet.currency !== investment.currency
+          ? parseFloat(additionalAmountInInvestmentCurrency.toString()) /
+            parseFloat(decimalAmount.toString())
+          : 1,
+      description: `Additional liquidity for investment in ${investment.plan.name}`,
+      status: "completed",
+      reference: `${reference}-DEBIT`,
+      ipAddress: req.ip,
+      userAgent: req.headers["user-agent"],
+      completedAt: new Date(),
+    });
+
+    // Create credit transaction for investment
+    const investmentTransaction = new InvestmentTransaction({
+      user: req.user._id,
+      type: "investment",
+      amount: additionalAmountInInvestmentCurrency,
+      currency: investment.currency,
+      sourceAmount: decimalAmount,
+      source: sourceWallet._id,
+      sourceType: "Wallet",
+      sourceCurrency: sourceWallet.currency,
+      beneficiary: investment._id,
+      beneficiaryType: "UserInvestment",
+      beneficiaryCurrency: investment.currency,
+      description: `Additional liquidity for investment in ${investment.plan.name}`,
+      status: "completed",
+      reference: `${reference}-CREDIT`,
+    });
+
+    // Save both transactions
+    await walletTransaction.save({ session });
+    await investmentTransaction.save({ session });
+
+    // Add transaction to investment
+    investment.transactions.push(investmentTransaction._id);
+    await investment.save({ session });
+
+    // Add transaction to wallet
+    if (!sourceWallet.transactions) {
+      sourceWallet.transactions = [];
+    }
+    sourceWallet.transactions.push(walletTransaction._id);
+    sourceWallet.lastActivityAt = new Date();
+    await sourceWallet.save({ session });
+
+    // Commit the transaction
+    await session.commitTransaction();
+    session.endSession();
+
+    logger.info("Liquidity added to investment successfully", {
+      userId: req.user._id,
+      requestId: req.id,
+      investmentId: investment._id,
+      walletTransactionId: walletTransaction._id,
+      investmentTransactionId: investmentTransaction._id,
+      originalAmount: oldAmount.toFixed(8),
+      additionalAmount: additionalAmount.toFixed(8),
+      newTotalAmount: investment.amount.toString(),
+      originalValue: oldCurrentValue.toFixed(8),
+      newTotalValue: investment.currentValue.toString(),
+      reference,
+      timestamp: new Date().toISOString(),
+    });
+
+    // Fetch the fully populated investment to return
+    const populatedInvestment = await UserInvestment.findById(investment._id)
+      .populate("plan")
+      .populate("source")
+      .populate("transactions");
+
+    // Return successful response
+    return apiResponse.success(
+      res,
+      200,
+      "Liquidity Added",
+      "Additional funds have been added to your investment successfully",
+      {
+        investment: populatedInvestment,
+        walletTransaction,
+        investmentTransaction,
+        originalAmount: oldAmount.toFixed(8),
+        additionalAmount: additionalAmount.toFixed(8),
+        newTotalAmount: investment.amount.toString(),
+        reference,
+      }
+    );
+  } catch (error) {
+    // Abort transaction if error occurs
+    logger.error("Aborting add liquidity operation due to error", {
+      userId: req.user?._id,
+      requestId: req.id,
+      investmentId: req.params?.id,
+      errorMessage: error.message,
+      errorStack: error.stack,
+      timestamp: new Date().toISOString(),
+    });
+
+    await session.abortTransaction();
+    session.endSession();
+
+    logger.error("Add liquidity to investment failed:", {
+      error: error.message,
+      errorCode: error.code || error.statusCode,
+      errorStack: error.stack,
+      userId: req.user?._id,
+      requestId: req.id,
+      requestBody: req.body,
+      timestamp: new Date().toISOString(),
+    });
+
+    next(error);
+  }
+};
+
+/**
+ * @desc    Withdraw funds from an investment (partial or full withdrawal)
  * @route   POST /api/investments/:id/withdraw
  * @access  Private
  */
 exports.withdrawInvestment = async (req, res, next) => {
   // Start logging
-  logger.info("Investment withdrawal request initiated", {
+  logger.info("Investment partial withdrawal request initiated", {
     userId: req.user._id,
     requestId: req.id,
     investmentId: req.params.id,
@@ -932,7 +1282,7 @@ exports.withdrawInvestment = async (req, res, next) => {
     const { amount, destinationWalletId } = req.body;
 
     // Convert amount to Decimal128 for precise calculations
-    const decimalAmount = mongoose.Types.Decimal128.fromString(
+    const withdrawalAmount = mongoose.Types.Decimal128.fromString(
       amount.toString()
     );
 
@@ -977,7 +1327,7 @@ exports.withdrawInvestment = async (req, res, next) => {
       try {
         await investment.calculateInterest();
 
-        logger.debug("Interest calculated before withdrawal", {
+        logger.debug("Interest calculated before partial withdrawal", {
           userId: req.user._id,
           requestId: req.id,
           investmentId: id,
@@ -985,7 +1335,7 @@ exports.withdrawInvestment = async (req, res, next) => {
           timestamp: new Date().toISOString(),
         });
       } catch (error) {
-        logger.error("Error calculating interest before withdrawal:", {
+        logger.error("Error calculating interest before partial withdrawal:", {
           error: error.message,
           stack: error.stack,
           userId: req.user._id,
@@ -999,26 +1349,6 @@ exports.withdrawInvestment = async (req, res, next) => {
           "Error calculating investment value"
         );
       }
-    }
-
-    // Validate withdrawal amount
-    if (
-      parseFloat(decimalAmount.toString()) >
-      parseFloat(investment.currentValue.toString())
-    ) {
-      logger.warn("Withdrawal amount exceeds investment value", {
-        userId: req.user._id,
-        requestId: req.id,
-        investmentId: id,
-        requestedAmount: decimalAmount.toString(),
-        availableAmount: investment.currentValue.toString(),
-        timestamp: new Date().toISOString(),
-      });
-      await session.abortTransaction();
-      return apiResponse.badRequest(
-        res,
-        "Withdrawal amount exceeds investment value"
-      );
     }
 
     // Check withdrawal eligibility
@@ -1056,45 +1386,98 @@ exports.withdrawInvestment = async (req, res, next) => {
       );
     }
 
-    // Generate reference for transaction
-    const reference = `INV-WD-${Date.now()}-${Math.floor(
-      Math.random() * 1000
-    )}`;
-
-    // Process withdrawal
-    const withdrawalResult = await investment.withdraw(
-      decimalAmount,
-      reference
-    );
-
-    if (!withdrawalResult.success) {
-      logger.error("Withdrawal processing failed", {
+    // Validate withdrawal amount
+    if (
+      parseFloat(withdrawalAmount.toString()) >
+      parseFloat(investment.currentValue.toString())
+    ) {
+      logger.warn("Withdrawal amount exceeds investment value", {
         userId: req.user._id,
         requestId: req.id,
         investmentId: id,
-        error: withdrawalResult.message,
+        requestedAmount: withdrawalAmount.toString(),
+        availableAmount: investment.currentValue.toString(),
         timestamp: new Date().toISOString(),
       });
       await session.abortTransaction();
       return apiResponse.badRequest(
         res,
-        withdrawalResult.message || "Withdrawal processing failed"
+        "Withdrawal amount exceeds investment value"
       );
     }
 
-    logger.debug("Withdrawal processed by investment model", {
+    // Determine if this is a full withdrawal (liquidation) or partial withdrawal
+    const isFullWithdrawal =
+      Math.abs(
+        parseFloat(withdrawalAmount.toString()) -
+          parseFloat(investment.currentValue.toString())
+      ) < 0.00001; // Using small epsilon for floating point comparison
+
+    logger.debug("Withdrawal type determination", {
       userId: req.user._id,
       requestId: req.id,
       investmentId: id,
-      withdrawalResult,
+      withdrawalAmount: withdrawalAmount.toString(),
+      currentValue: investment.currentValue.toString(),
+      isFullWithdrawal,
       timestamp: new Date().toISOString(),
     });
 
-    // Convert currency if needed
-    let convertedAmount = decimalAmount;
+    // For partial withdrawals, check minimum investment requirement
+    if (!isFullWithdrawal) {
+      // Calculate remaining value after withdrawal
+      const remainingValue =
+        parseFloat(investment.currentValue.toString()) -
+        parseFloat(withdrawalAmount.toString());
+
+      // Ensure remaining value isn't less than the plan's minimum investment
+      if (remainingValue < investment.plan.minInvestment) {
+        logger.warn(
+          "Remaining investment would be below minimum investment amount",
+          {
+            userId: req.user._id,
+            requestId: req.id,
+            investmentId: id,
+            requestedWithdrawal: withdrawalAmount.toString(),
+            remainingValue: remainingValue.toFixed(8),
+            minimumRequired: investment.plan.minInvestment,
+            timestamp: new Date().toISOString(),
+          }
+        );
+        await session.abortTransaction();
+        return apiResponse.badRequest(
+          res,
+          `Remaining investment would be below the minimum required amount of ${investment.plan.minInvestment} ${investment.currency}. Please withdraw the full amount instead.`
+        );
+      }
+    }
+
+    // Calculate fee for early withdrawal
+    let fee = 0;
+    if (!maturityReached && investment.earlyWithdrawalFee > 0) {
+      fee =
+        parseFloat(withdrawalAmount.toString()) *
+        (investment.earlyWithdrawalFee / 100);
+      logger.debug("Early withdrawal fee applied", {
+        userId: req.user._id,
+        requestId: req.id,
+        investmentId: id,
+        withdrawalAmount: withdrawalAmount.toString(),
+        feePercentage: investment.earlyWithdrawalFee,
+        feeAmount: fee.toFixed(8),
+        timestamp: new Date().toISOString(),
+      });
+    }
+
+    // Actual amount after fee deduction
+    const actualWithdrawalAmount =
+      parseFloat(withdrawalAmount.toString()) - fee;
+
+    // Convert withdrawal amount to destination wallet currency if needed
+    let convertedAmount;
     if (investment.currency !== destinationWallet.currency) {
       convertedAmount = await convertCurrency(
-        decimalAmount,
+        mongoose.Types.Decimal128.fromString(actualWithdrawalAmount.toFixed(8)),
         investment.currency,
         destinationWallet.currency
       );
@@ -1104,14 +1487,111 @@ exports.withdrawInvestment = async (req, res, next) => {
         requestId: req.id,
         fromCurrency: investment.currency,
         toCurrency: destinationWallet.currency,
-        beforeConversion: decimalAmount.toString(),
+        beforeConversion: actualWithdrawalAmount.toFixed(8),
         afterConversion: convertedAmount.toString(),
+        timestamp: new Date().toISOString(),
+      });
+    } else {
+      convertedAmount = mongoose.Types.Decimal128.fromString(
+        actualWithdrawalAmount.toFixed(8)
+      );
+    }
+
+    // Generate reference for transaction
+    const reference = `INV-PWD-${Date.now()}-${Math.floor(
+      Math.random() * 1000
+    )}`;
+
+    // Record old values for logging
+    const oldInvestmentValue = investment.currentValue.toString();
+    const oldInvestmentAmount = investment.amount.toString();
+    const oldWalletBalance = destinationWallet.balance.toString();
+
+    // Calculate proportion of principal being withdrawn
+    const withdrawalProportion =
+      parseFloat(withdrawalAmount.toString()) /
+      parseFloat(investment.currentValue.toString());
+    const principalReduction =
+      parseFloat(investment.amount.toString()) * withdrawalProportion;
+
+    // Store the current value as previous value before making any changes
+    investment.previousValue = mongoose.Types.Decimal128.fromString(
+      investment.currentValue.toString()
+    );
+
+    // Update investment values
+    if (isFullWithdrawal) {
+      // For full withdrawal, change status to withdrawn
+      investment.status = "withdrawn";
+      investment.currentValue = mongoose.Types.Decimal128.fromString("0");
+      investment.amount = mongoose.Types.Decimal128.fromString("0");
+
+      logger.debug("Investment fully liquidated", {
+        userId: req.user._id,
+        requestId: req.id,
+        investmentId: id,
+        oldValue: oldInvestmentValue,
+        previousValue: investment.previousValue.toString(),
+        currentValue: "0",
+        status: "withdrawn",
+        timestamp: new Date().toISOString(),
+      });
+    } else {
+      // For partial withdrawal, calculate proportion and reduce accordingly
+      const remainingValue =
+        parseFloat(investment.currentValue.toString()) -
+        parseFloat(withdrawalAmount.toString());
+
+      investment.currentValue = mongoose.Types.Decimal128.fromString(
+        remainingValue.toFixed(8)
+      );
+      investment.amount = mongoose.Types.Decimal128.fromString(
+        (parseFloat(investment.amount.toString()) - principalReduction).toFixed(
+          8
+        )
+      );
+
+      logger.debug("Investment partially withdrawn", {
+        userId: req.user._id,
+        requestId: req.id,
+        investmentId: id,
+        oldValue: oldInvestmentValue,
+        previousValue: investment.previousValue.toString(),
+        newValue: investment.currentValue.toString(),
+        oldAmount: oldInvestmentAmount,
+        newAmount: investment.amount.toString(),
+        withdrawalProportion: withdrawalProportion.toFixed(4),
         timestamp: new Date().toISOString(),
       });
     }
 
-    // Credit the wallet
-    const oldWalletBalance = destinationWallet.balance.toString();
+    // Record withdrawal in history
+    if (!investment.withdrawalHistory) {
+      investment.withdrawalHistory = [];
+    }
+
+    investment.withdrawalHistory.push({
+      amount: parseFloat(withdrawalAmount.toString()),
+      date: now,
+      transactionReference: reference,
+      fee: fee,
+    });
+
+    await investment.save({ session });
+
+    logger.debug("Investment updated after partial withdrawal", {
+      userId: req.user._id,
+      requestId: req.id,
+      investmentId: id,
+      oldValue: oldInvestmentValue,
+      previousValue: investment.previousValue.toString(),
+      newValue: investment.currentValue.toString(),
+      oldAmount: oldInvestmentAmount,
+      newAmount: investment.amount.toString(),
+      timestamp: new Date().toISOString(),
+    });
+
+    // Update wallet balance
     destinationWallet.balance = mongoose.Types.Decimal128.fromString(
       (
         parseFloat(destinationWallet.balance.toString()) +
@@ -1119,84 +1599,159 @@ exports.withdrawInvestment = async (req, res, next) => {
       ).toFixed(8)
     );
 
-    logger.debug("Crediting wallet", {
+    logger.debug("Destination wallet balance updated", {
       userId: req.user._id,
       requestId: req.id,
       walletId: destinationWallet._id,
       oldBalance: oldWalletBalance,
-      creditAmount: convertedAmount.toString(),
+      deposited: convertedAmount.toString(),
       newBalance: destinationWallet.balance.toString(),
       timestamp: new Date().toISOString(),
     });
 
     await destinationWallet.save({ session });
 
-    // Create transaction record
-    const transaction = new InvestmentTransaction({
+    // Calculate conversion rate
+    const conversionRate =
+      investment.currency !== destinationWallet.currency
+        ? parseFloat(convertedAmount.toString()) / actualWithdrawalAmount
+        : 1;
+
+    // Create InvestmentTransaction (debit)
+    const investmentTransaction = new InvestmentTransaction({
       user: req.user._id,
-      type: "return",
-      amount: decimalAmount,
-      currency: destinationWallet.currency,
+      type: "debit",
+      amount: mongoose.Types.Decimal128.fromString(withdrawalAmount.toString()),
+      currency: investment.currency,
+      sourceAmount: mongoose.Types.Decimal128.fromString(
+        withdrawalAmount.toString()
+      ),
       source: investment._id,
-      sourceAmount: convertedAmount,
       sourceType: "UserInvestment",
       sourceCurrency: investment.currency,
       beneficiary: destinationWallet._id,
       beneficiaryType: "Wallet",
       beneficiaryCurrency: destinationWallet.currency,
-      description: `Investment withdrawal ${
-        maturityReached ? "at maturity" : "before maturity"
+      description: `${
+        isFullWithdrawal ? "Full liquidation" : "Partial withdrawal"
+      } from investment${!maturityReached ? " before maturity" : ""}${
+        fee > 0 ? ` (fee: ${fee.toFixed(8)} ${investment.currency})` : ""
       }`,
       status: "completed",
-      reference,
+      reference: `${reference}-DEBIT`,
     });
 
-    
+    await investmentTransaction.save({ session });
 
-    await transaction.save({ session });
+    // Create WalletTransaction (credit)
+    const walletTransaction = new WalletTransaction({
+      user: req.user._id,
+      type: "credit",
+      amount: convertedAmount,
+      currency: destinationWallet.currency,
+      source: investment._id,
+      sourceType: "UserInvestment",
+      sourceCurrency: investment.currency,
+      beneficiary: destinationWallet._id,
+      beneficiaryType: "Wallet",
+      beneficiaryCurrency: destinationWallet.currency,
+      conversionRate,
+      description: `${
+        isFullWithdrawal ? "Full liquidation" : "Partial withdrawal"
+      } from investment${!maturityReached ? " before maturity" : ""}${
+        fee > 0 ? ` (fee: ${fee.toFixed(8)} ${investment.currency})` : ""
+      }`,
+      status: "completed",
+      reference: `${reference}-CREDIT`,
+      ipAddress: req.ip,
+      userAgent: req.headers["user-agent"],
+      completedAt: new Date(),
+    });
+
+    await walletTransaction.save({ session });
 
     // Add transaction to investment
-    investment.transactions.push(transaction._id);
+    if (!investment.transactions) {
+      investment.transactions = [];
+    }
+    investment.transactions.push(investmentTransaction._id);
     await investment.save({ session });
+
+    // Add transaction to wallet
+    if (!destinationWallet.transactions) {
+      destinationWallet.transactions = [];
+    }
+    destinationWallet.transactions.push(walletTransaction._id);
+    destinationWallet.lastActivityAt = new Date();
+    await destinationWallet.save({ session });
 
     // Commit the transaction
     await session.commitTransaction();
     session.endSession();
 
-    logger.info("Investment withdrawal completed successfully", {
-      userId: req.user._id,
-      requestId: req.id,
-      investmentId: id,
-      transactionId: transaction._id,
-      amount: decimalAmount.toString(),
-      convertedAmount: convertedAmount.toString(),
-      fee: withdrawalResult.fee || 0,
-      reference,
-      timestamp: new Date().toISOString(),
-    });
+    logger.info(
+      `Investment ${
+        isFullWithdrawal ? "full liquidation" : "partial withdrawal"
+      } completed successfully`,
+      {
+        userId: req.user._id,
+        requestId: req.id,
+        investmentId: id,
+        investmentTransactionId: investmentTransaction._id,
+        walletTransactionId: walletTransaction._id,
+        withdrawalAmount: withdrawalAmount.toString(),
+        fee: fee.toFixed(8),
+        actualWithdrawalAmount: actualWithdrawalAmount.toFixed(8),
+        convertedAmount: convertedAmount.toString(),
+        previousValue: investment.previousValue.toString(),
+        remainingValue: investment.currentValue.toString(),
+        isFullWithdrawal,
+        newStatus: investment.status,
+        reference,
+        timestamp: new Date().toISOString(),
+      }
+    );
 
-    // Return success response
+    const populatedInvestment = await UserInvestment.findById(investment._id)
+      .populate("plan")
+      .populate("source")
+      .lean();
+
+    // Return success response with detailed information
     return apiResponse.success(
       res,
       200,
-      "Withdrawal Successful",
-      "Your investment withdrawal has been processed successfully",
+      isFullWithdrawal ? "Liquidation Successful!" : "Trade Successful!",
+      isFullWithdrawal
+        ? "Your investment has been liquidated successfully"
+        : "Your investment trade has been processed successfully",
       {
-        transaction,
-        withdrawalAmount: convertedAmount.toString(),
-        fee: withdrawalResult.fee || 0,
-        remainingValue: investment.currentValue.toString(),
         investment: {
           _id: investment._id,
           status: investment.status,
           currentValue: investment.currentValue,
-          maturityDate: investment.maturityDate,
+          previousValue: investment.previousValue,
+          amount: investment.amount,
+          isFullyLiquidated: isFullWithdrawal,
+          plan: populatedInvestment.plan,
+        },
+        withdrawal: {
+          requestedAmount: withdrawalAmount.toString(),
+          fee: fee.toFixed(8),
+          actualAmount: actualWithdrawalAmount.toFixed(8),
+          convertedAmount: convertedAmount.toString(),
+          currency: destinationWallet.currency,
+        },
+        transactions: {
+          investmentTransaction,
+          walletTransaction,
+          reference,
         },
       }
     );
   } catch (error) {
     // Abort transaction if error occurs
-    logger.error("Aborting investment withdrawal due to error", {
+    logger.error("Aborting investment partial withdrawal due to error", {
       userId: req.user?._id,
       requestId: req.id,
       investmentId: req.params?.id,
@@ -1208,7 +1763,7 @@ exports.withdrawInvestment = async (req, res, next) => {
     await session.abortTransaction();
     session.endSession();
 
-    logger.error("Investment withdrawal failed:", {
+    logger.error("Investment partial withdrawal failed:", {
       error: error.message,
       errorCode: error.code || error.statusCode,
       errorStack: error.stack,
@@ -1470,7 +2025,6 @@ exports.cancelInvestment = async (req, res, next) => {
       reference,
     });
 
-    
     await transaction.save({ session });
 
     // Add transaction to investment
@@ -1535,7 +2089,6 @@ exports.cancelInvestment = async (req, res, next) => {
   }
 };
 
-
 /**
  * @desc    Simulate growth on an investment (for testing purposes only)
  * @route   POST /api/investments/:id/simulate-growth
@@ -1547,59 +2100,62 @@ exports.simulateInvestmentGrowth = async (req, res, next) => {
       userId: req.user._id,
       requestId: req.id,
       investmentId: req.params.id,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
-    
+
     // This is a dev/admin endpoint
-    if (!req.user.isAdmin && process.env.NODE_ENV === 'production') {
+    if (!req.user.isAdmin && process.env.NODE_ENV === "production") {
       logger.warn("Unauthorized attempt to simulate investment growth", {
         userId: req.user._id,
         requestId: req.id,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       });
-      return apiResponse.unauthorized(res, "You do not have permission to perform this action");
+      return apiResponse.unauthorized(
+        res,
+        "You do not have permission to perform this action"
+      );
     }
-    
+
     const { id } = req.params;
-    const { 
-      growthPattern = 'random', // 'random', 'up', 'down', 'volatile'
+    const {
+      growthPattern = "random", // 'random', 'up', 'down', 'volatile'
       days = 7,
       baseGrowthRate = 0.005, // 0.5% daily average
       volatilityFactor = 0.5, // How much variation
       reset = true,
-      applyGrowth = true
+      applyGrowth = true,
     } = req.body;
-    
+
     // Find the investment
     const investment = await UserInvestment.findOne({
       _id: id,
       user: "67dcb8120a0ba43192d09cec",
     });
-    
+
     if (!investment) {
       logger.warn("Investment not found for growth simulation", {
         userId: req.user._id,
         requestId: req.id,
         investmentId: id,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       });
       return apiResponse.notFound(res, "Investment not found");
     }
-    
+
     // Initialize metadata object if it doesn't exist
     if (!investment.metadata) {
       investment.metadata = {};
     }
-    
+
     // Initialize or reset growth schedule
     if (!investment.metadata.growthSchedule || reset) {
       investment.metadata.growthSchedule = [];
       investment.metadata.nextGrowthIndex = 0;
     }
-    
+
     // Generate growth rates based on pattern
     const growthRates = [];
-    
+
     // Ensure we have some historical data for comparison if we're resetting
     if (reset) {
       // Add 5 days of baseline growth first to establish a reference point
@@ -1607,68 +2163,75 @@ exports.simulateInvestmentGrowth = async (req, res, next) => {
         growthRates.push(baseGrowthRate);
       }
     }
-    
+
     // Now add the pattern-specific growth rates
     for (let i = 0; i < days; i++) {
       let rate;
       const dayPosition = i / days; // Relative position in the simulation period (0 to 1)
-      
+
       switch (growthPattern) {
-        case 'up':
+        case "up":
           // Gradually increasing trend - starts at base rate and goes up
           rate = baseGrowthRate * (1 + dayPosition * 2);
           // Add some randomness
           rate += (Math.random() - 0.3) * volatilityFactor * baseGrowthRate;
           growthRates.push(Math.max(0, rate));
           break;
-        
-        case 'down':
+
+        case "down":
           // Gradually decreasing trend - starts at base rate and goes down
           rate = baseGrowthRate * (1 - dayPosition);
           // Add some randomness
           rate += (Math.random() - 0.7) * volatilityFactor * baseGrowthRate;
           growthRates.push(Math.max(0, rate));
           break;
-          
-        case 'volatile':
+
+        case "volatile":
           // Highly variable (both positive and negative)
-          rate = baseGrowthRate + ((Math.random() * 2 - 1) * volatilityFactor * baseGrowthRate * 3);
+          rate =
+            baseGrowthRate +
+            (Math.random() * 2 - 1) * volatilityFactor * baseGrowthRate * 3;
           growthRates.push(rate);
           break;
-          
-        case 'random':
+
+        case "random":
         default:
           // Random variations around base rate
-          rate = baseGrowthRate + ((Math.random() * 2 - 1) * volatilityFactor * baseGrowthRate);
+          rate =
+            baseGrowthRate +
+            (Math.random() * 2 - 1) * volatilityFactor * baseGrowthRate;
           growthRates.push(rate);
           break;
       }
     }
-    
+
     // Add new growth rates to the schedule
     investment.metadata.growthSchedule = [
       ...investment.metadata.growthSchedule,
-      ...growthRates
+      ...growthRates,
     ];
-    
+
     // Calculate new value based on growth rates
     let currentValue = parseFloat(investment.currentValue.toString());
     const initialValue = currentValue;
-    
+
     for (let i = 0; i < growthRates.length; i++) {
       const growthRate = growthRates[i];
       currentValue = currentValue * (1 + growthRate);
     }
-    
+
     // Update the investment with new value and next growth index
     if (applyGrowth) {
-      investment.currentValue = mongoose.Types.Decimal128.fromString(currentValue.toFixed(8));
+      investment.currentValue = mongoose.Types.Decimal128.fromString(
+        currentValue.toFixed(8)
+      );
       // Set nextGrowthIndex to one past the end to indicate all growth has been applied
-      investment.metadata.nextGrowthIndex = investment.metadata.growthSchedule.length;
+      investment.metadata.nextGrowthIndex =
+        investment.metadata.growthSchedule.length;
     }
-    
+
     await investment.save();
-    
+
     logger.info("Investment growth simulation completed", {
       userId: req.user._id,
       requestId: req.id,
@@ -1677,13 +2240,15 @@ exports.simulateInvestmentGrowth = async (req, res, next) => {
       daysSimulated: days,
       initialValue: initialValue.toFixed(8),
       newValue: currentValue.toFixed(8),
-      percentageGrowth: ((currentValue / initialValue - 1) * 100).toFixed(2) + '%',
-      growthRates: growthRates.slice(0, 3).map(r => (r * 100).toFixed(2) + '%') + '...',
+      percentageGrowth:
+        ((currentValue / initialValue - 1) * 100).toFixed(2) + "%",
+      growthRates:
+        growthRates.slice(0, 3).map((r) => (r * 100).toFixed(2) + "%") + "...",
       totalGrowthRates: growthRates.length,
       nextGrowthIndex: investment.metadata.nextGrowthIndex,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
-    
+
     // Return the simulated investment
     return apiResponse.success(
       res,
@@ -1697,11 +2262,12 @@ exports.simulateInvestmentGrowth = async (req, res, next) => {
           daysSimulated: days,
           initialValue: initialValue.toFixed(8),
           newValue: currentValue.toFixed(8),
-          percentageChange: ((currentValue / initialValue - 1) * 100).toFixed(2) + '%',
-          growthRates: growthRates.map(rate => (rate * 100).toFixed(4) + '%'),
+          percentageChange:
+            ((currentValue / initialValue - 1) * 100).toFixed(2) + "%",
+          growthRates: growthRates.map((rate) => (rate * 100).toFixed(4) + "%"),
           totalRates: investment.metadata.growthSchedule.length,
-          nextGrowthIndex: investment.metadata.nextGrowthIndex
-        }
+          nextGrowthIndex: investment.metadata.nextGrowthIndex,
+        },
       }
     );
   } catch (error) {
@@ -1711,13 +2277,11 @@ exports.simulateInvestmentGrowth = async (req, res, next) => {
       userId: req.user?._id,
       requestId: req.id,
       investmentId: req.params?.id,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
     next(error);
   }
 };
-
-
 
 /**
  * @desc    Execute a currency conversion

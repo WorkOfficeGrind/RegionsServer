@@ -479,6 +479,7 @@ exports.login = async (req, res) => {
           },
           {
             path: "transactions", // Populating transactions inside investments
+            options: { sort: { createdAt: -1 } },
             // select: "amount date status", // Adjust based on your schema
           },
         ],
@@ -824,6 +825,7 @@ exports.getMe = async (req, res) => {
           },
           {
             path: "transactions", // Populating transactions inside investments
+            options: { sort: { createdAt: -1 } },
             // select: "amount date status", // Adjust based on your schema
           },
         ],
