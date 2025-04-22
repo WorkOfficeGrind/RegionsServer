@@ -6,48 +6,7 @@ const { logger } = require("../config/logger");
  * @param {Object} schema - Joi schema to validate against
  * @param {string} property - Request property to validate ('body', 'query', 'params')
  */
-// const validate = (schema, property = "body") => {
-//   return (req, res, next) => {
 
-//     const dataToValidate = req[property];
-//     const { error, value } = schema.validate(dataToValidate, {
-//       abortEarly: false, // Return all errors, not just the first one
-//       stripUnknown: true, // Remove unknown properties
-//     });
-
-//     if (error) {
-//       const validationErrors = {};
-
-//       // Format validation errors
-//       error.details.forEach((detail) => {
-//         const path = detail.path.join(".");
-//         validationErrors[path] = detail.message;
-//       });
-
-//       logger.warn("Validation error", {
-//         errors: validationErrors,
-//         property,
-//         data: dataToValidate,
-//         requestId: req.id,
-//         userId: req.user ? req.user._id : "unauthenticated",
-//       });
-
-//       return res.status(400).json({
-//         status: "error",
-//         message: "Validation failed",
-//         errors: validationErrors,
-//       });
-//     }
-
-//     // Replace validated values
-//     req[property] = value;
-//     next();
-//   };
-// };
-
-// Common validations
-
-// In your validator.js file, modify the validate function
 const validate = (schema, property = "body") => {
   return (req, res, next) => {
     const dataToValidate = req[property];
@@ -163,25 +122,128 @@ const schemas = {
   },
 
   // User schemas
+  // user: {
+  //   update: Joi.object({
+  //     firstName: Joi.string().trim(),
+  //     lastName: Joi.string().trim(),
+  //     phone: commonValidations.phone,
+  //     address: Joi.object({
+  //       street: Joi.string().trim(),
+  //       city: Joi.string().trim(),
+  //       state: Joi.string().trim(),
+  //       zipCode: Joi.string().trim(),
+  //       country: Joi.string().trim(),
+  //     }),
+  //     picture: Joi.string().trim(),
+  //   }),
+
+  //   updatePassword: Joi.object({
+  //     currentPassword: Joi.string().required(),
+  //     newPassword: commonValidations.password.required(),
+  //     newPasswordConfirm: Joi.ref("newPassword"),
+  //   }),
+  // },
+
+  // User schemas - Updated with specific validation for each profile update type
   user: {
+    // Keep existing schema for general updates (non-sensitive fields)
     update: Joi.object({
-      firstName: Joi.string().trim(),
-      lastName: Joi.string().trim(),
-      phone: commonValidations.phone,
-      address: Joi.object({
-        street: Joi.string().trim(),
-        city: Joi.string().trim(),
-        state: Joi.string().trim(),
-        zipCode: Joi.string().trim(),
-        country: Joi.string().trim(),
-      }),
-      picture: Joi.string().trim(),
+      // Only include fields that don't require verification
+      preferences: Joi.object(),
+      settings: Joi.object(),
+      language: Joi.string().trim(),
+      timezone: Joi.string().trim(),
+      theme: Joi.string().trim(),
     }),
 
+    // Email update validation
+    updateEmail: Joi.object({
+      // email: commonValidations.email.required().messages({
+      //   "string.email": "Please provide a valid email address",
+      //   "any.required": "Email is required",
+      // }),
+      email: commonValidations.email.required(),
+    }),
+
+    // Name update validation
+    updateName: Joi.object({
+      firstName: Joi.string().trim().required().messages({
+        "string.empty": "First name cannot be empty",
+        "any.required": "First name is required",
+      }),
+      lastName: Joi.string().trim().required().messages({
+        "string.empty": "Last name cannot be empty",
+        "any.required": "Last name is required",
+      }),
+    }),
+
+    // Phone update validation
+    updatePhone: Joi.object({
+      phone: commonValidations.phone.required().messages({
+        "string.pattern.base": "Please provide a valid phone number",
+        "any.required": "Phone number is required",
+      }),
+    }),
+
+    // Address update validation
+    updateAddress: Joi.object({
+      address: Joi.alternatives()
+        .try(
+          // Handle JSON string format
+          Joi.string(),
+          // Handle object format
+          Joi.object({
+            street: Joi.string().trim().required().messages({
+              "string.empty": "Street address cannot be empty",
+              "any.required": "Street address is required",
+            }),
+            street2: Joi.string().trim().allow(""),
+            city: Joi.string().trim().required().messages({
+              "string.empty": "City cannot be empty",
+              "any.required": "City is required",
+            }),
+            state: Joi.string().trim().required().messages({
+              "string.empty": "State cannot be empty",
+              "any.required": "State is required",
+            }),
+            zipCode: Joi.string().trim().required().messages({
+              "string.empty": "Zip code cannot be empty",
+              "any.required": "Zip code is required",
+            }),
+            country: Joi.string().trim().default("US"),
+          })
+        )
+        .required()
+        .messages({
+          "any.required": "Address information is required",
+        }),
+    }),
+
+    // Keep existing schema for password updates
     updatePassword: Joi.object({
       currentPassword: Joi.string().required(),
       newPassword: commonValidations.password.required(),
       newPasswordConfirm: Joi.ref("newPassword"),
+    }),
+
+    // Schema for email verification
+    verifyEmailChange: Joi.object({
+      verificationCode: Joi.string().required().messages({
+        "string.empty": "Verification code cannot be empty",
+        "any.required": "Verification code is required",
+      }),
+      emailChangeId: commonValidations.objectId.required().messages({
+        "string.pattern.base": "Invalid email change ID format",
+        "any.required": "Email change ID is required",
+      }),
+    }),
+
+    // Schema for email verification resend
+    resendEmailVerification: Joi.object({
+      emailChangeId: commonValidations.objectId.required().messages({
+        "string.pattern.base": "Invalid email change ID format",
+        "any.required": "Email change ID is required",
+      }),
     }),
   },
 

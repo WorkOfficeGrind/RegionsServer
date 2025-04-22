@@ -6,6 +6,7 @@ const Wallet = require("../models/Wallet");
 const User = require("../models/User");
 const { logger } = require("../config/logger");
 const apiResponse = require("../utils/apiResponse");
+const notificationService = require("../services/notificationService");
 
 // Helper function to get entity model based on type
 const getEntityModel = (entityType) => {
@@ -154,9 +155,28 @@ exports.createBeneficiary = async (req, res) => {
       { session }
     );
 
+    // Create notification for the user
+    await notificationService.createNotification(
+      req.user._id,
+      "Beneficiary Added",
+      `${
+        beneficiaryData.name || "New beneficiary"
+      } has been added to your account.`,
+      "system",
+      { beneficiaryId: beneficiary[0]._id },
+      session
+    );
+
     // Commit transaction
     await session.commitTransaction();
     session.endSession();
+
+    logger.info("Beneficiary created successfully", {
+      userId: req.user._id,
+      beneficiaryId: beneficiary[0]._id,
+      entityType,
+      requestId: req.id,
+    });
 
     return apiResponse.created(
       res,
@@ -175,6 +195,7 @@ exports.createBeneficiary = async (req, res) => {
       userId: req.user?._id,
       error: error.message,
       stack: error.stack,
+      requestId: req.id,
     });
 
     // Handle specific validation errors
@@ -221,6 +242,7 @@ exports.getAllBeneficiaries = async (req, res) => {
       sort,
       limit = 20,
       page = 1,
+      search,
     } = req.query;
 
     // Build query
@@ -239,6 +261,14 @@ exports.getAllBeneficiaries = async (req, res) => {
       ...(selfEntity === "false" ? { isSelfEntity: false } : {}),
     };
 
+    // Add search functionality
+    if (search) {
+      query.$or = [
+        { name: { $regex: search, $options: "i" } },
+        { nickname: { $regex: search, $options: "i" } },
+      ];
+    }
+
     // Build sort options
     let sortOptions = {};
     if (sort) {
@@ -254,13 +284,14 @@ exports.getAllBeneficiaries = async (req, res) => {
     }
 
     // Calculate pagination
-    const skip = (page - 1) * limit;
+    const skip = (page - 1) * parseInt(limit);
+    const parsedLimit = parseInt(limit);
 
     // Execute query with pagination
     const beneficiaries = await Beneficiary.find(query)
       .sort(sortOptions)
       .skip(skip)
-      .limit(parseInt(limit));
+      .limit(parsedLimit);
 
     // Get total count for pagination
     const total = await Beneficiary.countDocuments(query);
@@ -268,9 +299,16 @@ exports.getAllBeneficiaries = async (req, res) => {
     const paginationMeta = apiResponse.paginationMeta(
       total,
       parseInt(page),
-      parseInt(limit),
-      Math.ceil(total / limit)
+      parsedLimit,
+      Math.ceil(total / parsedLimit)
     );
+
+    logger.info("Beneficiaries retrieved successfully", {
+      userId: req.user._id,
+      count: beneficiaries.length,
+      total,
+      requestId: req.id,
+    });
 
     return apiResponse.success(
       res,
@@ -285,6 +323,7 @@ exports.getAllBeneficiaries = async (req, res) => {
       userId: req.user?._id,
       error: error.message,
       stack: error.stack,
+      requestId: req.id,
     });
 
     return apiResponse.error(
@@ -303,8 +342,20 @@ exports.getAllBeneficiaries = async (req, res) => {
  */
 exports.getBeneficiary = async (req, res) => {
   try {
+    const beneficiaryId = req.params.id;
+
+    // Input validation
+    if (!beneficiaryId || !mongoose.Types.ObjectId.isValid(beneficiaryId)) {
+      return apiResponse.badRequest(
+        res,
+        "Invalid ID",
+        "The provided beneficiary ID is invalid",
+        "INVALID_ID"
+      );
+    }
+
     const beneficiary = await Beneficiary.findOne({
-      _id: req.params.id,
+      _id: beneficiaryId,
       user: req.user._id,
     });
 
@@ -344,10 +395,17 @@ exports.getBeneficiary = async (req, res) => {
           entityModel: beneficiary.entityModel,
           entityId: beneficiary.entityId,
           error: populateError.message,
+          requestId: req.id,
         });
         // Continue without populating
       }
     }
+
+    logger.info("Beneficiary retrieved successfully", {
+      userId: req.user._id,
+      beneficiaryId: beneficiary._id,
+      requestId: req.id,
+    });
 
     return apiResponse.success(
       res,
@@ -362,6 +420,7 @@ exports.getBeneficiary = async (req, res) => {
       beneficiaryId: req.params.id,
       error: error.message,
       stack: error.stack,
+      requestId: req.id,
     });
 
     return apiResponse.error(
@@ -382,12 +441,24 @@ exports.updateBeneficiary = async (req, res) => {
   let session = null;
 
   try {
+    const beneficiaryId = req.params.id;
+
+    // Input validation
+    if (!beneficiaryId || !mongoose.Types.ObjectId.isValid(beneficiaryId)) {
+      return apiResponse.badRequest(
+        res,
+        "Invalid ID",
+        "The provided beneficiary ID is invalid",
+        "INVALID_ID"
+      );
+    }
+
     session = await mongoose.startSession();
     session.startTransaction();
 
     // First, find the beneficiary to check ownership and current status
     const existingBeneficiary = await Beneficiary.findOne({
-      _id: req.params.id,
+      _id: beneficiaryId,
       user: req.user._id,
     }).session(session);
 
@@ -430,10 +501,22 @@ exports.updateBeneficiary = async (req, res) => {
         return obj;
       }, {});
 
+    // Check if there's anything to update
+    if (Object.keys(filteredData).length === 0) {
+      await session.abortTransaction();
+      session.endSession();
+      return apiResponse.badRequest(
+        res,
+        "No Changes",
+        "No valid fields to update were provided",
+        "NO_CHANGES"
+      );
+    }
+
     // Update beneficiary
     const beneficiary = await Beneficiary.findOneAndUpdate(
       {
-        _id: req.params.id,
+        _id: beneficiaryId,
         user: req.user._id,
       },
       filteredData,
@@ -444,9 +527,30 @@ exports.updateBeneficiary = async (req, res) => {
       }
     );
 
+    // Create notification for significant updates
+    if (filteredData.name || filteredData.nickname || filteredData.status) {
+      await notificationService.createNotification(
+        req.user._id,
+        "Beneficiary Updated",
+        `Your beneficiary ${
+          beneficiary.nickname || beneficiary.name
+        } has been updated.`,
+        "system",
+        { beneficiaryId: beneficiary._id },
+        session
+      );
+    }
+
     // Commit transaction
     await session.commitTransaction();
     session.endSession();
+
+    logger.info("Beneficiary updated successfully", {
+      userId: req.user._id,
+      beneficiaryId: beneficiary._id,
+      fields: Object.keys(filteredData),
+      requestId: req.id,
+    });
 
     return apiResponse.updated(
       res,
@@ -466,6 +570,7 @@ exports.updateBeneficiary = async (req, res) => {
       beneficiaryId: req.params.id,
       error: error.message,
       stack: error.stack,
+      requestId: req.id,
     });
 
     // Handle validation errors
@@ -504,17 +609,26 @@ exports.deleteBeneficiary = async (req, res) => {
   let session = null;
 
   try {
+    const beneficiaryId = req.params.id;
+
+    // Input validation
+    if (!beneficiaryId || !mongoose.Types.ObjectId.isValid(beneficiaryId)) {
+      return apiResponse.badRequest(
+        res,
+        "Invalid ID",
+        "The provided beneficiary ID is invalid",
+        "INVALID_ID"
+      );
+    }
+
     session = await mongoose.startSession();
     session.startTransaction();
 
-    // Find and delete beneficiary
-    const beneficiary = await Beneficiary.findOneAndDelete(
-      {
-        _id: req.params.id,
-        user: req.user._id,
-      },
-      { session }
-    );
+    // Find beneficiary first to store name for notification
+    const beneficiary = await Beneficiary.findOne({
+      _id: beneficiaryId,
+      user: req.user._id,
+    }).session(session);
 
     if (!beneficiary) {
       await session.abortTransaction();
@@ -527,6 +641,12 @@ exports.deleteBeneficiary = async (req, res) => {
       );
     }
 
+    // Store beneficiary name for notification
+    const beneficiaryName = beneficiary.nickname || beneficiary.name;
+
+    // Delete the beneficiary
+    await Beneficiary.findByIdAndDelete(beneficiary._id, { session });
+
     // Remove beneficiary ID from user's beneficiaries array
     await User.findByIdAndUpdate(
       req.user._id,
@@ -534,9 +654,26 @@ exports.deleteBeneficiary = async (req, res) => {
       { session }
     );
 
+    // Create notification for deletion
+    await notificationService.createNotification(
+      req.user._id,
+      "Beneficiary Removed",
+      `Beneficiary "${beneficiaryName}" has been removed from your account.`,
+      "system",
+      { beneficiaryType: beneficiary.entityType },
+      session
+    );
+
     // Commit transaction
     await session.commitTransaction();
     session.endSession();
+
+    logger.info("Beneficiary deleted successfully", {
+      userId: req.user._id,
+      beneficiaryId: beneficiary._id,
+      beneficiaryName,
+      requestId: req.id,
+    });
 
     return apiResponse.deleted(
       res,
@@ -555,6 +692,7 @@ exports.deleteBeneficiary = async (req, res) => {
       beneficiaryId: req.params.id,
       error: error.message,
       stack: error.stack,
+      requestId: req.id,
     });
 
     // Handle error response
@@ -576,12 +714,24 @@ exports.toggleFavorite = async (req, res) => {
   let session = null;
 
   try {
+    const beneficiaryId = req.params.id;
+
+    // Input validation
+    if (!beneficiaryId || !mongoose.Types.ObjectId.isValid(beneficiaryId)) {
+      return apiResponse.badRequest(
+        res,
+        "Invalid ID",
+        "The provided beneficiary ID is invalid",
+        "INVALID_ID"
+      );
+    }
+
     session = await mongoose.startSession();
     session.startTransaction();
 
     // Find the beneficiary
     const beneficiary = await Beneficiary.findOne({
-      _id: req.params.id,
+      _id: beneficiaryId,
       user: req.user._id,
     }).session(session);
 
@@ -599,9 +749,30 @@ exports.toggleFavorite = async (req, res) => {
     // Toggle favorite status
     const result = await beneficiary.toggleFavorite();
 
+    // If this operation involves adding to favorites, we might want to notify
+    if (result.isFavorite) {
+      await notificationService.createNotification(
+        req.user._id,
+        "Beneficiary Added to Favorites",
+        `${
+          beneficiary.nickname || beneficiary.name
+        } has been added to your favorites.`,
+        "system",
+        { beneficiaryId: beneficiary._id },
+        session
+      );
+    }
+
     // Commit transaction
     await session.commitTransaction();
     session.endSession();
+
+    logger.info("Beneficiary favorite status toggled", {
+      userId: req.user._id,
+      beneficiaryId: beneficiary._id,
+      isFavorite: result.isFavorite,
+      requestId: req.id,
+    });
 
     return apiResponse.updated(
       res,
@@ -626,6 +797,7 @@ exports.toggleFavorite = async (req, res) => {
       beneficiaryId: req.params.id,
       error: error.message,
       stack: error.stack,
+      requestId: req.id,
     });
 
     // Handle error response
@@ -647,6 +819,18 @@ exports.verifyBeneficiary = async (req, res) => {
   let session = null;
 
   try {
+    const beneficiaryId = req.params.id;
+
+    // Input validation
+    if (!beneficiaryId || !mongoose.Types.ObjectId.isValid(beneficiaryId)) {
+      return apiResponse.badRequest(
+        res,
+        "Invalid ID",
+        "The provided beneficiary ID is invalid",
+        "INVALID_ID"
+      );
+    }
+
     session = await mongoose.startSession();
     session.startTransaction();
 
@@ -654,7 +838,7 @@ exports.verifyBeneficiary = async (req, res) => {
 
     // Find the beneficiary
     const beneficiary = await Beneficiary.findOne({
-      _id: req.params.id,
+      _id: beneficiaryId,
       user: req.user._id,
     }).session(session);
 
@@ -699,9 +883,34 @@ exports.verifyBeneficiary = async (req, res) => {
     // Perform verification
     const result = await beneficiary.verify(method, req.user._id);
 
+    // Update status to active if it was pending
+    if (beneficiary.status === "pending") {
+      beneficiary.status = "active";
+      await beneficiary.save({ session });
+    }
+
+    // Create notification for verification
+    await notificationService.createNotification(
+      req.user._id,
+      "Beneficiary Verified",
+      `${
+        beneficiary.nickname || beneficiary.name
+      } has been verified and is now ready for use.`,
+      "system",
+      { beneficiaryId: beneficiary._id },
+      session
+    );
+
     // Commit transaction
     await session.commitTransaction();
     session.endSession();
+
+    logger.info("Beneficiary verified successfully", {
+      userId: req.user._id,
+      beneficiaryId: beneficiary._id,
+      method,
+      requestId: req.id,
+    });
 
     return apiResponse.updated(
       res,
@@ -721,6 +930,7 @@ exports.verifyBeneficiary = async (req, res) => {
       beneficiaryId: req.params.id,
       error: error.message,
       stack: error.stack,
+      requestId: req.id,
     });
 
     // Handle error response
@@ -747,6 +957,7 @@ exports.createFromEntity = async (req, res) => {
 
     const { entityType, entityId, nickname } = req.body;
 
+    // Input validation
     if (!entityType || !entityId) {
       await session.abortTransaction();
       session.endSession();
@@ -755,6 +966,17 @@ exports.createFromEntity = async (req, res) => {
         "Missing Parameters",
         "Entity type and ID are required",
         "MISSING_PARAMETERS"
+      );
+    }
+
+    if (!mongoose.Types.ObjectId.isValid(entityId)) {
+      await session.abortTransaction();
+      session.endSession();
+      return apiResponse.badRequest(
+        res,
+        "Invalid Entity ID",
+        "The provided entity ID is not valid",
+        "INVALID_ENTITY_ID"
       );
     }
 
@@ -817,6 +1039,7 @@ exports.createFromEntity = async (req, res) => {
       entityModel: EntityModel.modelName,
       entityOwner: entity.user,
       isSelfEntity: isSelfEntity,
+      status: isSelfEntity ? "active" : "pending", // Set status based on ownership
     };
 
     // For security reasons, set verification requirements for external entities
@@ -827,7 +1050,6 @@ exports.createFromEntity = async (req, res) => {
         verifiedAt: null,
         verifiedBy: null,
       };
-      beneficiaryData.status = "pending"; // Require verification for non-self entities
     }
 
     // Add type-specific details
@@ -869,9 +1091,34 @@ exports.createFromEntity = async (req, res) => {
       { session }
     );
 
+    // Create notification
+    await notificationService.createNotification(
+      req.user._id,
+      "Beneficiary Created",
+      `${
+        beneficiary[0].nickname || beneficiary[0].name
+      } has been added to your beneficiaries.`,
+      "system",
+      {
+        beneficiaryId: beneficiary[0]._id,
+        entityType: entityType,
+        requiresVerification: !isSelfEntity,
+      },
+      session
+    );
+
     // Commit transaction
     await session.commitTransaction();
     session.endSession();
+
+    logger.info("Beneficiary created from entity", {
+      userId: req.user._id,
+      beneficiaryId: beneficiary[0]._id,
+      entityType,
+      entityId,
+      isSelfEntity,
+      requestId: req.id,
+    });
 
     return apiResponse.created(
       res,
@@ -894,6 +1141,7 @@ exports.createFromEntity = async (req, res) => {
       entityData: req.body,
       error: error.message,
       stack: error.stack,
+      requestId: req.id,
     });
 
     // Handle specific validation errors
@@ -930,7 +1178,32 @@ exports.createFromEntity = async (req, res) => {
  */
 exports.getRecentBeneficiaries = async (req, res) => {
   try {
-    const { limit = 5, verified = "true" } = req.query;
+    const { limit = 5, verified = "true", days = 30 } = req.query;
+    const parsedLimit = parseInt(limit);
+    const parsedDays = parseInt(days);
+
+    // Validate params
+    if (isNaN(parsedLimit) || parsedLimit < 1 || parsedLimit > 50) {
+      return apiResponse.badRequest(
+        res,
+        "Invalid Parameter",
+        "Limit must be a number between 1 and 50",
+        "INVALID_LIMIT"
+      );
+    }
+
+    if (isNaN(parsedDays) || parsedDays < 1 || parsedDays > 365) {
+      return apiResponse.badRequest(
+        res,
+        "Invalid Parameter",
+        "Days must be a number between 1 and 365",
+        "INVALID_DAYS"
+      );
+    }
+
+    // Calculate date threshold (e.g., within last 30 days)
+    const dateThreshold = new Date();
+    dateThreshold.setDate(dateThreshold.getDate() - parsedDays);
 
     // Build match criteria
     const matchCriteria = {
@@ -954,8 +1227,21 @@ exports.getRecentBeneficiaries = async (req, res) => {
       {
         $lookup: {
           from: "transactions",
-          localField: "_id",
-          foreignField: "beneficiary",
+          let: { beneficiaryId: "$_id" },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $and: [
+                    { $eq: ["$beneficiary", "$$beneficiaryId"] },
+                    { $gte: ["$createdAt", dateThreshold] },
+                  ],
+                },
+              },
+            },
+            { $sort: { createdAt: -1 } },
+            { $limit: 5 }, // Limit to most recent transactions per beneficiary
+          ],
           as: "transactions",
         },
       },
@@ -969,38 +1255,67 @@ exports.getRecentBeneficiaries = async (req, res) => {
       {
         $addFields: {
           lastUsed: { $max: "$transactions.createdAt" },
+          transactionCount: { $size: "$transactions" },
         },
       },
       // Sort by most recent first
       {
         $sort: {
           lastUsed: -1,
+          transactionCount: -1,
+          isFavorite: -1,
         },
       },
       // Limit results
       {
-        $limit: parseInt(limit),
+        $limit: parsedLimit,
       },
-      // Remove the transactions array to keep response size down
+      // Shape the output to include relevant fields
       {
         $project: {
+          _id: 1,
+          name: 1,
+          nickname: 1,
+          entityType: 1,
+          isFavorite: 1,
+          status: 1,
+          lastUsed: 1,
+          transactionCount: 1,
+          accountDetails: 1,
+          walletDetails: 1,
+          cardDetails: 1,
+          "verification.isVerified": 1,
+          // Include only the most recent transaction date
+          lastTransaction: { $arrayElemAt: ["$transactions", 0] },
+          // Remove full transactions array
           transactions: 0,
         },
       },
     ]);
+
+    logger.info("Recent beneficiaries retrieved", {
+      userId: req.user._id,
+      count: recentBeneficiaries.length,
+      days: parsedDays,
+      requestId: req.id,
+    });
 
     return apiResponse.success(
       res,
       200,
       "Recent Beneficiaries Retrieved",
       `Found ${recentBeneficiaries.length} recently used beneficiaries`,
-      { beneficiaries: recentBeneficiaries }
+      {
+        beneficiaries: recentBeneficiaries,
+        timeFrame: `${parsedDays} days`,
+      }
     );
   } catch (error) {
     logger.error("Error retrieving recent beneficiaries", {
       userId: req.user?._id,
       error: error.message,
       stack: error.stack,
+      requestId: req.id,
     });
 
     return apiResponse.error(

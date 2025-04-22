@@ -103,11 +103,23 @@ const AccountSchema = new mongoose.Schema(
         type: Number,
         default: 2000,
       },
+      maxWithdrawalPerTransaction: {
+        type: Number,
+        default: 5000,
+      },
       dailyTransfer: {
         type: Number,
         default: 5000,
       },
+      maxTransferPerTransaction: {
+        type: Number,
+        default: 5000,
+      },
       monthlyTransfer: {
+        type: Number,
+        default: 20000,
+      },
+      monthlyWithdrawal: {
         type: Number,
         default: 20000,
       },

@@ -4,6 +4,7 @@ const transactionService = require("../services/transactionService");
 const { logger } = require("../config/logger");
 const apiResponse = require("../utils/apiResponse");
 const waitlistService = require("../services/waitlistService");
+const notificationService = require("../services/notificationService");
 
 /**
  * waitlist controller for handling wallet operations

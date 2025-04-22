@@ -54,7 +54,8 @@ const UserSchema = new mongoose.Schema(
       select: false, // This field will not be included in query results by default
     },
     address: {
-      street: String,
+      street1: String,
+      street2: String,
       city: String,
       state: String,
       zipCode: String,
@@ -141,6 +142,10 @@ const UserSchema = new mongoose.Schema(
       type: Number,
       default: 5,
     },
+    passwordAttemptLeft: {
+      type: Number,
+      default: 5,
+    },
     status: {
       type: String,
       enum: [
@@ -163,6 +168,13 @@ const UserSchema = new mongoose.Schema(
         lastUsed: Date,
       },
     ],
+    expoPushToken: { type: String },
+    notificationSettings: {
+      transactions: { type: Boolean, default: true },
+      market: { type: Boolean, default: true },
+      system: { type: Boolean, default: true },
+      // Add other notification categories as needed
+    },
   },
   {
     timestamps: true,

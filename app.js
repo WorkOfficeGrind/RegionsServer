@@ -11,13 +11,17 @@ require("./models/Transaction");
 require("./models/Cashapp");
 require("./models/InvestmentPlan");
 require("./models/InvestmentTransaction");
+require("./models/EmailChange");
+require("./models/NameChange");
+require("./models/PhoneChange");
+require("./models/AddressChange");
 require("./models/Paypal");
 require("./models/PreloadedWallet");
 require("./models/UserInvestment");
 require("./models/Venmo");
 require("./models/Waitlist");
-require("./models/Wallet");
 require("./models/Zelle");
+require("./models/Notification");
 
 const express = require("express");
 const morgan = require("morgan");
@@ -46,6 +50,7 @@ const investmentRoutes = require("./routes/investmentRoutes");
 const beneficiaryRoutes = require("./routes/beneficiaryRoutes");
 const walletBeneficiaryRoutes = require("./routes/walletBeneficiaryRoutes");
 const billRoutes = require("./routes/billRoutes");
+const notificationRoutes = require("./routes/notificationRoutes");
 
 // Initialize express application
 const app = express();
@@ -182,8 +187,9 @@ require("./config/passport");
 // API routes
 app.use("/api/v1/auth", authRoutes);
 app.use("/api/v1/users", userRoutes);
-// app.use("/api/v1/accounts", accountRoutes);
+app.use("/api/v1/accounts", accountRoutes);
 // app.use("/api/v1/cards", cardRoutes);
+app.use("/api/v1/notifications", notificationRoutes);
 app.use("/api/v1/wallets", walletRoutes);
 app.use("/api/v1/preloaded-wallets", preloadedWalletRoutes);
 app.use("/api/v1/transactions", transactionRoutes);

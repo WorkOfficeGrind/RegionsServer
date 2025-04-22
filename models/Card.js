@@ -136,17 +136,29 @@ const CardSchema = new mongoose.Schema(
       required: true,
     },
     limits: {
-      daily: {
+      dailyWithdrawal: {
         type: Number,
-        default: 1000,
+        default: 2000,
       },
-      monthly: {
+      maxWithdrawalPerTransaction: {
         type: Number,
-        default: 10000,
+        default: 2000,
       },
-      perTransaction: {
+      dailyTransfer: {
         type: Number,
-        default: 500,
+        default: 5000,
+      },
+      maxTransferPerTransaction: {
+        type: Number,
+        default: 5000,
+      },
+      monthlyTransfer: {
+        type: Number,
+        default: 20000,
+      },
+      monthlyWithdrawal: {
+        type: Number,
+        default: 20000,
       },
     },
     issueDate: {

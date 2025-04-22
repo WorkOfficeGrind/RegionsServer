@@ -54,16 +54,16 @@ const WalletSchema = new mongoose.Schema(
       default: false,
     },
     securitySettings: {
-      transferLimit: {
-        daily: {
-          type: Number,
-          default: 5000,
-        },
-        singleTransaction: {
-          type: Number,
-          default: 2000,
-        },
-      },
+      // transferLimit: {
+      //   daily: {
+      //     type: Number,
+      //     default: 5000,
+      //   },
+      //   singleTransaction: {
+      //     type: Number,
+      //     default: 2000,
+      //   },
+      // },
       requireConfirmation: {
         type: Boolean,
         default: true,
@@ -71,6 +71,44 @@ const WalletSchema = new mongoose.Schema(
       twoFactorEnabled: {
         type: Boolean,
         default: false,
+      },
+    },
+    limits: {
+      dailyWithdrawal: {
+        type: Number,
+        default: 2000,
+      },
+      maxWithdrawalPerTransaction: {
+        type: Number,
+        default: 2000,
+      },
+      dailyTransfer: {
+        type: Number,
+        default: 5000,
+      },
+      maxTransferPerTransaction: {
+        type: Number,
+        default: 5000,
+      },
+      dailySwap: {
+        type: Number,
+        default: 5000,
+      },
+      maxSwapPerTransaction: {
+        type: Number,
+        default: 5000,
+      },
+      monthlyTransfer: {
+        type: Number,
+        default: 20000,
+      },
+      monthlyWithdrawal: {
+        type: Number,
+        default: 20000,
+      },
+      monthlySwap: {
+        type: Number,
+        default: 20000,
       },
     },
     lastActivityAt: {

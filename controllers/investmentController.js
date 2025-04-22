@@ -7,13 +7,157 @@ const WalletTransaction = require("../models/WalletTransaction");
 const { logger } = require("../config/logger");
 const apiResponse = require("../utils/apiResponse");
 const { toUSDrates, fromUSDrates } = require("../utils/constants");
+const notificationService = require("../services/notificationService");
+
+/**
+ * @desc    Execute a currency conversion
+ * @param {mongoose.Types.Decimal128} amount - Amount to convert
+ * @param {string} fromCurrency - Source currency
+ * @param {string} toCurrency - Destination currency
+ * @returns {Promise<mongoose.Types.Decimal128>} - Converted amount
+ */
+const convertCurrency = async (amount, fromCurrency, toCurrency) => {
+  try {
+    // If currencies are the same, no conversion needed
+    if (fromCurrency === toCurrency) {
+      return amount;
+    }
+
+    // In a real-world scenario, you would call an external API or use a service
+    // like CoinGecko, CoinMarketCap, or a forex API to get real-time exchange rates
+
+    logger.debug(`Converting currency from ${fromCurrency} to ${toCurrency}`, {
+      amount: amount.toString(),
+      fromCurrency,
+      toCurrency,
+      timestamp: new Date().toISOString()
+    });
+
+    // Convert amount to USD first (as an intermediate currency)
+    const toUSD = await convertToUSD(amount, fromCurrency);
+
+    // If destination is USD, return the USD amount
+    if (toCurrency === "USD") {
+      return toUSD;
+    }
+
+    // Otherwise convert from USD to destination currency
+    return await convertFromUSD(toUSD, toCurrency);
+  } catch (error) {
+    logger.error("Error in currency conversion:", {
+      error: error.message,
+      stack: error.stack,
+      fromCurrency,
+      toCurrency,
+      amount: amount?.toString() || "undefined",
+      timestamp: new Date().toISOString()
+    });
+    throw error;
+  }
+};
+
+/**
+ * @desc    Convert given amount to USD
+ * @param {mongoose.Types.Decimal128} amount - Amount to convert
+ * @param {string} currency - Source currency
+ * @returns {Promise<mongoose.Types.Decimal128>} - Converted amount in USD
+ */
+const convertToUSD = async (amount, currency) => {
+  try {
+    if (currency === "USD") {
+      return amount;
+    }
+
+    // Check if we have a rate for this currency
+    if (!toUSDrates[currency]) {
+      logger.error(`Unsupported currency for conversion to USD: ${currency}`, {
+        amount: amount.toString(),
+        currency,
+        availableRates: Object.keys(toUSDrates),
+        timestamp: new Date().toISOString()
+      });
+      throw new Error(`Unsupported currency for conversion: ${currency}`);
+    }
+
+    // Convert to USD
+    const amountFloat = parseFloat(amount.toString());
+    const usdValue = amountFloat * toUSDrates[currency];
+
+    logger.debug(`Converted ${currency} to USD`, {
+      originalAmount: amount.toString(),
+      currency,
+      rate: toUSDrates[currency],
+      usdValue: usdValue.toFixed(8),
+      timestamp: new Date().toISOString()
+    });
+
+    return mongoose.Types.Decimal128.fromString(usdValue.toFixed(8));
+  } catch (error) {
+    logger.error("Error converting to USD:", {
+      error: error.message,
+      stack: error.stack,
+      amount: amount?.toString() || "undefined",
+      currency,
+      timestamp: new Date().toISOString()
+    });
+    throw error;
+  }
+};
+
+/**
+ * @desc    Convert USD amount to specified currency
+ * @param {mongoose.Types.Decimal128} usdAmount - Amount in USD
+ * @param {string} currency - Target currency
+ * @returns {Promise<mongoose.Types.Decimal128>} - Converted amount
+ */
+const convertFromUSD = async (usdAmount, currency) => {
+  try {
+    if (currency === "USD") {
+      return usdAmount;
+    }
+
+    // Check if we have a rate for this currency
+    if (!fromUSDrates[currency]) {
+      logger.error(`Unsupported currency for conversion from USD: ${currency}`, {
+        usdAmount: usdAmount.toString(),
+        currency,
+        availableRates: Object.keys(fromUSDrates),
+        timestamp: new Date().toISOString()
+      });
+      throw new Error(`Unsupported currency for conversion: ${currency}`);
+    }
+
+    // Convert from USD to target currency
+    const usdFloat = parseFloat(usdAmount.toString());
+    const convertedValue = usdFloat * fromUSDrates[currency];
+
+    logger.debug(`Converted USD to ${currency}`, {
+      usdAmount: usdAmount.toString(),
+      currency,
+      rate: fromUSDrates[currency],
+      convertedValue: convertedValue.toFixed(8),
+      timestamp: new Date().toISOString()
+    });
+
+    return mongoose.Types.Decimal128.fromString(convertedValue.toFixed(8));
+  } catch (error) {
+    logger.error("Error converting from USD:", {
+      error: error.message,
+      stack: error.stack,
+      usdAmount: usdAmount?.toString() || "undefined",
+      currency,
+      timestamp: new Date().toISOString()
+    });
+    throw error;
+  }
+};
 
 /**
  * @desc    Get all available investment plans
  * @route   GET /api/investments/plans
  * @access  Private
  */
-exports.getInvestmentPlans = async (req, res, next) => {
+exports.getInvestmentPlans = async (req, res) => {
   try {
     logger.info("Fetching investment plans", {
       userId: req.user._id,
@@ -48,16 +192,23 @@ exports.getInvestmentPlans = async (req, res, next) => {
       requestId: req.id,
       timestamp: new Date().toISOString(),
     });
-    next(error);
+    
+    return apiResponse.error(
+      res,
+      500,
+      "Plans Retrieval Failed",
+      "Error fetching investment plans",
+      "PLANS_FETCH_ERROR"
+    );
   }
-};
+}
 
 /**
  * @desc    Get a specific investment plan
  * @route   GET /api/investments/plans/:id
  * @access  Private
  */
-exports.getInvestmentPlan = async (req, res, next) => {
+exports.getInvestmentPlan = async (req, res) => {
   try {
     const { id } = req.params;
 
@@ -77,7 +228,12 @@ exports.getInvestmentPlan = async (req, res, next) => {
         planId: id,
         timestamp: new Date().toISOString(),
       });
-      return apiResponse.notFound(res, "No investment plan found with that ID");
+      return apiResponse.notFound(
+        res, 
+        "Plan Not Found", 
+        "No investment plan found with that ID",
+        "PLAN_NOT_FOUND"
+      );
     }
 
     logger.debug("Investment plan fetched successfully", {
@@ -103,16 +259,23 @@ exports.getInvestmentPlan = async (req, res, next) => {
       planId: req.params?.id,
       timestamp: new Date().toISOString(),
     });
-    next(error);
+    
+    return apiResponse.error(
+      res,
+      500,
+      "Plan Retrieval Failed",
+      "Error fetching investment plan",
+      "PLAN_FETCH_ERROR"
+    );
   }
-};
+}
 
 /**
  * @desc    Create a new investment
  * @route   POST /api/investments
  * @access  Private
  */
-exports.createInvestment = async (req, res, next) => {
+exports.createInvestment = async (req, res) => {
   // Start logging - capture initial request data
   logger.info("Investment creation request initiated", {
     userId: req.user._id,
@@ -142,6 +305,19 @@ exports.createInvestment = async (req, res, next) => {
       label,
     } = req.body;
 
+    // Validate required fields
+    if (!planId || !amount || !sourceWalletId) {
+      await session.abortTransaction();
+      session.endSession();
+      
+      return apiResponse.badRequest(
+        res,
+        "Bad Request",
+        "Missing required fields for creating investment",
+        "MISSING_INVESTMENT_FIELDS"
+      );
+    }
+
     // Convert amount to Decimal128 for precise calculations
     const decimalAmount = mongoose.Types.Decimal128.fromString(
       amount.toString()
@@ -158,7 +334,14 @@ exports.createInvestment = async (req, res, next) => {
         timestamp: new Date().toISOString(),
       });
       await session.abortTransaction();
-      return apiResponse.badRequest(res, "Invalid or inactive investment plan");
+      session.endSession();
+      
+      return apiResponse.badRequest(
+        res,
+        "Invalid Plan",
+        "Invalid or inactive investment plan",
+        "INVALID_INVESTMENT_PLAN"
+      );
     }
 
     // Find source wallet
@@ -175,7 +358,14 @@ exports.createInvestment = async (req, res, next) => {
         timestamp: new Date().toISOString(),
       });
       await session.abortTransaction();
-      return apiResponse.badRequest(res, "Source wallet not found");
+      session.endSession();
+      
+      return apiResponse.badRequest(
+        res,
+        "Wallet Not Found",
+        "Source wallet not found",
+        "SOURCE_WALLET_NOT_FOUND"
+      );
     }
 
     // Check if source wallet has sufficient balance
@@ -196,7 +386,14 @@ exports.createInvestment = async (req, res, next) => {
         timestamp: new Date().toISOString(),
       });
       await session.abortTransaction();
-      return apiResponse.badRequest(res, "Insufficient funds in source wallet");
+      session.endSession();
+      
+      return apiResponse.badRequest(
+        res,
+        "Insufficient Funds",
+        "Insufficient funds in source wallet",
+        "INSUFFICIENT_WALLET_FUNDS"
+      );
     }
 
     // Convert amount from source wallet currency to plan currency for minimum investment check
@@ -233,20 +430,16 @@ exports.createInvestment = async (req, res, next) => {
         timestamp: new Date().toISOString(),
       });
       await session.abortTransaction();
-      return apiResponse.serverError(res, "Error converting currency");
+      session.endSession();
+      
+      return apiResponse.error(
+        res,
+        500,
+        "Conversion Error",
+        "Error converting currency",
+        "CURRENCY_CONVERSION_ERROR"
+      );
     }
-
-    // Debug log to verify conversion
-    logger.debug("Comparing investment amount with minimum", {
-      userId: req.user._id,
-      requestId: req.id,
-      walletCurrency: sourceWallet.currency,
-      planCurrency: plan.currency,
-      originalAmount: decimalAmount.toString(),
-      convertedAmount: investmentAmountInPlanCurrency.toString(),
-      minimumRequired: plan.minInvestment,
-      timestamp: new Date().toISOString(),
-    });
 
     // Check minimum investment amount AFTER converting to plan currency (usually USD)
     if (
@@ -264,13 +457,16 @@ exports.createInvestment = async (req, res, next) => {
         timestamp: new Date().toISOString(),
       });
       await session.abortTransaction();
+      session.endSession();
+      
       return apiResponse.badRequest(
         res,
-        `Minimum investment amount is ${plan.minInvestment} ${plan.currency}`
+        "Below Minimum",
+        `Minimum investment amount is ${plan.minInvestment} ${plan.currency}`,
+        "BELOW_MINIMUM_INVESTMENT"
       );
     }
 
-    // Create the investment - here we preserve the original currency or convert if needed
     // We're already converted to plan currency above, so use that value
     let investmentAmount = investmentAmountInPlanCurrency;
 
@@ -297,9 +493,13 @@ exports.createInvestment = async (req, res, next) => {
         timestamp: new Date().toISOString(),
       });
       await session.abortTransaction();
+      session.endSession();
+      
       return apiResponse.badRequest(
         res,
-        "Could not calculate valid maturity date"
+        "Invalid Date",
+        "Could not calculate valid maturity date",
+        "INVALID_MATURITY_DATE"
       );
     }
 
@@ -403,6 +603,22 @@ exports.createInvestment = async (req, res, next) => {
     });
 
     await user.save({ session });
+    
+    // Create notification for the user
+    await notificationService.createNotification(
+      user._id,
+      "Investment Created Successfully",
+      `Your investment of ${parseFloat(investmentAmount.toString()).toFixed(2)} ${plan.currency} in ${plan.name} has been created successfully.`,
+      "investment",
+      { 
+        investmentId: userInvestment._id,
+        planName: plan.name,
+        amount: investmentAmount.toString(),
+        currency: plan.currency,
+        maturityDate: maturityDate
+      },
+      session
+    );
 
     // Commit the transaction
     await session.commitTransaction();
@@ -428,9 +644,8 @@ exports.createInvestment = async (req, res, next) => {
       .populate("transactions");
 
     // Return successful response
-    return apiResponse.success(
+    return apiResponse.created(
       res,
-      201,
       "Investment Created",
       "Your investment has been created successfully",
       {
@@ -462,16 +677,22 @@ exports.createInvestment = async (req, res, next) => {
       timestamp: new Date().toISOString(),
     });
 
-    next(error);
+    return apiResponse.error(
+      res,
+      500,
+      "Investment Creation Failed",
+      "Error creating investment",
+      "INVESTMENT_CREATION_ERROR"
+    );
   }
-};
+}
 
 /**
  * @desc    Get user's investments
  * @route   GET /api/investments
  * @access  Private
  */
-exports.getUserInvestments = async (req, res, next) => {
+exports.getUserInvestments = async (req, res) => {
   try {
     const { status, sortBy = "-investedAt" } = req.query;
 
@@ -530,114 +751,23 @@ exports.getUserInvestments = async (req, res, next) => {
       requestId: req.id,
       timestamp: new Date().toISOString(),
     });
-    next(error);
-  }
-};
-
-/**
- * @desc    Get a specific investment details
- * @route   GET /api/investments/:id
- * @access  Private
- */
-exports.getInvestmentDetails = async (req, res, next) => {
-  try {
-    const { id } = req.params;
-
-    logger.info("Fetching investment details", {
-      userId: req.user._id,
-      requestId: req.id,
-      investmentId: id,
-      timestamp: new Date().toISOString(),
-    });
-
-    // Find investment with populated data
-    const investment = await UserInvestment.findOne({
-      _id: id,
-      user: req.user._id,
-    })
-      .populate("plan")
-      .populate("source")
-      .populate({
-        path: "transactions",
-        options: { sort: { createdAt: -1 } },
-      })
-      .exec();
-
-    if (!investment) {
-      logger.warn("Investment not found", {
-        userId: req.user._id,
-        requestId: req.id,
-        investmentId: id,
-        timestamp: new Date().toISOString(),
-      });
-      return apiResponse.notFound(res, "Investment not found");
-    }
-
-    // Calculate current value before returning
-    // For active investments, we should recalculate interest
-    if (investment.status === "active") {
-      try {
-        const result = await investment.calculateInterest();
-
-        logger.debug("Interest calculation for investment", {
-          userId: req.user._id,
-          requestId: req.id,
-          investmentId: id,
-          calculationResult: result,
-          timestamp: new Date().toISOString(),
-        });
-      } catch (error) {
-        logger.error("Error calculating investment interest:", {
-          error: error.message,
-          stack: error.stack,
-          userId: req.user._id,
-          requestId: req.id,
-          investmentId: id,
-          timestamp: new Date().toISOString(),
-        });
-        // Continue without failing the request
-      }
-    }
-
-    if (!investment.previousValue && investment.previousValue !== 0) {
-      investment.previousValue = investment.currentValue;
-      await investment.save();
-    }
-
-    logger.debug("Investment details fetched", {
-      userId: req.user._id,
-      requestId: req.id,
-      investmentId: id,
-      timestamp: new Date().toISOString(),
-    });
-
-    // Return investment details
-    return apiResponse.success(
+    
+    return apiResponse.error(
       res,
-      200,
-      "Investment Details Retrieved",
-      "Investment details have been retrieved successfully",
-      { investment }
+      500,
+      "Investments Retrieval Failed",
+      "Error fetching your investments",
+      "INVESTMENTS_FETCH_ERROR"
     );
-  } catch (error) {
-    logger.error("Error fetching investment details:", {
-      error: error.message,
-      stack: error.stack,
-      userId: req.user?._id,
-      requestId: req.id,
-      investmentId: req.params?.id,
-      timestamp: new Date().toISOString(),
-    });
-    next(error);
   }
-};
+}
 
 /**
  * @desc    Get investment performance metrics
  * @route   GET /api/investments/performance
  * @access  Private
  */
-exports.getInvestmentPerformance = async (req, res, next) => {
+exports.getInvestmentPerformance = async (req, res) => {
   try {
     logger.info("Fetching investment performance metrics", {
       userId: req.user._id,
@@ -805,16 +935,23 @@ exports.getInvestmentPerformance = async (req, res, next) => {
       requestId: req.id,
       timestamp: new Date().toISOString(),
     });
-    next(error);
+    
+    return apiResponse.error(
+      res,
+      500,
+      "Performance Retrieval Failed",
+      "Error fetching investment performance metrics",
+      "PERFORMANCE_METRICS_ERROR"
+    );
   }
-};
+}
 
 /**
  * @desc    Process investment growth (simulated daily growth)
  * @route   POST /api/investments/process-growth
  * @access  Private/Admin
  */
-exports.processInvestmentGrowth = async (req, res, next) => {
+exports.processInvestmentGrowth = async (req, res) => {
   try {
     logger.info("Processing investment growth", {
       userId: req.user._id,
@@ -832,83 +969,122 @@ exports.processInvestmentGrowth = async (req, res, next) => {
       });
       return apiResponse.unauthorized(
         res,
-        "You do not have permission to perform this action"
+        "Unauthorized",
+        "You do not have permission to perform this action",
+        "ADMIN_PERMISSION_REQUIRED"
       );
     }
 
-    // Get all active investments
-    const activeInvestments = await UserInvestment.find({
-      status: "active",
-    }).populate("plan");
+    // Start a transaction for batch processing
+    const session = await mongoose.startSession();
+    session.startTransaction();
 
-    logger.debug("Found active investments for growth processing", {
-      count: activeInvestments.length,
-      requestId: req.id,
-      timestamp: new Date().toISOString(),
-    });
+    try {
+      // Get all active investments
+      const activeInvestments = await UserInvestment.find({
+        status: "active",
+      }).populate("plan").session(session);
 
-    // Process each investment
-    const results = await Promise.all(
-      activeInvestments.map(async (investment) => {
-        try {
-          const result = await investment.calculateInterest();
-          return {
-            investmentId: investment._id,
-            userId: investment.user,
-            success: result.success,
-            message: result.message,
-            interestEarned: result.interestEarned?.toString() || "0",
-            currentValue:
-              result.currentValue?.toString() ||
-              investment.currentValue.toString(),
-          };
-        } catch (error) {
-          logger.error("Error processing growth for investment:", {
-            error: error.message,
-            stack: error.stack,
-            investmentId: investment._id,
-            userId: investment.user,
-            requestId: req.id,
-            timestamp: new Date().toISOString(),
-          });
-          return {
-            investmentId: investment._id,
-            userId: investment.user,
-            success: false,
-            message: error.message,
-            error: true,
-          };
+      logger.debug("Found active investments for growth processing", {
+        count: activeInvestments.length,
+        requestId: req.id,
+        timestamp: new Date().toISOString(),
+      });
+
+      // Process each investment
+      const results = await Promise.all(
+        activeInvestments.map(async (investment) => {
+          try {
+            const result = await investment.calculateInterest();
+            
+            // Create notification for significant growth (e.g., > 2%)
+            if (result.success && result.interestEarned) {
+              const interestPercent = (parseFloat(result.interestEarned.toString()) / 
+                                       parseFloat(investment.currentValue.toString() || "1")) * 100;
+              
+              if (interestPercent >= 2) {
+                await notificationService.createNotification(
+                  investment.user,
+                  "Significant Investment Growth",
+                  `Your investment in ${investment.plan.name} has grown by ${interestPercent.toFixed(2)}% today.`,
+                  "investment",
+                  {
+                    investmentId: investment._id,
+                    planName: investment.plan.name,
+                    growthAmount: result.interestEarned.toString(),
+                    growthPercent: interestPercent.toFixed(2),
+                    currentValue: result.currentValue.toString()
+                  },
+                  session
+                );
+              }
+            }
+            
+            return {
+              investmentId: investment._id,
+              userId: investment.user,
+              success: result.success,
+              message: result.message,
+              interestEarned: result.interestEarned?.toString() || "0",
+              currentValue:
+                result.currentValue?.toString() ||
+                investment.currentValue.toString(),
+            };
+          } catch (error) {
+            logger.error("Error processing growth for investment:", {
+              error: error.message,
+              stack: error.stack,
+              investmentId: investment._id,
+              userId: investment.user,
+              requestId: req.id,
+              timestamp: new Date().toISOString(),
+            });
+            return {
+              investmentId: investment._id,
+              userId: investment.user,
+              success: false,
+              message: error.message,
+              error: true,
+            };
+          }
+        })
+      );
+
+      // Summarize results
+      const successful = results.filter((r) => r.success).length;
+      const failed = results.filter((r) => !r.success).length;
+
+      await session.commitTransaction();
+      session.endSession();
+
+      logger.info("Investment growth processing completed", {
+        totalProcessed: results.length,
+        successful,
+        failed,
+        requestId: req.id,
+        timestamp: new Date().toISOString(),
+      });
+
+      // Return results
+      return apiResponse.success(
+        res,
+        200,
+        "Investment Growth Processed",
+        `Processed ${results.length} investments: ${successful} successful, ${failed} failed`,
+        {
+          summary: {
+            totalProcessed: results.length,
+            successful,
+            failed,
+          },
+          results,
         }
-      })
-    );
-
-    // Summarize results
-    const successful = results.filter((r) => r.success).length;
-    const failed = results.filter((r) => !r.success).length;
-
-    logger.info("Investment growth processing completed", {
-      totalProcessed: results.length,
-      successful,
-      failed,
-      requestId: req.id,
-      timestamp: new Date().toISOString(),
-    });
-
-    // Return results
-    return apiResponse.success(
-      res,
-      200,
-      "Investment Growth Processed",
-      `Processed ${results.length} investments: ${successful} successful, ${failed} failed`,
-      {
-        summary: {
-          totalProcessed: results.length,
-          successful,
-          failed,
-        },
-        results,
-      }
-    );
+      );
+    } catch (error) {
+      await session.abortTransaction();
+      session.endSession();
+      throw error;
+    }
   } catch (error) {
     logger.error("Error in investment growth processing:", {
       error: error.message,
@@ -916,16 +1092,23 @@ exports.processInvestmentGrowth = async (req, res, next) => {
       requestId: req.id,
       timestamp: new Date().toISOString(),
     });
-    next(error);
+    
+    return apiResponse.error(
+      res,
+      500,
+      "Growth Processing Failed",
+      "Error processing investment growth",
+      "GROWTH_PROCESSING_ERROR"
+    );
   }
-};
+}
 
 /**
  * @desc    Add liquidity to an existing investment
  * @route   POST /api/investments/:id/add-liquidity
  * @access  Private
  */
-exports.addLiquidityToInvestment = async (req, res, next) => {
+exports.addLiquidityToInvestment = async (req, res) => {
   // Start logging - capture initial request data
   logger.info("Add liquidity to investment request initiated", {
     userId: req.user._id,
@@ -947,6 +1130,19 @@ exports.addLiquidityToInvestment = async (req, res, next) => {
   try {
     const { id } = req.params;
     const { amount, sourceWalletId } = req.body;
+    
+    // Validate required fields
+    if (!amount || !sourceWalletId) {
+      await session.abortTransaction();
+      session.endSession();
+      
+      return apiResponse.badRequest(
+        res,
+        "Bad Request",
+        "Amount and source wallet ID are required",
+        "MISSING_REQUIRED_FIELDS"
+      );
+    }
 
     // Convert amount to Decimal128 for precise calculations
     const decimalAmount = mongoose.Types.Decimal128.fromString(
@@ -970,7 +1166,14 @@ exports.addLiquidityToInvestment = async (req, res, next) => {
         timestamp: new Date().toISOString(),
       });
       await session.abortTransaction();
-      return apiResponse.notFound(res, "Active investment not found");
+      session.endSession();
+      
+      return apiResponse.notFound(
+        res,
+        "Not Found",
+        "Active investment not found",
+        "INVESTMENT_NOT_FOUND"
+      );
     }
 
     // Find source wallet
@@ -987,7 +1190,14 @@ exports.addLiquidityToInvestment = async (req, res, next) => {
         timestamp: new Date().toISOString(),
       });
       await session.abortTransaction();
-      return apiResponse.badRequest(res, "Source wallet not found");
+      session.endSession();
+      
+      return apiResponse.badRequest(
+        res,
+        "Bad Request",
+        "Source wallet not found",
+        "SOURCE_WALLET_NOT_FOUND"
+      );
     }
 
     // Check if source wallet has sufficient balance
@@ -1008,7 +1218,14 @@ exports.addLiquidityToInvestment = async (req, res, next) => {
         timestamp: new Date().toISOString(),
       });
       await session.abortTransaction();
-      return apiResponse.badRequest(res, "Insufficient funds in source wallet");
+      session.endSession();
+      
+      return apiResponse.badRequest(
+        res,
+        "Insufficient Funds",
+        "Insufficient funds in source wallet",
+        "INSUFFICIENT_WALLET_FUNDS"
+      );
     }
 
     // Convert amount from source wallet currency to investment currency if needed
@@ -1044,7 +1261,15 @@ exports.addLiquidityToInvestment = async (req, res, next) => {
         timestamp: new Date().toISOString(),
       });
       await session.abortTransaction();
-      return apiResponse.serverError(res, "Error converting currency");
+      session.endSession();
+      
+      return apiResponse.error(
+        res,
+        500,
+        "Conversion Error",
+        "Error converting currency",
+        "CURRENCY_CONVERSION_ERROR"
+      );
     }
 
     // Calculate current value before adding liquidity
@@ -1068,9 +1293,14 @@ exports.addLiquidityToInvestment = async (req, res, next) => {
           timestamp: new Date().toISOString(),
         });
         await session.abortTransaction();
-        return apiResponse.serverError(
+        session.endSession();
+        
+        return apiResponse.error(
           res,
-          "Error calculating current investment value"
+          500,
+          "Calculation Error",
+          "Error calculating current investment value",
+          "INTEREST_CALCULATION_ERROR"
         );
       }
     }
@@ -1095,7 +1325,6 @@ exports.addLiquidityToInvestment = async (req, res, next) => {
       !investment.previousValue ||
       parseFloat(investment.previousValue.toString()) === 0
     ) {
-      // investment.previousValue = oldCurrentValue;
       investment.previousValue = investment.currentValue;
     }
 
@@ -1183,6 +1412,23 @@ exports.addLiquidityToInvestment = async (req, res, next) => {
     sourceWallet.transactions.push(walletTransaction._id);
     sourceWallet.lastActivityAt = new Date();
     await sourceWallet.save({ session });
+    
+    // Create notification for the user
+    await notificationService.createNotification(
+      req.user._id,
+      "Liquidity Added to Investment",
+      `Additional liquidity of ${parseFloat(additionalAmountInInvestmentCurrency.toString()).toFixed(2)} ${investment.currency} has been added to your investment in ${investment.plan.name}.`,
+      "investment",
+      {
+        investmentId: investment._id,
+        planName: investment.plan.name,
+        addedAmount: additionalAmountInInvestmentCurrency.toString(),
+        currency: investment.currency,
+        newTotalAmount: investment.amount.toString(),
+        transactionReference: reference
+      },
+      session
+    );
 
     // Commit the transaction
     await session.commitTransaction();
@@ -1249,9 +1495,301 @@ exports.addLiquidityToInvestment = async (req, res, next) => {
       timestamp: new Date().toISOString(),
     });
 
-    next(error);
+    return apiResponse.error(
+      res,
+      500,
+      "Liquidity Addition Failed",
+      "Error adding liquidity to investment",
+      "LIQUIDITY_ADDITION_ERROR"
+    );
   }
-};
+}
+
+/**
+ * @desc    Simulate growth on an investment (for testing purposes only)
+ * @route   POST /api/investments/:id/simulate-growth
+ * @access  Private/Admin
+ */
+exports.simulateInvestmentGrowth = async (req, res) => {
+  try {
+    logger.info("Simulating investment growth", {
+      userId: req.user._id,
+      requestId: req.id,
+      investmentId: req.params.id,
+      timestamp: new Date().toISOString(),
+    });
+
+    // This is a dev/admin endpoint
+    if (!req.user.isAdmin && process.env.NODE_ENV === "production") {
+      logger.warn("Unauthorized attempt to simulate investment growth", {
+        userId: req.user._id,
+        requestId: req.id,
+        timestamp: new Date().toISOString(),
+      });
+      return apiResponse.unauthorized(
+        res,
+        "Unauthorized",
+        "You do not have permission to perform this action",
+        "ADMIN_PERMISSION_REQUIRED"
+      );
+    }
+
+    const { id } = req.params;
+    const {
+      growthPattern = "random", // 'random', 'up', 'down', 'volatile'
+      days = 7,
+      baseGrowthRate = 0.005, // 0.5% daily average
+      volatilityFactor = 0.5, // How much variation
+      reset = true,
+      applyGrowth = true,
+    } = req.body;
+
+    // Start a transaction for the operation
+    const session = await mongoose.startSession();
+    session.startTransaction();
+
+    try {
+      // Find the investment
+      const investment = await UserInvestment.findOne({
+        _id: id,
+        user: req.user._id,
+      }).session(session);
+
+      if (!investment) {
+        logger.warn("Investment not found for growth simulation", {
+          userId: req.user._id,
+          requestId: req.id,
+          investmentId: id,
+          timestamp: new Date().toISOString(),
+        });
+        await session.abortTransaction();
+        session.endSession();
+        
+        return apiResponse.notFound(
+          res,
+          "Not Found",
+          "Investment not found",
+          "INVESTMENT_NOT_FOUND"
+        );
+      }
+
+      // Validate input parameters
+      if (days <= 0 || days > 365) {
+        logger.warn("Invalid number of days for growth simulation", {
+          userId: req.user._id,
+          requestId: req.id,
+          investmentId: id,
+          days,
+          timestamp: new Date().toISOString(),
+        });
+        await session.abortTransaction();
+        session.endSession();
+        
+        return apiResponse.badRequest(
+          res,
+          "Invalid Parameter",
+          "Number of days must be between 1 and 365",
+          "INVALID_DAYS_PARAMETER"
+        );
+      }
+
+      if (baseGrowthRate < -0.1 || baseGrowthRate > 0.1) {
+        logger.warn("Invalid growth rate for simulation", {
+          userId: req.user._id,
+          requestId: req.id,
+          investmentId: id,
+          baseGrowthRate,
+          timestamp: new Date().toISOString(),
+        });
+        await session.abortTransaction();
+        session.endSession();
+        
+        return apiResponse.badRequest(
+          res,
+          "Invalid Parameter",
+          "Base growth rate must be between -10% and 10% per day",
+          "INVALID_GROWTH_RATE"
+        );
+      }
+
+      // Initialize metadata object if it doesn't exist
+      if (!investment.metadata) {
+        investment.metadata = {};
+      }
+
+      // Initialize or reset growth schedule
+      if (!investment.metadata.growthSchedule || reset) {
+        investment.metadata.growthSchedule = [];
+        investment.metadata.nextGrowthIndex = 0;
+      }
+
+      // Generate growth rates based on pattern
+      const growthRates = [];
+
+      // Ensure we have some historical data for comparison if we're resetting
+      if (reset) {
+        // Add 5 days of baseline growth first to establish a reference point
+        for (let i = 0; i < 5; i++) {
+          growthRates.push(baseGrowthRate);
+        }
+      }
+
+      // Now add the pattern-specific growth rates
+      for (let i = 0; i < days; i++) {
+        let rate;
+        const dayPosition = i / days; // Relative position in the simulation period (0 to 1)
+
+        switch (growthPattern) {
+          case "up":
+            // Gradually increasing trend - starts at base rate and goes up
+            rate = baseGrowthRate * (1 + dayPosition * 2);
+            // Add some randomness
+            rate += (Math.random() - 0.3) * volatilityFactor * baseGrowthRate;
+            growthRates.push(Math.max(0, rate));
+            break;
+
+          case "down":
+            // Gradually decreasing trend - starts at base rate and goes down
+            rate = baseGrowthRate * (1 - dayPosition);
+            // Add some randomness
+            rate += (Math.random() - 0.7) * volatilityFactor * baseGrowthRate;
+            growthRates.push(Math.max(0, rate));
+            break;
+
+          case "volatile":
+            // Highly variable (both positive and negative)
+            rate =
+              baseGrowthRate +
+              (Math.random() * 2 - 1) * volatilityFactor * baseGrowthRate * 3;
+            growthRates.push(rate);
+            break;
+
+          case "random":
+          default:
+            // Random variations around base rate
+            rate =
+              baseGrowthRate +
+              (Math.random() * 2 - 1) * volatilityFactor * baseGrowthRate;
+            growthRates.push(rate);
+            break;
+        }
+      }
+
+      // Add new growth rates to the schedule
+      investment.metadata.growthSchedule = [
+        ...investment.metadata.growthSchedule,
+        ...growthRates,
+      ];
+
+      // Calculate new value based on growth rates
+      let currentValue = parseFloat(investment.currentValue.toString());
+      const initialValue = currentValue;
+
+      for (let i = 0; i < growthRates.length; i++) {
+        const growthRate = growthRates[i];
+        currentValue = currentValue * (1 + growthRate);
+      }
+
+      // Store previous value before updating current value
+      investment.previousValue = investment.currentValue;
+
+      // Update the investment with new value and next growth index
+      if (applyGrowth) {
+        investment.currentValue = mongoose.Types.Decimal128.fromString(
+          currentValue.toFixed(8)
+        );
+        // Set nextGrowthIndex to one past the end to indicate all growth has been applied
+        investment.metadata.nextGrowthIndex =
+          investment.metadata.growthSchedule.length;
+      }
+
+      await investment.save({ session });
+      
+      // If there's significant growth, create a notification
+      if (applyGrowth && currentValue > initialValue * 1.05) { // More than 5% growth
+        const growthPercent = ((currentValue / initialValue - 1) * 100).toFixed(2);
+        await notificationService.createNotification(
+          req.user._id,
+          "Significant Investment Growth Simulated",
+          `Your investment has simulated a growth of ${growthPercent}% (for testing purposes).`,
+          "investment",
+          {
+            investmentId: investment._id,
+            initialValue: initialValue.toFixed(8),
+            currentValue: currentValue.toFixed(8),
+            growthPercent: growthPercent,
+            growthPattern,
+            simulationDays: days
+          },
+          session
+        );
+      }
+
+      await session.commitTransaction();
+      session.endSession();
+
+      logger.info("Investment growth simulation completed", {
+        userId: req.user._id,
+        requestId: req.id,
+        investmentId: id,
+        growthPattern,
+        daysSimulated: days,
+        initialValue: initialValue.toFixed(8),
+        newValue: currentValue.toFixed(8),
+        percentageGrowth:
+          ((currentValue / initialValue - 1) * 100).toFixed(2) + "%",
+        growthRates:
+          growthRates.slice(0, 3).map((r) => (r * 100).toFixed(2) + "%") + "...",
+        totalGrowthRates: growthRates.length,
+        nextGrowthIndex: investment.metadata.nextGrowthIndex,
+        timestamp: new Date().toISOString(),
+      });
+
+      // Return the simulated investment
+      return apiResponse.success(
+        res,
+        200,
+        "Investment Growth Simulated",
+        "Growth has been simulated on the investment",
+        {
+          investment,
+          simulationDetails: {
+            growthPattern,
+            daysSimulated: days,
+            initialValue: initialValue.toFixed(8),
+            newValue: currentValue.toFixed(8),
+            percentageChange:
+              ((currentValue / initialValue - 1) * 100).toFixed(2) + "%",
+            growthRates: growthRates.map((rate) => (rate * 100).toFixed(4) + "%"),
+            totalRates: investment.metadata.growthSchedule.length,
+            nextGrowthIndex: investment.metadata.nextGrowthIndex,
+          },
+        }
+      );
+    } catch (error) {
+      await session.abortTransaction();
+      session.endSession();
+      throw error;
+    }
+  } catch (error) {
+    logger.error("Error simulating investment growth:", {
+      error: error.message,
+      stack: error.stack,
+      userId: req.user?._id,
+      requestId: req.id,
+      investmentId: req.params?.id,
+      timestamp: new Date().toISOString(),
+    });
+    
+    return apiResponse.error(
+      res,
+      500,
+      "Simulation Failed",
+      "Error simulating investment growth",
+      "GROWTH_SIMULATION_ERROR"
+    );
+  }
+}
 
 /**
  * @desc    Withdraw funds from an investment (partial or full withdrawal)
@@ -1882,11 +2420,109 @@ exports.getInvestmentTransactions = async (req, res, next) => {
 };
 
 /**
+ * @desc    Get a specific investment details
+ * @route   GET /api/investments/:id
+ * @access  Private
+ */
+exports.getInvestmentDetails = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+
+    logger.info("Fetching investment details", {
+      userId: req.user._id,
+      requestId: req.id,
+      investmentId: id,
+      timestamp: new Date().toISOString(),
+    });
+
+    // Find investment with populated data
+    const investment = await UserInvestment.findOne({
+      _id: id,
+      user: req.user._id,
+    })
+      .populate("plan")
+      .populate("source")
+      .populate({
+        path: "transactions",
+        options: { sort: { createdAt: -1 } },
+      })
+      .exec();
+
+    if (!investment) {
+      logger.warn("Investment not found", {
+        userId: req.user._id,
+        requestId: req.id,
+        investmentId: id,
+        timestamp: new Date().toISOString(),
+      });
+      return apiResponse.notFound(res, "Investment not found");
+    }
+
+    // Calculate current value before returning
+    // For active investments, we should recalculate interest
+    if (investment.status === "active") {
+      try {
+        const result = await investment.calculateInterest();
+
+        logger.debug("Interest calculation for investment", {
+          userId: req.user._id,
+          requestId: req.id,
+          investmentId: id,
+          calculationResult: result,
+          timestamp: new Date().toISOString(),
+        });
+      } catch (error) {
+        logger.error("Error calculating investment interest:", {
+          error: error.message,
+          stack: error.stack,
+          userId: req.user._id,
+          requestId: req.id,
+          investmentId: id,
+          timestamp: new Date().toISOString(),
+        });
+        // Continue without failing the request
+      }
+    }
+
+    if (!investment.previousValue && investment.previousValue !== 0) {
+      investment.previousValue = investment.currentValue;
+      await investment.save();
+    }
+
+    logger.debug("Investment details fetched", {
+      userId: req.user._id,
+      requestId: req.id,
+      investmentId: id,
+      timestamp: new Date().toISOString(),
+    });
+
+    // Return investment details
+    return apiResponse.success(
+      res,
+      200,
+      "Investment Details Retrieved",
+      "Investment details have been retrieved successfully",
+      { investment }
+    );
+  } catch (error) {
+    logger.error("Error fetching investment details:", {
+      error: error.message,
+      stack: error.stack,
+      userId: req.user?._id,
+      requestId: req.id,
+      investmentId: req.params?.id,
+      timestamp: new Date().toISOString(),
+    });
+    next(error);
+  }
+};
+
+/**
  * @desc    Cancel an investment
  * @route   POST /api/investments/:id/cancel
  * @access  Private
  */
-exports.cancelInvestment = async (req, res, next) => {
+exports.cancelInvestment = async (req, res) => {
   // Start logging
   logger.info("Investment cancellation request initiated", {
     userId: req.user._id,
@@ -1905,6 +2541,19 @@ exports.cancelInvestment = async (req, res, next) => {
     const { id } = req.params;
     const { destinationWalletId, reason } = req.body;
 
+    // Validate required fields
+    if (!destinationWalletId) {
+      await session.abortTransaction();
+      session.endSession();
+      
+      return apiResponse.badRequest(
+        res,
+        "Bad Request",
+        "Destination wallet ID is required",
+        "MISSING_DESTINATION_WALLET"
+      );
+    }
+
     // Find the investment
     const investment = await UserInvestment.findOne({
       _id: id,
@@ -1921,7 +2570,14 @@ exports.cancelInvestment = async (req, res, next) => {
         timestamp: new Date().toISOString(),
       });
       await session.abortTransaction();
-      return apiResponse.notFound(res, "Investment not found");
+      session.endSession();
+      
+      return apiResponse.notFound(
+        res,
+        "Not Found",
+        "Investment not found",
+        "INVESTMENT_NOT_FOUND"
+      );
     }
 
     // Check if investment can be cancelled (only active ones)
@@ -1934,9 +2590,13 @@ exports.cancelInvestment = async (req, res, next) => {
         timestamp: new Date().toISOString(),
       });
       await session.abortTransaction();
+      session.endSession();
+      
       return apiResponse.badRequest(
         res,
-        `Cannot cancel ${investment.status} investment`
+        "Invalid Status",
+        `Cannot cancel ${investment.status} investment`,
+        "INVESTMENT_NOT_CANCELLABLE"
       );
     }
 
@@ -1954,7 +2614,14 @@ exports.cancelInvestment = async (req, res, next) => {
         timestamp: new Date().toISOString(),
       });
       await session.abortTransaction();
-      return apiResponse.badRequest(res, "Destination wallet not found");
+      session.endSession();
+      
+      return apiResponse.badRequest(
+        res,
+        "Bad Request",
+        "Destination wallet not found",
+        "DESTINATION_WALLET_NOT_FOUND"
+      );
     }
 
     // Generate reference for transaction
@@ -1964,26 +2631,52 @@ exports.cancelInvestment = async (req, res, next) => {
 
     // Set investment status to cancelled and save
     investment.status = "cancelled";
+    investment.cancelledAt = new Date();
+    investment.cancellationReason = reason || "User requested";
+    
     await investment.save({ session });
 
     // Convert currency if needed for refund
     let refundAmount = investment.amount;
-    if (investment.currency !== destinationWallet.currency) {
-      refundAmount = await convertCurrency(
-        investment.amount,
-        investment.currency,
-        destinationWallet.currency
-      );
+    try {
+      if (investment.currency !== destinationWallet.currency) {
+        refundAmount = await convertCurrency(
+          investment.amount,
+          investment.currency,
+          destinationWallet.currency
+        );
 
-      logger.debug("Currency conversion for cancellation refund", {
+        logger.debug("Currency conversion for cancellation refund", {
+          userId: req.user._id,
+          requestId: req.id,
+          fromCurrency: investment.currency,
+          toCurrency: destinationWallet.currency,
+          beforeConversion: investment.amount.toString(),
+          afterConversion: refundAmount.toString(),
+          timestamp: new Date().toISOString(),
+        });
+      }
+    } catch (error) {
+      logger.error("Currency conversion error during cancellation", {
         userId: req.user._id,
         requestId: req.id,
         fromCurrency: investment.currency,
         toCurrency: destinationWallet.currency,
-        beforeConversion: investment.amount.toString(),
-        afterConversion: refundAmount.toString(),
+        amount: investment.amount.toString(),
+        error: error.message,
+        stack: error.stack,
         timestamp: new Date().toISOString(),
       });
+      await session.abortTransaction();
+      session.endSession();
+      
+      return apiResponse.error(
+        res,
+        500,
+        "Conversion Error",
+        "Error converting investment amount to wallet currency",
+        "CANCELLATION_CONVERSION_ERROR"
+      );
     }
 
     // Credit the wallet with the original investment amount
@@ -2007,14 +2700,13 @@ exports.cancelInvestment = async (req, res, next) => {
 
     await destinationWallet.save({ session });
 
-    // Create transaction record
-    const transaction = new InvestmentTransaction({
+    // Create transaction record for investment
+    const investmentTransaction = new InvestmentTransaction({
       user: req.user._id,
       type: "return",
       amount: investment.amount,
-      currency: destinationWallet.currency,
+      currency: investment.currency,
       source: investment._id,
-      sourceAmount: refundAmount,
       sourceType: "UserInvestment",
       sourceCurrency: investment.currency,
       beneficiary: destinationWallet._id,
@@ -2022,14 +2714,72 @@ exports.cancelInvestment = async (req, res, next) => {
       beneficiaryCurrency: destinationWallet.currency,
       description: `Investment cancellation: ${reason || "User requested"}`,
       status: "completed",
-      reference,
+      reference: `${reference}-INVEST`,
+      ipAddress: req.ip,
+      userAgent: req.headers["user-agent"],
+      completedAt: new Date(),
     });
 
-    await transaction.save({ session });
+    await investmentTransaction.save({ session });
+
+    // Create wallet transaction record
+    const walletTransaction = new WalletTransaction({
+      user: req.user._id,
+      type: "credit",
+      amount: refundAmount,
+      currency: destinationWallet.currency,
+      source: investment._id,
+      sourceType: "UserInvestment",
+      sourceCurrency: investment.currency,
+      beneficiary: destinationWallet._id,
+      beneficiaryType: "Wallet",
+      beneficiaryCurrency: destinationWallet.currency,
+      conversionRate: 
+        investment.currency !== destinationWallet.currency
+          ? parseFloat(refundAmount.toString()) / parseFloat(investment.amount.toString())
+          : 1,
+      description: `Refund from cancelled investment in ${investment.plan.name}`,
+      status: "completed",
+      reference: `${reference}-WALLET`,
+      ipAddress: req.ip,
+      userAgent: req.headers["user-agent"],
+      completedAt: new Date(),
+    });
+
+    await walletTransaction.save({ session });
 
     // Add transaction to investment
-    investment.transactions.push(transaction._id);
+    if (!investment.transactions) {
+      investment.transactions = [];
+    }
+    investment.transactions.push(investmentTransaction._id);
     await investment.save({ session });
+    
+    // Add transaction to wallet
+    if (!destinationWallet.transactions) {
+      destinationWallet.transactions = [];
+    }
+    destinationWallet.transactions.push(walletTransaction._id);
+    destinationWallet.lastActivityAt = new Date();
+    await destinationWallet.save({ session });
+    
+    // Create notification for the user
+    await notificationService.createNotification(
+      req.user._id,
+      "Investment Cancelled",
+      `Your investment in ${investment.plan.name} has been cancelled. ${parseFloat(refundAmount.toString()).toFixed(2)} ${destinationWallet.currency} has been refunded to your wallet.`,
+      "investment",
+      {
+        investmentId: investment._id,
+        planName: investment.plan.name,
+        refundAmount: refundAmount.toString(),
+        currency: destinationWallet.currency,
+        reason: reason || "User requested",
+        walletId: destinationWallet._id,
+        transactionReference: reference
+      },
+      session
+    );
 
     // Commit the transaction
     await session.commitTransaction();
@@ -2039,7 +2789,8 @@ exports.cancelInvestment = async (req, res, next) => {
       userId: req.user._id,
       requestId: req.id,
       investmentId: id,
-      transactionId: transaction._id,
+      investmentTransactionId: investmentTransaction._id,
+      walletTransactionId: walletTransaction._id,
       refundAmount: refundAmount.toString(),
       reason: reason || "User requested",
       reference,
@@ -2053,12 +2804,23 @@ exports.cancelInvestment = async (req, res, next) => {
       "Investment Cancelled",
       "Your investment has been cancelled and funds returned to your wallet",
       {
-        transaction,
-        refundAmount: refundAmount.toString(),
         investment: {
           _id: investment._id,
           status: investment.status,
+          cancelledAt: investment.cancelledAt,
+          cancellationReason: investment.cancellationReason
         },
+        wallet: {
+          _id: destinationWallet._id,
+          balance: destinationWallet.balance
+        },
+        transactions: {
+          investmentTransaction,
+          walletTransaction,
+          reference
+        },
+        refundAmount: refundAmount.toString(),
+        currency: destinationWallet.currency
       }
     );
   } catch (error) {
@@ -2085,279 +2847,14 @@ exports.cancelInvestment = async (req, res, next) => {
       timestamp: new Date().toISOString(),
     });
 
-    next(error);
-  }
-};
-
-/**
- * @desc    Simulate growth on an investment (for testing purposes only)
- * @route   POST /api/investments/:id/simulate-growth
- * @access  Private/Admin
- */
-exports.simulateInvestmentGrowth = async (req, res, next) => {
-  try {
-    logger.info("Simulating investment growth", {
-      userId: req.user._id,
-      requestId: req.id,
-      investmentId: req.params.id,
-      timestamp: new Date().toISOString(),
-    });
-
-    // This is a dev/admin endpoint
-    if (!req.user.isAdmin && process.env.NODE_ENV === "production") {
-      logger.warn("Unauthorized attempt to simulate investment growth", {
-        userId: req.user._id,
-        requestId: req.id,
-        timestamp: new Date().toISOString(),
-      });
-      return apiResponse.unauthorized(
-        res,
-        "You do not have permission to perform this action"
-      );
-    }
-
-    const { id } = req.params;
-    const {
-      growthPattern = "random", // 'random', 'up', 'down', 'volatile'
-      days = 7,
-      baseGrowthRate = 0.005, // 0.5% daily average
-      volatilityFactor = 0.5, // How much variation
-      reset = true,
-      applyGrowth = true,
-    } = req.body;
-
-    // Find the investment
-    const investment = await UserInvestment.findOne({
-      _id: id,
-      user: "67dcb8120a0ba43192d09cec",
-    });
-
-    if (!investment) {
-      logger.warn("Investment not found for growth simulation", {
-        userId: req.user._id,
-        requestId: req.id,
-        investmentId: id,
-        timestamp: new Date().toISOString(),
-      });
-      return apiResponse.notFound(res, "Investment not found");
-    }
-
-    // Initialize metadata object if it doesn't exist
-    if (!investment.metadata) {
-      investment.metadata = {};
-    }
-
-    // Initialize or reset growth schedule
-    if (!investment.metadata.growthSchedule || reset) {
-      investment.metadata.growthSchedule = [];
-      investment.metadata.nextGrowthIndex = 0;
-    }
-
-    // Generate growth rates based on pattern
-    const growthRates = [];
-
-    // Ensure we have some historical data for comparison if we're resetting
-    if (reset) {
-      // Add 5 days of baseline growth first to establish a reference point
-      for (let i = 0; i < 5; i++) {
-        growthRates.push(baseGrowthRate);
-      }
-    }
-
-    // Now add the pattern-specific growth rates
-    for (let i = 0; i < days; i++) {
-      let rate;
-      const dayPosition = i / days; // Relative position in the simulation period (0 to 1)
-
-      switch (growthPattern) {
-        case "up":
-          // Gradually increasing trend - starts at base rate and goes up
-          rate = baseGrowthRate * (1 + dayPosition * 2);
-          // Add some randomness
-          rate += (Math.random() - 0.3) * volatilityFactor * baseGrowthRate;
-          growthRates.push(Math.max(0, rate));
-          break;
-
-        case "down":
-          // Gradually decreasing trend - starts at base rate and goes down
-          rate = baseGrowthRate * (1 - dayPosition);
-          // Add some randomness
-          rate += (Math.random() - 0.7) * volatilityFactor * baseGrowthRate;
-          growthRates.push(Math.max(0, rate));
-          break;
-
-        case "volatile":
-          // Highly variable (both positive and negative)
-          rate =
-            baseGrowthRate +
-            (Math.random() * 2 - 1) * volatilityFactor * baseGrowthRate * 3;
-          growthRates.push(rate);
-          break;
-
-        case "random":
-        default:
-          // Random variations around base rate
-          rate =
-            baseGrowthRate +
-            (Math.random() * 2 - 1) * volatilityFactor * baseGrowthRate;
-          growthRates.push(rate);
-          break;
-      }
-    }
-
-    // Add new growth rates to the schedule
-    investment.metadata.growthSchedule = [
-      ...investment.metadata.growthSchedule,
-      ...growthRates,
-    ];
-
-    // Calculate new value based on growth rates
-    let currentValue = parseFloat(investment.currentValue.toString());
-    const initialValue = currentValue;
-
-    for (let i = 0; i < growthRates.length; i++) {
-      const growthRate = growthRates[i];
-      currentValue = currentValue * (1 + growthRate);
-    }
-
-    // Update the investment with new value and next growth index
-    if (applyGrowth) {
-      investment.currentValue = mongoose.Types.Decimal128.fromString(
-        currentValue.toFixed(8)
-      );
-      // Set nextGrowthIndex to one past the end to indicate all growth has been applied
-      investment.metadata.nextGrowthIndex =
-        investment.metadata.growthSchedule.length;
-    }
-
-    await investment.save();
-
-    logger.info("Investment growth simulation completed", {
-      userId: req.user._id,
-      requestId: req.id,
-      investmentId: id,
-      growthPattern,
-      daysSimulated: days,
-      initialValue: initialValue.toFixed(8),
-      newValue: currentValue.toFixed(8),
-      percentageGrowth:
-        ((currentValue / initialValue - 1) * 100).toFixed(2) + "%",
-      growthRates:
-        growthRates.slice(0, 3).map((r) => (r * 100).toFixed(2) + "%") + "...",
-      totalGrowthRates: growthRates.length,
-      nextGrowthIndex: investment.metadata.nextGrowthIndex,
-      timestamp: new Date().toISOString(),
-    });
-
-    // Return the simulated investment
-    return apiResponse.success(
+    return apiResponse.error(
       res,
-      200,
-      "Investment Growth Simulated",
-      "Growth has been simulated on the investment",
-      {
-        investment,
-        simulationDetails: {
-          growthPattern,
-          daysSimulated: days,
-          initialValue: initialValue.toFixed(8),
-          newValue: currentValue.toFixed(8),
-          percentageChange:
-            ((currentValue / initialValue - 1) * 100).toFixed(2) + "%",
-          growthRates: growthRates.map((rate) => (rate * 100).toFixed(4) + "%"),
-          totalRates: investment.metadata.growthSchedule.length,
-          nextGrowthIndex: investment.metadata.nextGrowthIndex,
-        },
-      }
+      500,
+      "Cancellation Failed",
+      "Error cancelling investment",
+      "INVESTMENT_CANCELLATION_ERROR"
     );
-  } catch (error) {
-    logger.error("Error simulating investment growth:", {
-      error: error.message,
-      stack: error.stack,
-      userId: req.user?._id,
-      requestId: req.id,
-      investmentId: req.params?.id,
-      timestamp: new Date().toISOString(),
-    });
-    next(error);
   }
-};
-
-/**
- * @desc    Execute a currency conversion
- * @param {mongoose.Types.Decimal128} amount - Amount to convert
- * @param {string} fromCurrency - Source currency
- * @param {string} toCurrency - Destination currency
- * @returns {Promise<mongoose.Types.Decimal128>} - Converted amount
- */
-const convertCurrency = async (amount, fromCurrency, toCurrency) => {
-  // If currencies are the same, no conversion needed
-  if (fromCurrency === toCurrency) {
-    return amount;
-  }
-
-  // In a real-world scenario, you would call an external API or use a service
-  // like CoinGecko, CoinMarketCap, or a forex API to get real-time exchange rates
-
-  // For this implementation, using a simplified approach with hardcoded rates
-  // You should replace this with a proper exchange rate service in production
-
-  // Convert amount to USD first (as an intermediate currency)
-  const toUSD = await convertToUSD(amount, fromCurrency);
-
-  // If destination is USD, return the USD amount
-  if (toCurrency === "USD") {
-    return toUSD;
-  }
-
-  // Otherwise convert from USD to destination currency
-  return await convertFromUSD(toUSD, toCurrency);
-};
-
-/**
- * @desc    Convert given amount to USD
- * @param {mongoose.Types.Decimal128} amount - Amount to convert
- * @param {string} currency - Source currency
- * @returns {Promise<mongoose.Types.Decimal128>} - Converted amount in USD
- */
-const convertToUSD = async (amount, currency) => {
-  if (currency === "USD") {
-    return amount;
-  }
-
-  // Check if we have a rate for this currency
-  if (!toUSDrates[currency]) {
-    throw new Error(`Unsupported currency for conversion: ${currency}`);
-  }
-
-  // Convert to USD
-  const amountFloat = parseFloat(amount.toString());
-  const usdValue = amountFloat * toUSDrates[currency];
-
-  return mongoose.Types.Decimal128.fromString(usdValue.toFixed(8));
-};
-
-/**
- * @desc    Convert USD amount to specified currency
- * @param {mongoose.Types.Decimal128} usdAmount - Amount in USD
- * @param {string} currency - Target currency
- * @returns {Promise<mongoose.Types.Decimal128>} - Converted amount
- */
-const convertFromUSD = async (usdAmount, currency) => {
-  if (currency === "USD") {
-    return usdAmount;
-  }
-
-  // Check if we have a rate for this currency
-  if (!fromUSDrates[currency]) {
-    throw new Error(`Unsupported currency for conversion: ${currency}`);
-  }
-
-  // Convert from USD to target currency
-  const usdFloat = parseFloat(usdAmount.toString());
-  const convertedValue = usdFloat * fromUSDrates[currency];
-
-  return mongoose.Types.Decimal128.fromString(convertedValue.toFixed(8));
-};
+}
 
 module.exports = exports;

@@ -1,5 +1,9 @@
 // Application-wide configuration values
 module.exports = {
+  appName: process.env.APP_NAME || "Regions Prime",
+  appUrl: process.env.APP_URL || "https://regions.com/prime",
+  supportEmail: process.env.SUPPORT_EMAIL || "support@primebanking.com",
+
   // JWT configuration
   jwt: {
     secret: process.env.JWT_SECRET,
@@ -33,7 +37,7 @@ module.exports = {
 
   // Email configuration
   email: {
-    from: process.env.EMAIL_FROM || "noreply@bankingapp.com",
+    from: process.env.EMAIL_FROM || "noreply@primebanking.com",
     smtp: {
       host: process.env.EMAIL_HOST,
       port: process.env.EMAIL_PORT,
@@ -42,6 +46,13 @@ module.exports = {
         pass: process.env.EMAIL_PASSWORD,
       },
     },
+    host: process.env.SMTP_HOST,
+    port: parseInt(process.env.SMTP_PORT) || 587,
+    secure: process.env.SMTP_SECURE === "true",
+    user: process.env.SMTP_USER,
+    password: process.env.SMTP_PASSWORD,
+    fromAddress: process.env.SMTP_FROM_ADDRESS || "noreply@your-app.com",
+    fromName: process.env.SMTP_FROM_NAME || "Your App Name",
   },
 
   // Transaction fee structure
@@ -87,6 +98,7 @@ module.exports = {
     lockoutTime: 30 * 60 * 1000, // 30 minutes
     passwordResetExpires: 60 * 60 * 1000, // 1 hour
     passcodeMaxAttempts: 3,
+    passwordMaxAttempts: 3,
   },
 
   // Rate limiting configuration
@@ -123,4 +135,40 @@ module.exports = {
     defaultCurrency: "USD",
     defaultMaturityPeriod: 30, // days
   },
+
+  cloudinary: {
+    timeout: process.env.CLOUDINARY_TIMEOUT || 60000,
+    maxRetries: process.env.CLOUDINARY_MAX_RETRIES || 3,
+    folder: process.env.CLOUDINARY_FOLDER || "prime-id-verification",
+  },
+
+  uploads: {
+    maxFileSize: process.env.UPLOAD_MAX_FILE_SIZE || 10 * 1024 * 1024,
+  },
+
+  brevo: {
+    apiKey: process.env.BREVO_API_KEY,
+    senderEmail: process.env.BREVO_SENDER_EMAIL || "noreply@your-app.com",
+    senderName: process.env.BREVO_SENDER_NAME || "Your App Name",
+
+    // Template IDs (configured in Brevo dashboard)
+    templates: {
+      welcome: parseInt(process.env.BREVO_TEMPLATE_WELCOME) || 1,
+      passwordReset: parseInt(process.env.BREVO_TEMPLATE_PASSWORD_RESET) || 2,
+      emailChangeVerification:
+        parseInt(process.env.BREVO_TEMPLATE_EMAIL_CHANGE_VERIFICATION) || 3,
+      emailChangeConfirmation:
+        parseInt(process.env.BREVO_TEMPLATE_EMAIL_CHANGE_CONFIRMATION) || 4,
+      emailChangeRejection:
+        parseInt(process.env.BREVO_TEMPLATE_EMAIL_CHANGE_REJECTION) || 5,
+      nameChangeConfirmation:
+        parseInt(process.env.BREVO_TEMPLATE_NAME_CHANGE_CONFIRMATION) || 6,
+      nameChangeRejection:
+        parseInt(process.env.BREVO_TEMPLATE_NAME_CHANGE_REJECTION) || 7,
+      accountLocked: parseInt(process.env.BREVO_TEMPLATE_ACCOUNT_LOCKED) || 8,
+      securityAlert: parseInt(process.env.BREVO_TEMPLATE_SECURITY_ALERT) || 9,
+    },
+  },
+
+  // Email configuration fallbacks (if not using Brevo)
 };
