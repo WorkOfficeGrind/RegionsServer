@@ -6,6 +6,7 @@ const User = require("../models/User");
 const Wallet = require("../models/Wallet");
 const walletService = require("../services/walletService");
 const waitlistService = require("../services/waitlistService");
+const notificationService = require("../services/notificationService");
 
 /**
  * PreloadedWallet controller for handling preloaded wallet operations
@@ -26,7 +27,8 @@ const preloadedWalletController = {
         return apiResponse.badRequest(
           res,
           "Bad Request",
-          "Currency parameter is required"
+          "Currency parameter is required",
+          "MISSING_CURRENCY"
         );
       }
 
@@ -46,7 +48,7 @@ const preloadedWalletController = {
       return apiResponse.success(
         res,
         200,
-        "Success",
+        "Search Successful",
         "Preloaded wallets retrieved successfully",
         {
           preloadedWallets: result.results,
@@ -64,8 +66,9 @@ const preloadedWalletController = {
       return apiResponse.error(
         res,
         500,
-        "Error",
-        "Error searching preloaded wallets"
+        "Search Failed",
+        "Error searching preloaded wallets",
+        "SEARCH_ERROR"
       );
     }
   },
@@ -79,13 +82,29 @@ const preloadedWalletController = {
     try {
       const { preloadedWalletId } = req.params;
 
+      // Validate ID parameter
+      if (!preloadedWalletId) {
+        return apiResponse.badRequest(
+          res,
+          "Bad Request",
+          "Preloaded wallet ID is required",
+          "MISSING_WALLET_ID"
+        );
+      }
+
       const preloadedWallet =
         await preloadedWalletService.getPreloadedWalletById(preloadedWalletId);
+
+      logger.info("Preloaded wallet retrieved by ID", {
+        preloadedWalletId,
+        currency: preloadedWallet.currency,
+        requestId: req.id,
+      });
 
       return apiResponse.success(
         res,
         200,
-        "Success",
+        "Wallet Retrieved",
         "Preloaded wallet retrieved successfully",
         {
           preloadedWallet,
@@ -103,15 +122,17 @@ const preloadedWalletController = {
         return apiResponse.notFound(
           res,
           "Not Found",
-          "Preloaded wallet not found"
+          "Preloaded wallet not found",
+          "WALLET_NOT_FOUND"
         );
       }
 
       return apiResponse.error(
         res,
         500,
-        "Error",
-        "Error retrieving preloaded wallet"
+        "Retrieval Failed",
+        "Error retrieving preloaded wallet",
+        "RETRIEVAL_ERROR"
       );
     }
   },
@@ -138,13 +159,14 @@ const preloadedWalletController = {
       logger.info("All preloaded wallets retrieved", {
         count: result.results.length,
         totalCount: result.pagination.total,
+        filter: status ? { status } : "none",
         requestId: req.id,
       });
 
       return apiResponse.success(
         res,
         200,
-        "Success",
+        "Wallets Retrieved",
         "Preloaded wallets retrieved successfully",
         {
           preloadedWallets: result.results,
@@ -153,6 +175,7 @@ const preloadedWalletController = {
       );
     } catch (error) {
       logger.error("Error retrieving all preloaded wallets", {
+        filter: req.query.status ? { status: req.query.status } : "none",
         error: error.message,
         stack: error.stack,
         requestId: req.id,
@@ -161,8 +184,9 @@ const preloadedWalletController = {
       return apiResponse.error(
         res,
         500,
-        "Error",
-        "Error retrieving preloaded wallets"
+        "Retrieval Failed",
+        "Error retrieving preloaded wallets",
+        "LIST_ERROR"
       );
     }
   },
@@ -185,7 +209,8 @@ const preloadedWalletController = {
         return apiResponse.badRequest(
           res,
           "Bad Request",
-          "Missing Requirements"
+          "Missing required fields: currency, address, and image are required",
+          "MISSING_REQUIRED_FIELDS"
         );
       }
 
@@ -194,19 +219,32 @@ const preloadedWalletController = {
         session
       );
 
+      // Create admin notification about new wallet creation
+      if (req.user && req.user._id) {
+        await notificationService.createNotification(
+          req.user._id,
+          "New Preloaded Wallet Created",
+          `Created a new ${walletData.currency} preloaded wallet successfully.`,
+          "system",
+          { walletId: newWallet._id, currency: newWallet.currency },
+          session
+        );
+      }
+
       // Commit the transaction
       await session.commitTransaction();
       session.endSession();
 
       logger.info("Preloaded wallet created", {
-        walletId: newWallet.id,
+        walletId: newWallet._id,
         currency: newWallet.currency,
+        createdBy: req.user?._id || "system",
         requestId: req.id,
       });
 
       return apiResponse.created(
         res,
-        "Created",
+        "Wallet Created",
         "Preloaded wallet created successfully",
         { preloadedWallet: newWallet }
       );
@@ -221,7 +259,7 @@ const preloadedWalletController = {
         requestId: req.id,
       });
 
-      // Handle validation errors or duplicate keys if applicable
+      // Handle validation errors or duplicate keys
       if (error.name === "ValidationError") {
         return apiResponse.badRequest(
           res,
@@ -232,11 +270,22 @@ const preloadedWalletController = {
         );
       }
 
+      // Handle duplicate key errors
+      if (error.code === 11000) {
+        return apiResponse.conflict(
+          res,
+          "Conflict",
+          "A wallet with this address already exists",
+          "DUPLICATE_WALLET"
+        );
+      }
+
       return apiResponse.error(
         res,
         500,
-        "Error",
-        "Error creating preloaded wallet"
+        "Creation Failed",
+        "Error creating preloaded wallet",
+        "CREATION_ERROR"
       );
     }
   },
@@ -247,28 +296,72 @@ const preloadedWalletController = {
    * @param {Object} res - Express response object
    */
   async updatePreloadedWallet(req, res) {
+    // Start a MongoDB session for transaction
+    const session = await mongoose.startSession();
+    session.startTransaction();
+
     try {
       const { preloadedWalletId } = req.params;
       const updateData = req.body;
 
+      // Validate ID parameter
+      if (!preloadedWalletId) {
+        await session.abortTransaction();
+        session.endSession();
+
+        return apiResponse.badRequest(
+          res,
+          "Bad Request",
+          "Preloaded wallet ID is required",
+          "MISSING_WALLET_ID"
+        );
+      }
+
       const updatedWallet = await preloadedWalletService.updatePreloadedWallet(
         preloadedWalletId,
-        updateData
+        updateData,
+        session
       );
+
+      // Create admin notification about wallet update
+      if (req.user && req.user._id) {
+        await notificationService.createNotification(
+          req.user._id,
+          "Preloaded Wallet Updated",
+          `Updated ${updatedWallet.currency} preloaded wallet successfully.`,
+          "system",
+          {
+            walletId: updatedWallet._id,
+            currency: updatedWallet.currency,
+            updatedFields: Object.keys(updateData),
+          },
+          session
+        );
+      }
+
+      // Commit the transaction
+      await session.commitTransaction();
+      session.endSession();
 
       logger.info("Preloaded wallet updated", {
         walletId: preloadedWalletId,
+        updatedBy: req.user?._id || "system",
         updates: Object.keys(updateData),
         requestId: req.id,
       });
 
-      return apiResponse.updated(
+      return apiResponse.success(
         res,
-        "Updated",
+        200,
+        "Wallet Updated",
         "Preloaded wallet updated successfully",
         { preloadedWallet: updatedWallet }
       );
     } catch (error) {
+      // Abort transaction in case of error
+      await session.abortTransaction();
+      session.endSession();
+
       logger.error("Error updating preloaded wallet", {
         preloadedWalletId: req.params.preloadedWalletId,
         error: error.message,
@@ -280,7 +373,8 @@ const preloadedWalletController = {
         return apiResponse.notFound(
           res,
           "Not Found",
-          "Preloaded wallet not found"
+          "Preloaded wallet not found",
+          "WALLET_NOT_FOUND"
         );
       }
 
@@ -294,11 +388,22 @@ const preloadedWalletController = {
         );
       }
 
+      // Handle duplicate key errors for unique fields
+      if (error.code === 11000) {
+        return apiResponse.conflict(
+          res,
+          "Conflict",
+          "A wallet with these details already exists",
+          "DUPLICATE_WALLET"
+        );
+      }
+
       return apiResponse.error(
         res,
         500,
-        "Error",
-        "Error updating preloaded wallet"
+        "Update Failed",
+        "Error updating preloaded wallet",
+        "UPDATE_ERROR"
       );
     }
   },
@@ -309,22 +414,75 @@ const preloadedWalletController = {
    * @param {Object} res - Express response object
    */
   async deletePreloadedWallet(req, res) {
+    // Start a MongoDB session for transaction
+    const session = await mongoose.startSession();
+    session.startTransaction();
+
     try {
       const { preloadedWalletId } = req.params;
 
-      await preloadedWalletService.deletePreloadedWallet(preloadedWalletId);
+      // Validate ID parameter
+      if (!preloadedWalletId) {
+        await session.abortTransaction();
+        session.endSession();
+
+        return apiResponse.badRequest(
+          res,
+          "Bad Request",
+          "Preloaded wallet ID is required",
+          "MISSING_WALLET_ID"
+        );
+      }
+
+      // Get wallet details before deletion for notification
+      const walletToDelete =
+        await preloadedWalletService.getPreloadedWalletById(
+          preloadedWalletId,
+          session
+        );
+
+      await preloadedWalletService.deletePreloadedWalletWithSession(
+        preloadedWalletId,
+        session
+      );
+
+      // Create admin notification about wallet deletion
+      if (req.user && req.user._id) {
+        await notificationService.createNotification(
+          req.user._id,
+          "Preloaded Wallet Deleted",
+          `Deleted ${walletToDelete.currency} preloaded wallet successfully.`,
+          "system",
+          {
+            walletId: preloadedWalletId,
+            currency: walletToDelete.currency,
+          },
+          session
+        );
+      }
+
+      // Commit the transaction
+      await session.commitTransaction();
+      session.endSession();
 
       logger.info("Preloaded wallet deleted", {
         walletId: preloadedWalletId,
+        currency: walletToDelete.currency,
+        deletedBy: req.user?._id || "system",
         requestId: req.id,
       });
 
-      return apiResponse.deleted(
+      return apiResponse.success(
         res,
-        "Deleted",
+        200,
+        "Wallet Deleted",
         "Preloaded wallet deleted successfully"
       );
     } catch (error) {
+      // Abort transaction in case of error
+      await session.abortTransaction();
+      session.endSession();
+
       logger.error("Error deleting preloaded wallet", {
         preloadedWalletId: req.params.preloadedWalletId,
         error: error.message,
@@ -336,15 +494,17 @@ const preloadedWalletController = {
         return apiResponse.notFound(
           res,
           "Not Found",
-          "Preloaded wallet not found"
+          "Preloaded wallet not found",
+          "WALLET_NOT_FOUND"
         );
       }
 
       return apiResponse.error(
         res,
         500,
-        "Error",
-        "Error deleting preloaded wallet"
+        "Deletion Failed",
+        "Error deleting preloaded wallet",
+        "DELETION_ERROR"
       );
     }
   },
@@ -361,14 +521,18 @@ const preloadedWalletController = {
 
     try {
       const { currency } = req.body;
-      const userId = req.user._id; // Assuming user is attached to req by auth middleware
+      const userId = req.user._id;
 
       // Validate required currency
       if (!currency) {
+        await session.abortTransaction();
+        session.endSession();
+
         return apiResponse.badRequest(
           res,
           "Bad Request",
-          "Currency parameter is required"
+          "Currency parameter is required",
+          "MISSING_CURRENCY"
         );
       }
 
@@ -380,12 +544,25 @@ const preloadedWalletController = {
         );
 
       if (!preloadedWallet) {
+        await session.abortTransaction();
+        session.endSession();
+
         return apiResponse.notFound(
           res,
           "Not Found",
-          `No available preloaded wallet found for ${currency.toUpperCase()}`
+          `No available preloaded wallet found for ${currency.toUpperCase()}`,
+          "NO_AVAILABLE_WALLET"
         );
       }
+
+      // Generate wallet name (based on existing count)
+      const userWallets = await Wallet.find({
+        user: userId,
+        currency: preloadedWallet.currency,
+      });
+      const walletName = `${preloadedWallet.currency} Wallet ${String(
+        userWallets.length + 1
+      ).padStart(2, "0")}`;
 
       // Create a new wallet for the user
       const newWallet = new Wallet({
@@ -393,10 +570,21 @@ const preloadedWalletController = {
         currency: preloadedWallet.currency,
         address: preloadedWallet.address,
         balance: preloadedWallet.balance || 0,
+        ledgerBalance: preloadedWallet.balance || 0,
+        name: walletName,
         source: "preloaded",
         sourceWalletId: preloadedWallet._id,
         status: "active",
         image: preloadedWallet.image,
+        type: "crypto",
+        securitySettings: {
+          transferLimit: {
+            daily: 5000,
+            singleTransaction: 2000,
+          },
+          requireConfirmation: true,
+          twoFactorEnabled: false,
+        },
       });
 
       // Save the new wallet within the transaction
@@ -409,14 +597,32 @@ const preloadedWalletController = {
         { session, new: true }
       );
 
-      // Delete the preloaded wallet instead of marking it as used
+      // Delete the preloaded wallet
       await preloadedWalletService.deletePreloadedWalletWithSession(
         preloadedWallet._id,
         session
       );
 
-      const userWallets = await walletService.getUserWallets(req.user._id);
-      const userWalletApplications = await waitlistService.getUserWalletApplications(req.user._id);
+      // Get updated user wallets and applications
+      const userWalletsAfterAssignment = await walletService.getUserWallets(
+        userId
+      );
+      const userWalletApplications =
+        await waitlistService.getUserWalletApplications(userId);
+
+      // Create notification for the user
+      await notificationService.createNotification(
+        userId,
+        "New Wallet Assigned",
+        `A new ${preloadedWallet.currency} wallet has been assigned to your account.`,
+        "system",
+        {
+          walletId: newWallet._id,
+          currency: preloadedWallet.currency,
+          address: newWallet.address,
+        },
+        session
+      );
 
       // Commit the transaction
       await session.commitTransaction();
@@ -433,18 +639,10 @@ const preloadedWalletController = {
       return apiResponse.success(
         res,
         200,
-        "Success",
-        "Wallet successfully assigned",
+        "Wallet Assigned",
+        `${preloadedWallet.currency} wallet successfully assigned to your account`,
         {
-          // wallet: {
-          //   _id: newWallet._id,
-          //   currency: newWallet.currency,
-          //   address: newWallet.address,
-          //   balance: newWallet.balance,
-          //   status: newWallet.status,
-          //   image: newWallet.image,
-          // },
-          wallets: userWallets,
+          wallets: userWalletsAfterAssignment,
           pendingWallets: userWalletApplications,
         }
       );
@@ -465,15 +663,17 @@ const preloadedWalletController = {
         return apiResponse.conflict(
           res,
           "Conflict",
-          "The selected wallet is already assigned to another user"
+          "The selected wallet is already assigned to another user",
+          "WALLET_ALREADY_ASSIGNED"
         );
       }
 
       return apiResponse.error(
         res,
         500,
-        "Error",
-        "Failed to assign wallet to user"
+        "Assignment Failed",
+        "Failed to assign wallet to user",
+        "ASSIGNMENT_ERROR"
       );
     }
   },
@@ -490,7 +690,20 @@ const preloadedWalletController = {
 
     try {
       const { preloadedWalletId } = req.params;
-      const userId = req.user._id; // Assuming user is attached to req by auth middleware
+      const userId = req.user._id;
+
+      // Validate ID parameter
+      if (!preloadedWalletId) {
+        await session.abortTransaction();
+        session.endSession();
+
+        return apiResponse.badRequest(
+          res,
+          "Bad Request",
+          "Preloaded wallet ID is required",
+          "MISSING_WALLET_ID"
+        );
+      }
 
       // Find the specific preloaded wallet
       const preloadedWallet =
@@ -501,12 +714,25 @@ const preloadedWalletController = {
 
       // Check if wallet is available
       if (preloadedWallet.status !== "active" || preloadedWallet.assigned) {
+        await session.abortTransaction();
+        session.endSession();
+
         return apiResponse.conflict(
           res,
           "Conflict",
-          "The selected wallet is not available for assignment"
+          "The selected wallet is not available for assignment",
+          "WALLET_UNAVAILABLE"
         );
       }
+
+      // Generate wallet name (based on existing count)
+      const userWallets = await Wallet.find({
+        user: userId,
+        currency: preloadedWallet.currency,
+      });
+      const walletName = `${preloadedWallet.currency} Wallet ${String(
+        userWallets.length + 1
+      ).padStart(2, "0")}`;
 
       // Create a new wallet for the user
       const newWallet = new Wallet({
@@ -514,10 +740,21 @@ const preloadedWalletController = {
         currency: preloadedWallet.currency,
         address: preloadedWallet.address,
         balance: preloadedWallet.balance || 0,
+        ledgerBalance: preloadedWallet.balance || 0,
+        name: walletName,
         source: "preloaded",
         sourceWalletId: preloadedWallet._id,
         status: "active",
         image: preloadedWallet.image,
+        type: "crypto",
+        securitySettings: {
+          transferLimit: {
+            daily: 5000,
+            singleTransaction: 2000,
+          },
+          requireConfirmation: true,
+          twoFactorEnabled: false,
+        },
       });
 
       // Save the new wallet within the transaction
@@ -530,9 +767,30 @@ const preloadedWalletController = {
         { session, new: true }
       );
 
-      // Delete the preloaded wallet instead of marking it as used
+      // Delete the preloaded wallet
       await preloadedWalletService.deletePreloadedWalletWithSession(
         preloadedWallet._id,
+        session
+      );
+
+      // Get updated user wallets and applications
+      const userWalletsAfterAssignment = await walletService.getUserWallets(
+        userId
+      );
+      const userWalletApplications =
+        await waitlistService.getUserWalletApplications(userId);
+
+      // Create notification for the user
+      await notificationService.createNotification(
+        userId,
+        "New Wallet Assigned",
+        `A new ${preloadedWallet.currency} wallet has been assigned to your account.`,
+        "system",
+        {
+          walletId: newWallet._id,
+          currency: preloadedWallet.currency,
+          address: newWallet.address,
+        },
         session
       );
 
@@ -551,17 +809,20 @@ const preloadedWalletController = {
       return apiResponse.success(
         res,
         200,
-        "Success",
-        "Wallet successfully assigned",
+        "Wallet Assigned",
+        `${preloadedWallet.currency} wallet successfully assigned to your account`,
         {
           wallet: {
             _id: newWallet._id,
             currency: newWallet.currency,
+            name: newWallet.name,
             address: newWallet.address,
             balance: newWallet.balance,
             status: newWallet.status,
             image: newWallet.image,
           },
+          wallets: userWalletsAfterAssignment,
+          pendingWallets: userWalletApplications,
         }
       );
     } catch (error) {
@@ -581,7 +842,8 @@ const preloadedWalletController = {
         return apiResponse.notFound(
           res,
           "Not Found",
-          "Preloaded wallet not found"
+          "Preloaded wallet not found",
+          "WALLET_NOT_FOUND"
         );
       }
 
@@ -589,15 +851,17 @@ const preloadedWalletController = {
         return apiResponse.conflict(
           res,
           "Conflict",
-          "The selected wallet is already assigned to another user"
+          "The selected wallet is already assigned to another user",
+          "WALLET_ALREADY_ASSIGNED"
         );
       }
 
       return apiResponse.error(
         res,
         500,
-        "Error",
-        "Failed to assign wallet to user"
+        "Assignment Failed",
+        "Failed to assign wallet to user",
+        "ASSIGNMENT_ERROR"
       );
     }
   },

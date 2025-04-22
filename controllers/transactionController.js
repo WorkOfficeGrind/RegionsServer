@@ -9,927 +9,7 @@ const config = require("../config/config");
 const mongoose = require("mongoose");
 const crypto = require("crypto");
 const { toUSDrates, fromUSDrates } = require("../utils/constants");
-/**
- * @desc    Get user accounts
- * @route   GET /api/accounts
- * @access  Private
- */
-const getUserAccounts = async (req, res, next) => {
-  try {
-    const userId = req.user._id;
-    const accounts = await Account.find({ user: userId })
-      .populate("transactions")
-      .exec();
-
-    res.status(200).json({
-      status: "Success",
-      success: true,
-      data: {
-        accounts,
-      },
-    });
-  } catch (error) {
-    logger.error("Get User Accounts:", {
-      error: error.message,
-      stack: error.stack,
-      requestId: req.id,
-      ip: req.ip,
-      timestamp: new Date().toISOString(),
-    });
-    next(error);
-  }
-};
-
-/**
- * @desc    Get user account by ID
- * @route   GET /api/accounts/:accountId
- * @access  Private
- */
-const getUserAccountById = async (req, res, next) => {
-  try {
-    const { accountId } = req.params;
-    const userId = req.user._id;
-    const account = await Account.find({ _id: accountId, user: userId });
-
-    if (!account || account.length === 0) {
-      throw new CustomError(404, "Account not found");
-    }
-
-    res.status(200).json({
-      status: "Success",
-      success: true,
-      data: {
-        account,
-      },
-    });
-  } catch (error) {
-    logger.error("Get User Account:", {
-      error: error.message,
-      stack: error.stack,
-      requestId: req.id,
-      ip: req.ip,
-      timestamp: new Date().toISOString(),
-    });
-    next(error);
-  }
-};
-
-// Helper function to convert amounts with proper precision
-// const convertCurrency = async (amount, fromCurrency, toCurrency) => {
-//   if (fromCurrency === toCurrency) {
-//     return amount;
-//   }
-
-//   const rate = await getExchangeRate(fromCurrency, toCurrency);
-//   return mongoose.Types.Decimal128.fromString(
-//     (parseFloat(amount.toString()) * rate).toFixed(8)
-//   );
-// };
-
-/**
- * @desc    Transfer funds between accounts (same or different currencies)
- * @route   POST /api/accounts/transfer
- * @access  Private
- */
-
-exports.transferBetweenAccounts = async (req, res, next) => {
-  // Start logging - capture initial request data
-  logger.info("Account transfer request initiated", {
-    userId: req.user._id,
-    requestId: req.id,
-    requestBody: {
-      type: req.body.type,
-      amount: req.body.amount,
-      sourceId: req.body.sourceId,
-      sourceType: req.body.sourceType,
-      sourceCurrency: req.body.sourceCurrency,
-      destinationId: req.body.destinationId,
-      destinationType: req.body.destinationType,
-      destinationCurrency: req.body.destinationCurrency,
-      description: req.body.description,
-      metadata: req.body.metadata,
-      narration: req.body.narration,
-    },
-    timestamp: new Date().toISOString(),
-    ipAddress: req.ip,
-    userAgent: req.headers["user-agent"],
-  });
-
-  // Start a database transaction
-  const session = await mongoose.startSession();
-  session.startTransaction();
-
-  try {
-    const {
-      type,
-      amount,
-      sourceId,
-      sourceType,
-      sourceCurrency,
-      destinationId,
-      destinationType,
-      destinationCurrency,
-      description,
-      metadata,
-      narration,
-    } = req.body;
-
-    if (sourceId === destinationId) {
-      logger.warn("Validation failed: Same source & destination", {
-        userId: req.user._id,
-        requestId: req.id,
-        timestamp: new Date().toISOString(),
-      });
-      return apiResponse.badRequest(
-        res,
-        `Source and destination accounts cannot be the same`
-      );
-    }
-
-    // Convert amount to Decimal128 for precise calculations
-    const decimalAmount = mongoose.Types.Decimal128.fromString(
-      amount.toString()
-    );
-
-    // Log account lookup attempt
-    logger.debug("Looking up accounts", {
-      userId: req.user._id,
-      requestId: req.id,
-      sourceId,
-      destinationId,
-      timestamp: new Date().toISOString(),
-    });
-
-    let source, destination, oldSourceBalance, oldDestinationBalance;
-
-    // Find source based on type
-    if (sourceType === "Account") {
-      source = await Account.findOne({
-        accountNumber: sourceId,
-        user: req.user._id,
-      })
-        .populate("user")
-        .session(session);
-    } else if (sourceType === "Card") {
-      source = await Card.findOne({
-        number: sourceId,
-        user: req.user._id,
-      })
-        .populate("user")
-        .session(session);
-    } else if (sourceType === "Wallet") {
-      source = await Wallet.findOne({
-        address: sourceId,
-        user: req.user._id,
-      })
-        .populate("user")
-        .session(session);
-    }
-
-    if (!source) {
-      logger.warn("Source not found", {
-        userId: req.user._id,
-        requestId: req.id,
-        sourceId,
-        timestamp: new Date().toISOString(),
-      });
-      return apiResponse.badRequest(res, `Source not found`);
-    }
-
-    // Check if source account has sufficient balance
-    if (
-      parseFloat(source.availableBalance.toString()) <
-      parseFloat(decimalAmount.toString())
-    ) {
-      logger.warn("Insufficient funds in source", {
-        userId: req.user._id,
-        requestId: req.id,
-        sourceId: source._id,
-        sourceBalance: source.availableBalance.toString(),
-        transferAmount: decimalAmount.toString(),
-        difference: (
-          parseFloat(decimalAmount.toString()) -
-          parseFloat(source.availableBalance.toString())
-        ).toFixed(8),
-        timestamp: new Date().toISOString(),
-      });
-      return apiResponse.badRequest(res, `Insufficient funds in source`);
-    }
-
-    // Find destination based on type
-    if (destinationType === "Account") {
-      destination = await Account.findOne({
-        accountNumber: destinationId,
-      })
-        .populate("user")
-        .session(session);
-    } else if (destinationType === "Card") {
-      destination = await Card.findOne({
-        number: destinationId,
-      })
-        .populate("user")
-        .session(session);
-    } else if (destinationType === "Wallet") {
-      destination = await Wallet.findOne({
-        address: destinationId,
-      })
-        .populate("user")
-        .session(session);
-    }
-
-    if (!destination) {
-      logger.warn("Destination not found", {
-        userId: req.user._id,
-        requestId: req.id,
-        destinationId,
-        timestamp: new Date().toISOString(),
-      });
-      return apiResponse.badRequest(res, `Destination account not found`);
-    }
-
-    logger.debug("Currency conversion check", {
-      userId: req.user._id,
-      requestId: req.id,
-      fromCurrency: source.currency,
-      toCurrency: destination.currency,
-      beforeConversion: decimalAmount.toString(),
-      timestamp: new Date().toISOString(),
-    });
-
-    // Convert amount to destination account currency if different
-    const convertedAmount = await convertCurrency(
-      decimalAmount,
-      source.currency,
-      destination.currency
-    );
-
-    logger.debug("After currency conversion", {
-      userId: req.user._id,
-      requestId: req.id,
-      fromCurrency: source.currency,
-      toCurrency: destination.currency,
-      beforeConversion: decimalAmount.toString(),
-      afterConversion: convertedAmount.toString(),
-      conversionRate: (
-        parseFloat(convertedAmount.toString()) /
-        parseFloat(decimalAmount.toString())
-      ).toFixed(8),
-      timestamp: new Date().toISOString(),
-    });
-
-    // Generate a shared reference for both transactions
-    // const sharedReference = `ACTR FRM ${source.fullName} TO ${destination.fullName}-${Date.now()}-${Math.floor(
-    //   Math.random() * 1000
-    // )}`;
-    // Replace the current reference generation code with this:
-    const getEntityName = (entity, entityType) => {
-      // Use the name property from the relevant entity
-      return entity.name || `Unknown ${entityType}`;
-    };
-
-    // Generate a shared reference for both transactions
-    const sourceEntityName = getEntityName(source, sourceType);
-    const destinationEntityName = getEntityName(destination, destinationType);
-
-    const sharedReference = `ACTR FRM ${sourceEntityName} TO ${destinationEntityName}-${Date.now()}-${Math.floor(
-      Math.random() * 1000
-    )}`;
-
-    // Deduct from source account
-    if (sourceType === "Account") {
-      oldSourceBalance = source.availableBalance.toString();
-      source.availableBalance = mongoose.Types.Decimal128.fromString(
-        (
-          parseFloat(source.availableBalance.toString()) -
-          parseFloat(decimalAmount.toString())
-        ).toFixed(8)
-      );
-    } else {
-      oldSourceBalance = source.balance.toString();
-      source.balance = mongoose.Types.Decimal128.fromString(
-        (
-          parseFloat(source.balance.toString()) -
-          parseFloat(decimalAmount.toString())
-        ).toFixed(8)
-      );
-    }
-
-    logger.debug("Updating Source balance", {
-      userId: req.user._id,
-      requestId: req.id,
-      sourceId: source._id,
-      oldBalance: oldSourceBalance,
-      amountDeducted: decimalAmount.toString(),
-      newBalance:
-        sourceType === "Account"
-          ? source.availableBalance.toString()
-          : source.balance.toString(),
-      timestamp: new Date().toISOString(),
-    });
-
-    await source.save({ session });
-
-    // Add to destination account
-    if (destinationType === "Account") {
-      oldDestinationBalance = destination.availableBalance.toString();
-      destination.availableBalance = mongoose.Types.Decimal128.fromString(
-        (
-          parseFloat(destination.availableBalance.toString()) +
-          parseFloat(convertedAmount.toString())
-        ).toFixed(8)
-      );
-    } else {
-      oldDestinationBalance = destination.balance.toString();
-      destination.balance = mongoose.Types.Decimal128.fromString(
-        (
-          parseFloat(destination.balance.toString()) +
-          parseFloat(convertedAmount.toString())
-        ).toFixed(8)
-      );
-    }
-
-    logger.debug("Updating Destination balance", {
-      userId: req.user._id,
-      requestId: req.id,
-      destinationId: destination._id,
-      oldBalance: oldDestinationBalance,
-      amountAdded: convertedAmount.toString(),
-      newBalance:
-        destinationType === "Account"
-          ? destination.availableBalance.toString()
-          : destination.balance.toString(),
-      timestamp: new Date().toISOString(),
-    });
-
-    await destination.save({ session });
-
-    // Create Debit transaction for the source
-    const debitTransaction = new Transaction({
-      user: req.user._id,
-      type: "debit",
-      amount: decimalAmount,
-      source:
-        sourceType === "Account"
-          ? source.accountNumber.toString()
-          : sourceType === "Card"
-          ? source.number.toString()
-          : source.address.toString(),
-      sourceType,
-      sourceCurrency: source.currency,
-      sourceUser: source.user._id,
-      destination:
-        destinationType === "Account"
-          ? destination.accountNumber.toString()
-          : destinationType === "Card"
-          ? destination.number.toString()
-          : destination.address.toString(),
-      destinationType,
-      destinationCurrency: destination.currency,
-      beneficiary: destination.user._id,
-      conversionRate:
-        source.currency !== destination.currency
-          ? parseFloat(convertedAmount.toString()) /
-            parseFloat(decimalAmount.toString())
-          : 1,
-      description: description || "Account transfer (debit)",
-      status: "completed",
-      reference: sharedReference,
-      metadata,
-      narration,
-    });
-
-    // Create Credit transaction for the destination
-    const creditTransaction = new Transaction({
-      user: destination.user._id,
-      type: "credit",
-      amount: convertedAmount,
-      source:
-        sourceType === "Account"
-          ? source.accountNumber.toString()
-          : sourceType === "Card"
-          ? source.number.toString()
-          : source.address.toString(),
-      sourceType,
-      sourceCurrency: source.currency,
-      sourceUser: source.user._id,
-      destination:
-        destinationType === "Account"
-          ? destination.accountNumber.toString()
-          : destinationType === "Card"
-          ? destination.number.toString()
-          : destination.address.toString(),
-      destinationType,
-      destinationCurrency: destination.currency,
-      beneficiary: destination.user._id,
-      conversionRate:
-        source.currency !== destination.currency
-          ? parseFloat(convertedAmount.toString()) /
-            parseFloat(decimalAmount.toString())
-          : 1,
-      description: description || "Account transfer (credit)",
-      status: "completed",
-      reference: sharedReference,
-      metadata,
-      narration,
-    });
-
-    // Save both transactions within the same session
-    await debitTransaction.save({ session });
-    await creditTransaction.save({ session });
-
-    logger.debug("Transactions created", {
-      userId: req.user._id,
-      requestId: req.id,
-      debitTransactionId: debitTransaction._id,
-      creditTransactionId: creditTransaction._id,
-      sourceUserId: source.user._id,
-      beneficiaryUserId: destination.user._id,
-      reference: sharedReference,
-      timestamp: new Date().toISOString(),
-    });
-
-    // Add transaction IDs to the respective accounts
-    if (!source.transactions) {
-      source.transactions = [];
-    }
-    source.transactions.push(debitTransaction._id);
-    await source.save({ session });
-
-    logger.debug("Added debit transaction to source", {
-      userId: req.user._id,
-      requestId: req.id,
-      sourceId: source._id,
-      transactionId: debitTransaction._id,
-      timestamp: new Date().toISOString(),
-    });
-
-    if (!destination.transactions) {
-      destination.transactions = [];
-    }
-    destination.transactions.push(creditTransaction._id);
-    await destination.save({ session });
-
-    logger.debug("Added credit transaction to destination", {
-      userId: req.user._id,
-      requestId: req.id,
-      destinationId: destination._id,
-      transactionId: creditTransaction._id,
-      timestamp: new Date().toISOString(),
-    });
-
-    logger.debug("Committing database transaction", {
-      userId: req.user._id,
-      requestId: req.id,
-      reference: sharedReference,
-      timestamp: new Date().toISOString(),
-    });
-
-    // Commit transaction
-    await session.commitTransaction();
-    session.endSession();
-
-    logger.info("Transfer completed successfully", {
-      userId: req.user._id,
-      requestId: req.id,
-      transactionReference: sharedReference,
-      amount: decimalAmount.toString(),
-      fromCurrency: source.currency,
-      toCurrency: destination.currency,
-      timestamp: new Date().toISOString(),
-    });
-
-    // Return both transactions in the response
-    res.status(200).json({
-      status: "success",
-      message: "Transfer Successful",
-      reference: sharedReference,
-      success: true,
-      data: {
-        debitTransaction,
-        creditTransaction,
-        sourceType,
-        destinationType,
-        amount: decimalAmount.toString(),
-        convertedAmount: convertedAmount.toString(),
-      },
-    });
-  } catch (error) {
-    // Abort transaction if error occurs
-    logger.error("Aborting database transaction due to error", {
-      userId: req.user?._id,
-      requestId: req.id,
-      errorMessage: error.message,
-      errorStack: error.stack,
-      timestamp: new Date().toISOString(),
-    });
-
-    await session.abortTransaction();
-    session.endSession();
-
-    logger.error("Transfer failed:", {
-      error: error.message,
-      errorCode: error.code || error.statusCode,
-      errorStack: error.stack,
-      userId: req.user?._id,
-      requestId: req.id,
-      requestBody: req.body,
-      timestamp: new Date().toISOString(),
-    });
-
-    next(error);
-  }
-};
-
-/**
- * @desc    Get account transactions
- * @route   GET /api/accounts/:accountId/transactions
- * @access  Private
- */
-const getAccountTransactions = async (req, res, next) => {
-  try {
-    const { accountId } = req.params;
-    const { page = 1, limit = 10, type } = req.query;
-
-    // Ensure account belongs to user
-    const account = await Account.findOne({
-      _id: accountId,
-      user: req.user._id,
-    });
-
-    if (!account) {
-      throw new CustomError(404, "Account not found");
-    }
-
-    // Build query to find transactions involving this account
-    const query = {
-      user: req.user._id,
-      $or: [
-        { sourceId: accountId, sourceType: "account" },
-        { destinationId: accountId, destinationType: "account" },
-      ],
-    };
-
-    // Add type filter if provided
-    if (type) {
-      query.type = type;
-    }
-
-    // Execute query with pagination
-    const options = {
-      page: parseInt(page, 10),
-      limit: parseInt(limit, 10),
-      sort: { createdAt: -1 },
-    };
-
-    const transactions = await AccountTransaction.paginate(query, options);
-
-    res.status(200).json({
-      status: "Success",
-      success: true,
-      data: {
-        transactions,
-      },
-    });
-  } catch (error) {
-    logger.error("Error fetching account transactions:", {
-      error: error.message,
-      userId: req.user?._id,
-      requestId: req.id,
-    });
-
-    next(error);
-  }
-};
-
-/**
- * @desc    Create a new account
- * @route   POST /api/accounts
- * @access  Private
- */
-const createAccount = async (req, res, next) => {
-  try {
-    const { accountName, accountType, currency = "USD" } = req.body;
-
-    if (!accountName || !accountType) {
-      return res.status(400).json({
-        success: false,
-        error: "Account name and type are required.",
-      });
-    }
-
-    const newAccount = new Account({
-      accountName,
-      accountType,
-      currency,
-      user: req.user._id,
-      availableBalance: mongoose.Types.Decimal128.fromString("0.00"),
-      isActive: true,
-    });
-
-    const savedAccount = await newAccount.save();
-
-    res.status(201).json({
-      status: "Success",
-      success: true,
-      data: {
-        account: savedAccount,
-      },
-    });
-  } catch (error) {
-    logger.error("Create Account Error:", {
-      error: error.message,
-      stack: error.stack,
-      requestId: req.id,
-      ip: req.ip,
-      timestamp: new Date().toISOString(),
-    });
-    next(error);
-  }
-};
-
-/**
- * @desc    Update an existing account
- * @route   PUT /api/accounts/:accountId
- * @access  Private
- */
-const updateAccount = async (req, res, next) => {
-  try {
-    const { accountId } = req.params;
-    const updateData = req.body;
-
-    // Prevent updating critical fields
-    delete updateData.availableBalance;
-    delete updateData.user;
-    delete updateData.currency; // Typically wouldn't allow currency changes
-
-    const updatedAccount = await Account.findOneAndUpdate(
-      { _id: accountId, user: req.user._id },
-      updateData,
-      { new: true }
-    );
-
-    if (!updatedAccount) {
-      throw new CustomError(404, "Account not found");
-    }
-
-    res.status(200).json({
-      status: "Success",
-      success: true,
-      data: {
-        account: updatedAccount,
-      },
-    });
-  } catch (error) {
-    logger.error("Update Account Error:", {
-      error: error.message,
-      stack: error.stack,
-      requestId: req.id,
-      ip: req.ip,
-      timestamp: new Date().toISOString(),
-    });
-    next(error);
-  }
-};
-
-/**
- * @desc    External account transfer
- * @route   POST /api/accounts/external-transfer
- * @access  Private
- */
-const externalTransfer = async (req, res, next) => {
-  // Start logging - capture initial request data
-  logger.info("External transfer request initiated", {
-    userId: req.user._id,
-    requestId: req.id,
-    requestBody: {
-      type: req.body.type,
-      amount: req.body.amount,
-      sourceId: req.body.sourceId,
-      sourceType: req.body.sourceType,
-      sourceCurrency: req.body.sourceCurrency,
-      destinationId: req.body.destinationId,
-      destinationType: req.body.destinationType,
-      destinationCurrency: req.body.destinationCurrency,
-      description: req.body.description,
-      metadata: req.body.metadata,
-      narration: req.body.narration,
-    },
-    timestamp: new Date().toISOString(),
-    ipAddress: req.ip,
-    userAgent: req.headers["user-agent"],
-  });
-
-  const session = await mongoose.startSession();
-  session.startTransaction();
-
-  try {
-    const {
-      type,
-      amount,
-      sourceId,
-      sourceType,
-      sourceCurrency,
-      destinationId,
-      destinationType,
-      destinationCurrency,
-      description = "External account transfer",
-      metadata = {},
-      narration,
-    } = req.body;
-
-    // Validate required fields
-    if (
-      !type ||
-      !amount ||
-      !sourceId ||
-      !sourceType ||
-      !destinationId ||
-      !destinationType
-    ) {
-      logger.warn("Validation failed: Missing required fields", {
-        userId: req.user._id,
-        requestId: req.id,
-        timestamp: new Date().toISOString(),
-      });
-      throw new CustomError(
-        400,
-        "Please provide all required transfer details"
-      );
-    }
-
-    // Convert amount to Decimal128 for precise calculations
-    const decimalAmount = mongoose.Types.Decimal128.fromString(
-      amount.toString()
-    );
-
-    // Ensure that the source account belongs to the user if it's an account
-    if (sourceType === "account") {
-      const sourceAccount = await Account.findOne({
-        _id: sourceId,
-        user: req.user._id,
-      }).session(session);
-
-      if (!sourceAccount) {
-        logger.warn("Source account not found or doesn't belong to user", {
-          userId: req.user._id,
-          requestId: req.id,
-          sourceId,
-          timestamp: new Date().toISOString(),
-        });
-        throw new CustomError(404, "Source account not found");
-      }
-
-      // Check if source account has sufficient balance
-      if (
-        parseFloat(sourceAccount.availableBalance.toString()) <
-        parseFloat(decimalAmount.toString())
-      ) {
-        logger.warn("Insufficient funds in source account", {
-          userId: req.user._id,
-          requestId: req.id,
-          sourceAccountId: sourceAccount._id,
-          sourceAccountBalance: sourceAccount.availableBalance.toString(),
-          transferAmount: decimalAmount.toString(),
-          difference: (
-            parseFloat(decimalAmount.toString()) -
-            parseFloat(sourceAccount.availableBalance.toString())
-          ).toFixed(8),
-          timestamp: new Date().toISOString(),
-        });
-        throw new CustomError(400, "Insufficient funds in source account");
-      }
-
-      // Deduct from source account
-      const oldFromAccountBalance = sourceAccount.availableBalance.toString();
-      sourceAccount.availableBalance = mongoose.Types.Decimal128.fromString(
-        (
-          parseFloat(sourceAccount.availableBalance.toString()) -
-          parseFloat(decimalAmount.toString())
-        ).toFixed(8)
-      );
-
-      logger.debug("Updating source account balance", {
-        userId: req.user._id,
-        requestId: req.id,
-        sourceAccountId: sourceAccount._id,
-        oldBalance: oldFromAccountBalance,
-        amountDeducted: decimalAmount.toString(),
-        newBalance: sourceAccount.availableBalance.toString(),
-        timestamp: new Date().toISOString(),
-      });
-
-      await sourceAccount.save({ session });
-    }
-
-    // For external transfers, we may not have direct access to update the destination
-    // This would typically involve an API call to an external service
-    // For this example, we'll just log the intent and create a transaction record
-
-    logger.info("Processing external transfer to destination", {
-      userId: req.user._id,
-      requestId: req.id,
-      destinationType,
-      destinationId,
-      destinationCurrency,
-      amount: decimalAmount.toString(),
-      timestamp: new Date().toISOString(),
-    });
-
-    // Here you would typically make an API call to an external service
-    // to complete the transfer to the external destination
-
-    // Create transaction record
-    const reference = `EXT-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
-    const transaction = new AccountTransaction({
-      user: req.user._id,
-      type,
-      amount: decimalAmount,
-      currency: sourceCurrency || "USD",
-      sourceId,
-      sourceType,
-      destinationId,
-      destinationType,
-      destinationCurrency: destinationCurrency || "USD",
-      description,
-      metadata,
-      narration,
-      status: "processing", // External transfers may need further processing
-      reference,
-    });
-
-    logger.debug("Creating transaction record", {
-      userId: req.user._id,
-      requestId: req.id,
-      transactionReference: reference,
-      transactionDetails: {
-        type,
-        amount: decimalAmount.toString(),
-        sourceCurrency,
-        sourceId,
-        sourceType,
-        destinationId,
-        destinationType,
-        destinationCurrency,
-        description,
-        status: "processing",
-      },
-      timestamp: new Date().toISOString(),
-    });
-
-    await transaction.save({ session });
-
-    logger.debug("Committing database transaction", {
-      userId: req.user._id,
-      requestId: req.id,
-      reference,
-      timestamp: new Date().toISOString(),
-    });
-
-    // Commit transaction
-    await session.commitTransaction();
-    session.endSession();
-
-    logger.info("External transfer initiated successfully", {
-      userId: req.user._id,
-      requestId: req.id,
-      transactionReference: reference,
-      amount: decimalAmount.toString(),
-      timestamp: new Date().toISOString(),
-    });
-
-    res.status(200).json({
-      status: "success",
-      message: "External transfer initiated successfully",
-      reference,
-      success: true,
-      data: transaction,
-    });
-  } catch (error) {
-    // Abort transaction if error occurs
-    logger.error("Aborting database transaction due to error", {
-      userId: req.user?._id,
-      requestId: req.id,
-      errorMessage: error.message,
-      errorStack: error.stack,
-      timestamp: new Date().toISOString(),
-    });
-
-    await session.abortTransaction();
-    session.endSession();
-
-    logger.error("External transfer failed:", {
-      error: error.message,
-      errorCode: error.code || error.statusCode,
-      errorStack: error.stack,
-      userId: req.user?._id,
-      requestId: req.id,
-      requestBody: req.body,
-      timestamp: new Date().toISOString(),
-    });
-
-    next(error);
-  }
-};
+const notificationService = require("../services/notificationService");
 
 /**
  * @desc    Execute a currency conversion
@@ -1026,11 +106,515 @@ const generateTransactionReference = (sourceType, destinationType) => {
 };
 
 /**
+ * @desc    Transfer funds between accounts (same or different currencies)
+ * @route   POST /api/accounts/transfer
+ * @access  Private
+ */
+exports.transferBetweenAccounts = async (req, res) => {
+  // Start logging - capture initial request data
+  logger.info("Account transfer request initiated", {
+    userId: req.user._id,
+    requestId: req.id,
+    requestBody: {
+      type: req.body.type,
+      amount: req.body.amount,
+      sourceId: req.body.sourceId,
+      sourceType: req.body.sourceType,
+      sourceCurrency: req.body.sourceCurrency,
+      destinationId: req.body.destinationId,
+      destinationType: req.body.destinationType,
+      destinationCurrency: req.body.destinationCurrency,
+      description: req.body.description,
+      metadata: req.body.metadata,
+      narration: req.body.narration,
+    },
+    timestamp: new Date().toISOString(),
+    ipAddress: req.ip,
+    userAgent: req.headers["user-agent"],
+  });
+
+  // Start a database transaction
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
+  try {
+    const {
+      type,
+      amount,
+      sourceId,
+      sourceType,
+      sourceCurrency,
+      destinationId,
+      destinationType,
+      destinationCurrency,
+      description,
+      metadata,
+      narration,
+    } = req.body;
+
+    if (sourceId === destinationId) {
+      logger.warn("Validation failed: Same source & destination", {
+        userId: req.user._id,
+        requestId: req.id,
+        timestamp: new Date().toISOString(),
+      });
+
+      await session.abortTransaction();
+      session.endSession();
+
+      return apiResponse.badRequest(
+        res,
+        "Bad Request",
+        "Source and destination accounts cannot be the same",
+        "SAME_ACCOUNT_ERROR"
+      );
+    }
+
+    // Convert amount to Decimal128 for precise calculations
+    const decimalAmount = mongoose.Types.Decimal128.fromString(
+      amount.toString()
+    );
+
+    // Log account lookup attempt
+    logger.debug("Looking up accounts", {
+      userId: req.user._id,
+      requestId: req.id,
+      sourceId,
+      destinationId,
+      timestamp: new Date().toISOString(),
+    });
+
+    let source, destination, oldSourceBalance, oldDestinationBalance;
+
+    // Find source based on type
+    if (sourceType === "Account") {
+      source = await Account.findOne({
+        accountNumber: sourceId,
+        user: req.user._id,
+      })
+        .populate("user")
+        .session(session);
+    } else if (sourceType === "Card") {
+      source = await Card.findOne({
+        number: sourceId,
+        user: req.user._id,
+      })
+        .populate("user")
+        .session(session);
+    } else if (sourceType === "Wallet") {
+      source = await Wallet.findOne({
+        address: sourceId,
+        user: req.user._id,
+      })
+        .populate("user")
+        .session(session);
+    }
+
+    if (!source) {
+      logger.warn("Source not found", {
+        userId: req.user._id,
+        requestId: req.id,
+        sourceId,
+        timestamp: new Date().toISOString(),
+      });
+
+      await session.abortTransaction();
+      session.endSession();
+
+      return apiResponse.badRequest(
+        res,
+        "Bad Request",
+        "Source not found",
+        "SOURCE_NOT_FOUND"
+      );
+    }
+
+    // Check if source account has sufficient balance
+    if (
+      parseFloat(source.availableBalance.toString()) <
+      parseFloat(decimalAmount.toString())
+    ) {
+      logger.warn("Insufficient funds in source", {
+        userId: req.user._id,
+        requestId: req.id,
+        sourceId: source._id,
+        sourceBalance: source.availableBalance.toString(),
+        transferAmount: decimalAmount.toString(),
+        difference: (
+          parseFloat(decimalAmount.toString()) -
+          parseFloat(source.availableBalance.toString())
+        ).toFixed(8),
+        timestamp: new Date().toISOString(),
+      });
+
+      await session.abortTransaction();
+      session.endSession();
+
+      return apiResponse.badRequest(
+        res,
+        "Bad Request",
+        "Insufficient funds in source",
+        "INSUFFICIENT_FUNDS"
+      );
+    }
+
+    // Find destination based on type
+    if (destinationType === "Account") {
+      destination = await Account.findOne({
+        accountNumber: destinationId,
+      })
+        .populate("user")
+        .session(session);
+    } else if (destinationType === "Card") {
+      destination = await Card.findOne({
+        number: destinationId,
+      })
+        .populate("user")
+        .session(session);
+    } else if (destinationType === "Wallet") {
+      destination = await Wallet.findOne({
+        address: destinationId,
+      })
+        .populate("user")
+        .session(session);
+    }
+
+    if (!destination) {
+      logger.warn("Destination not found", {
+        userId: req.user._id,
+        requestId: req.id,
+        destinationId,
+        timestamp: new Date().toISOString(),
+      });
+
+      await session.abortTransaction();
+      session.endSession();
+
+      return apiResponse.badRequest(
+        res,
+        "Bad Request",
+        "Destination account not found",
+        "DESTINATION_NOT_FOUND"
+      );
+    }
+
+    logger.debug("Currency conversion check", {
+      userId: req.user._id,
+      requestId: req.id,
+      fromCurrency: source.currency,
+      toCurrency: destination.currency,
+      beforeConversion: decimalAmount.toString(),
+      timestamp: new Date().toISOString(),
+    });
+
+    // Convert amount to destination account currency if different
+    const convertedAmount = await convertCurrency(
+      decimalAmount,
+      source.currency,
+      destination.currency
+    );
+
+    logger.debug("After currency conversion", {
+      userId: req.user._id,
+      requestId: req.id,
+      fromCurrency: source.currency,
+      toCurrency: destination.currency,
+      beforeConversion: decimalAmount.toString(),
+      afterConversion: convertedAmount.toString(),
+      conversionRate: (
+        parseFloat(convertedAmount.toString()) /
+        parseFloat(decimalAmount.toString())
+      ).toFixed(8),
+      timestamp: new Date().toISOString(),
+    });
+
+    // Generate entity names for reference
+    const getEntityName = (entity, entityType) => {
+      return entity.name || `Unknown ${entityType}`;
+    };
+
+    // Generate a shared reference for both transactions
+    const sourceEntityName = getEntityName(source, sourceType);
+    const destinationEntityName = getEntityName(destination, destinationType);
+
+    const sharedReference = `ACTR FRM ${sourceEntityName} TO ${destinationEntityName}-${Date.now()}-${Math.floor(
+      Math.random() * 1000
+    )}`;
+
+    // Deduct from source account
+    if (sourceType === "Account") {
+      oldSourceBalance = source.availableBalance.toString();
+      source.availableBalance = mongoose.Types.Decimal128.fromString(
+        (
+          parseFloat(source.availableBalance.toString()) -
+          parseFloat(decimalAmount.toString())
+        ).toFixed(8)
+      );
+    } else {
+      oldSourceBalance = source.balance.toString();
+      source.balance = mongoose.Types.Decimal128.fromString(
+        (
+          parseFloat(source.balance.toString()) -
+          parseFloat(decimalAmount.toString())
+        ).toFixed(8)
+      );
+    }
+
+    logger.debug("Updating Source balance", {
+      userId: req.user._id,
+      requestId: req.id,
+      sourceId: source._id,
+      oldBalance: oldSourceBalance,
+      amountDeducted: decimalAmount.toString(),
+      newBalance:
+        sourceType === "Account"
+          ? source.availableBalance.toString()
+          : source.balance.toString(),
+      timestamp: new Date().toISOString(),
+    });
+
+    await source.save({ session });
+
+    // Add to destination account
+    if (destinationType === "Account") {
+      oldDestinationBalance = destination.availableBalance.toString();
+      destination.availableBalance = mongoose.Types.Decimal128.fromString(
+        (
+          parseFloat(destination.availableBalance.toString()) +
+          parseFloat(convertedAmount.toString())
+        ).toFixed(8)
+      );
+    } else {
+      oldDestinationBalance = destination.balance.toString();
+      destination.balance = mongoose.Types.Decimal128.fromString(
+        (
+          parseFloat(destination.balance.toString()) +
+          parseFloat(convertedAmount.toString())
+        ).toFixed(8)
+      );
+    }
+
+    logger.debug("Updating Destination balance", {
+      userId: req.user._id,
+      requestId: req.id,
+      destinationId: destination._id,
+      oldBalance: oldDestinationBalance,
+      amountAdded: convertedAmount.toString(),
+      newBalance:
+        destinationType === "Account"
+          ? destination.availableBalance.toString()
+          : destination.balance.toString(),
+      timestamp: new Date().toISOString(),
+    });
+
+    await destination.save({ session });
+
+    // Create Debit transaction for the source
+    const debitTransaction = new Transaction({
+      user: req.user._id,
+      type: "debit",
+      amount: decimalAmount,
+      source: source._id,
+      sourceType,
+      sourceCurrency: source.currency,
+      sourceUser: source.user._id,
+      destination: destination._id,
+      destinationType,
+      destinationCurrency: destination.currency,
+      beneficiary: destination.user._id,
+      conversionRate:
+        source.currency !== destination.currency
+          ? parseFloat(convertedAmount.toString()) /
+            parseFloat(decimalAmount.toString())
+          : 1,
+      description: description || "Account transfer (debit)",
+      status: "completed",
+      reference: sharedReference,
+      metadata,
+      narration,
+      processedAt: new Date(),
+    });
+
+    // Create Credit transaction for the destination
+    const creditTransaction = new Transaction({
+      user: destination.user._id,
+      type: "credit",
+      amount: convertedAmount,
+      source: source._id,
+      sourceType,
+      sourceCurrency: source.currency,
+      sourceUser: source.user._id,
+      destination: destination._id,
+      destinationType,
+      destinationCurrency: destination.currency,
+      beneficiary: destination.user._id,
+      conversionRate:
+        source.currency !== destination.currency
+          ? parseFloat(convertedAmount.toString()) /
+            parseFloat(decimalAmount.toString())
+          : 1,
+      description: description || "Account transfer (credit)",
+      status: "completed",
+      reference: sharedReference,
+      metadata,
+      narration,
+      processedAt: new Date(),
+    });
+
+    // Save both transactions within the same session
+    await debitTransaction.save({ session });
+    await creditTransaction.save({ session });
+
+    logger.debug("Transactions created", {
+      userId: req.user._id,
+      requestId: req.id,
+      debitTransactionId: debitTransaction._id,
+      creditTransactionId: creditTransaction._id,
+      sourceUserId: source.user._id,
+      beneficiaryUserId: destination.user._id,
+      reference: sharedReference,
+      timestamp: new Date().toISOString(),
+    });
+
+    // Add transaction IDs to the respective accounts
+    if (!source.transactions) {
+      source.transactions = [];
+    }
+    source.transactions.push(debitTransaction._id);
+    await source.save({ session });
+
+    logger.debug("Added debit transaction to source", {
+      userId: req.user._id,
+      requestId: req.id,
+      sourceId: source._id,
+      transactionId: debitTransaction._id,
+      timestamp: new Date().toISOString(),
+    });
+
+    if (!destination.transactions) {
+      destination.transactions = [];
+    }
+    destination.transactions.push(creditTransaction._id);
+    await destination.save({ session });
+
+    logger.debug("Added credit transaction to destination", {
+      userId: req.user._id,
+      requestId: req.id,
+      destinationId: destination._id,
+      transactionId: creditTransaction._id,
+      timestamp: new Date().toISOString(),
+    });
+
+    // Create notification for sender
+    // await notificationService.createNotification(
+    //   req.user._id,
+    //   "Transfer Completed",
+    //   `Your transfer of ${decimalAmount.toString()} ${
+    //     source.currency
+    //   } to ${destinationEntityName} has been completed.`,
+    //   "transaction",
+    //   {
+    //     transactionId: debitTransaction._id,
+    //     reference: sharedReference,
+    //     type: "debit",
+    //   },
+    //   session
+    // );
+
+    // Create notification for recipient if it's a different user
+    // if (source.user._id.toString() !== destination.user._id.toString()) {
+    //   await notificationService.createNotification(
+    //     destination.user._id,
+    //     "Transfer Received",
+    //     `You have received ${convertedAmount.toString()} ${
+    //       destination.currency
+    //     } from ${sourceEntityName}.`,
+    //     "transaction",
+    //     {
+    //       transactionId: creditTransaction._id,
+    //       reference: sharedReference,
+    //       type: "credit",
+    //     },
+    //     session
+    //   );
+    // }
+
+    logger.debug("Committing database transaction", {
+      userId: req.user._id,
+      requestId: req.id,
+      reference: sharedReference,
+      timestamp: new Date().toISOString(),
+    });
+
+    // Commit transaction
+    await session.commitTransaction();
+    session.endSession();
+
+    logger.info("Transfer completed successfully", {
+      userId: req.user._id,
+      requestId: req.id,
+      transactionReference: sharedReference,
+      amount: decimalAmount.toString(),
+      fromCurrency: source.currency,
+      toCurrency: destination.currency,
+      timestamp: new Date().toISOString(),
+    });
+
+    // Return both transactions in the response
+    return apiResponse.success(
+      res,
+      200,
+      "Transfer Successful",
+      "Transfer completed successfully",
+      {
+        debitTransaction,
+        creditTransaction,
+        sourceType,
+        destinationType,
+        amount: decimalAmount.toString(),
+        convertedAmount: convertedAmount.toString(),
+        reference: sharedReference,
+      }
+    );
+  } catch (error) {
+    // Abort transaction if error occurs
+    logger.error("Aborting database transaction due to error", {
+      userId: req.user?._id,
+      requestId: req.id,
+      errorMessage: error.message,
+      errorStack: error.stack,
+      timestamp: new Date().toISOString(),
+    });
+
+    await session.abortTransaction();
+    session.endSession();
+
+    logger.error("Transfer failed:", {
+      error: error.message,
+      errorCode: error.code || error.statusCode,
+      errorStack: error.stack,
+      userId: req.user?._id,
+      requestId: req.id,
+      requestBody: req.body,
+      timestamp: new Date().toISOString(),
+    });
+
+    return apiResponse.error(
+      res,
+      500,
+      "Transfer Failed",
+      "An error occurred while processing your transfer",
+      "TRANSFER_ERROR"
+    );
+  }
+};
+
+/**
  * @desc    Transfer between wallets (same or different currencies)
  * @route   POST /api/wallets/transfer/wallet
  * @access  Private
  */
-exports.transferWalletToWallet = async (req, res, next) => {
+exports.transferWalletToWallet = async (req, res) => {
   // Start logging
   logger.info("Wallet-to-wallet transfer request initiated", {
     userId: req.user._id,
@@ -1069,10 +653,15 @@ exports.transferWalletToWallet = async (req, res, next) => {
         requestId: req.id,
         timestamp: new Date().toISOString(),
       });
+
+      await session.abortTransaction();
+      session.endSession();
+
       return apiResponse.badRequest(
         res,
         "Invalid Request",
-        "Source and destination wallets cannot be the same"
+        "Source and destination wallets cannot be the same",
+        "SAME_WALLET_ERROR"
       );
     }
 
@@ -1105,7 +694,16 @@ exports.transferWalletToWallet = async (req, res, next) => {
         sourceWalletId,
         timestamp: new Date().toISOString(),
       });
-      return apiResponse.badRequest(res, "Source wallet not found");
+
+      await session.abortTransaction();
+      session.endSession();
+
+      return apiResponse.badRequest(
+        res,
+        "Invalid Request",
+        "Source wallet not found",
+        "SOURCE_WALLET_NOT_FOUND"
+      );
     }
 
     // Check if source wallet has sufficient balance
@@ -1125,7 +723,16 @@ exports.transferWalletToWallet = async (req, res, next) => {
         ).toFixed(8),
         timestamp: new Date().toISOString(),
       });
-      return apiResponse.badRequest(res, "Insufficient funds in source wallet");
+
+      await session.abortTransaction();
+      session.endSession();
+
+      return apiResponse.badRequest(
+        res,
+        "Insufficient Funds",
+        "Insufficient funds in source wallet",
+        "INSUFFICIENT_WALLET_FUNDS"
+      );
     }
 
     // Check transaction limits
@@ -1140,7 +747,16 @@ exports.transferWalletToWallet = async (req, res, next) => {
         reason: limitCheck.reason,
         timestamp: new Date().toISOString(),
       });
-      return apiResponse.badRequest(res, limitCheck.reason);
+
+      await session.abortTransaction();
+      session.endSession();
+
+      return apiResponse.badRequest(
+        res,
+        "Limit Exceeded",
+        limitCheck.reason,
+        "TRANSACTION_LIMIT_EXCEEDED"
+      );
     }
 
     // Find destination wallet (no user restriction on destination)
@@ -1157,7 +773,16 @@ exports.transferWalletToWallet = async (req, res, next) => {
         destinationWalletId,
         timestamp: new Date().toISOString(),
       });
-      return apiResponse.badRequest(res, "Destination wallet not found");
+
+      await session.abortTransaction();
+      session.endSession();
+
+      return apiResponse.badRequest(
+        res,
+        "Invalid Request",
+        "Destination wallet not found",
+        "DESTINATION_WALLET_NOT_FOUND"
+      );
     }
 
     // Currency conversion check
@@ -1289,58 +914,13 @@ exports.transferWalletToWallet = async (req, res, next) => {
       completedAt: new Date(),
     });
 
-    // // Create Transaction records for general ledger
-    // const debitTransaction = new Transaction({
-    //   user: req.user._id,
-    //   type: "Debit",
-    //   amount: decimalAmount,
-    //   source: sourceWallet.address,
-    //   sourceType: "Wallet",
-    //   sourceCurrency: sourceWallet.currency,
-    //   sourceUser: sourceWallet.user._id,
-    //   destination: destinationWallet.address,
-    //   destinationType: "Wallet",
-    //   destinationCurrency: destinationWallet.currency,
-    //   beneficiary: destinationWallet.user._id,
-    //   conversionRate,
-    //   description: description || "Wallet to wallet transfer (debit)",
-    //   status: "completed",
-    //   reference: sharedReference,
-    //   metadata,
-    //   processedAt: new Date(),
-    // });
-
-    // const creditTransaction = new Transaction({
-    //   user: destinationWallet.user._id,
-    //   type: "Credit",
-    //   amount: convertedAmount,
-    //   source: sourceWallet.address,
-    //   sourceType: "Wallet",
-    //   sourceCurrency: sourceWallet.currency,
-    //   sourceUser: sourceWallet.user._id,
-    //   destination: destinationWallet.address,
-    //   destinationType: "Wallet",
-    //   destinationCurrency: destinationWallet.currency,
-    //   beneficiary: destinationWallet.user._id,
-    //   conversionRate,
-    //   description: description || "Wallet to wallet transfer (credit)",
-    //   status: "completed",
-    //   reference: sharedReference,
-    //   metadata,
-    //   processedAt: new Date(),
-    // });
-
-    // Save all transactions
-    // await sourceWalletTransaction.save({ session });
-    // await destinationWalletTransaction.save({ session });
+    // Save transactions
     await debitTransaction.save({ session });
     await creditTransaction.save({ session });
 
     logger.debug("Transactions created", {
       userId: req.user._id,
       requestId: req.id,
-      // sourceWalletTransactionId: sourceWalletTransaction._id,
-      // destinationWalletTransactionId: destinationWalletTransaction._id,
       debitTransactionId: debitTransaction._id,
       creditTransactionId: creditTransaction._id,
       reference: sharedReference,
@@ -1361,6 +941,44 @@ exports.transferWalletToWallet = async (req, res, next) => {
     destinationWallet.transactions.push(creditTransaction._id);
     destinationWallet.lastActivityAt = new Date();
     await destinationWallet.save({ session });
+
+    // Create notification for sender
+    // await notificationService.createNotification(
+    //   req.user._id,
+    //   "Wallet Transfer Completed",
+    //   `Your wallet transfer of ${decimalAmount.toString()} ${
+    //     sourceWallet.currency
+    //   } has been completed.`,
+    //   "transaction",
+    //   {
+    //     transactionId: debitTransaction._id,
+    //     reference: sharedReference,
+    //     type: "debit",
+    //   },
+    //   session
+    // );
+
+    // // Create notification for recipient if it's a different user
+    // if (
+    //   sourceWallet.user._id.toString() !== destinationWallet.user._id.toString()
+    // ) {
+    //   await notificationService.createNotification(
+    //     destinationWallet.user._id,
+    //     "Wallet Transfer Received",
+    //     `You have received ${convertedAmount.toString()} ${
+    //       destinationWallet.currency
+    //     } in your wallet ${
+    //       destinationWallet.name || destinationWallet.address
+    //     }.`,
+    //     "transaction",
+    //     {
+    //       transactionId: creditTransaction._id,
+    //       reference: sharedReference,
+    //       type: "credit",
+    //     },
+    //     session
+    //   );
+    // }
 
     logger.debug("Committing database transaction", {
       userId: req.user._id,
@@ -1391,8 +1009,6 @@ exports.transferWalletToWallet = async (req, res, next) => {
       "Swap Successful",
       "Wallet to wallet swap completed successfully",
       {
-        // sourceWalletTransaction,
-        // destinationWalletTransaction,
         debitTransaction,
         creditTransaction,
         amount: decimalAmount.toString(),
@@ -1423,7 +1039,13 @@ exports.transferWalletToWallet = async (req, res, next) => {
       timestamp: new Date().toISOString(),
     });
 
-    next(error);
+    return apiResponse.error(
+      res,
+      500,
+      "Transfer Failed",
+      "An error occurred during wallet to wallet transfer",
+      "WALLET_TRANSFER_ERROR"
+    );
   }
 };
 
@@ -1432,7 +1054,7 @@ exports.transferWalletToWallet = async (req, res, next) => {
  * @route   POST /api/wallets/transfer/account
  * @access  Private
  */
-exports.transferWalletToAccount = async (req, res, next) => {
+exports.transferWalletToAccount = async (req, res) => {
   // Start logging
   logger.info("Wallet-to-account transfer request initiated", {
     userId: req.user._id,
@@ -1492,7 +1114,16 @@ exports.transferWalletToAccount = async (req, res, next) => {
         sourceWalletId,
         timestamp: new Date().toISOString(),
       });
-      return apiResponse.badRequest(res, "Source wallet not found");
+
+      await session.abortTransaction();
+      session.endSession();
+
+      return apiResponse.badRequest(
+        res,
+        "Invalid Request",
+        "Source wallet not found",
+        "SOURCE_WALLET_NOT_FOUND"
+      );
     }
 
     // Check if source wallet has sufficient balance
@@ -1512,7 +1143,16 @@ exports.transferWalletToAccount = async (req, res, next) => {
         ).toFixed(8),
         timestamp: new Date().toISOString(),
       });
-      return apiResponse.badRequest(res, "Insufficient funds in source wallet");
+
+      await session.abortTransaction();
+      session.endSession();
+
+      return apiResponse.badRequest(
+        res,
+        "Insufficient Funds",
+        "Insufficient funds in source wallet",
+        "INSUFFICIENT_WALLET_FUNDS"
+      );
     }
 
     // Check transaction limits
@@ -1527,7 +1167,16 @@ exports.transferWalletToAccount = async (req, res, next) => {
         reason: limitCheck.reason,
         timestamp: new Date().toISOString(),
       });
-      return apiResponse.badRequest(res, limitCheck.reason);
+
+      await session.abortTransaction();
+      session.endSession();
+
+      return apiResponse.badRequest(
+        res,
+        "Limit Exceeded",
+        limitCheck.reason,
+        "TRANSACTION_LIMIT_EXCEEDED"
+      );
     }
 
     // Find destination account (notice we're looking for id not accountNumber here)
@@ -1544,7 +1193,16 @@ exports.transferWalletToAccount = async (req, res, next) => {
         destinationAccountId,
         timestamp: new Date().toISOString(),
       });
-      return apiResponse.badRequest(res, "Destination account not found");
+
+      await session.abortTransaction();
+      session.endSession();
+
+      return apiResponse.badRequest(
+        res,
+        "Invalid Request",
+        "Destination account not found",
+        "DESTINATION_ACCOUNT_NOT_FOUND"
+      );
     }
 
     // Currency conversion check (accounts are always in USD)
@@ -1641,29 +1299,7 @@ exports.transferWalletToAccount = async (req, res, next) => {
           parseFloat(decimalAmount.toString())
         : 1;
 
-    // // Create WalletTransaction for source (outgoing)
-    // const walletTransaction = new WalletTransaction({
-    //   user: req.user._id,
-    //   type: "withdrawal",
-    //   amount: decimalAmount,
-    //   currency: sourceWallet.currency,
-    //   sourceId: sourceWallet._id,
-    //   sourceType: "Wallet",
-    //   sourceCurrency: sourceWallet.currency,
-    //   destinationId: destinationAccount._id,
-    //   destinationType: "Account",
-    //   destinationCurrency: "USD",
-    //   conversionRate,
-    //   description: description || "Wallet to account transfer",
-    //   status: "completed",
-    //   reference: sharedReference,
-    //   metadata,
-    //   ipAddress: req.ip,
-    //   userAgent: req.headers["user-agent"],
-    //   completedAt: new Date(),
-    // });
-
-    // Create Transaction records for general ledger
+    // Create WalletTransaction for source wallet (debit)
     const debitTransaction = new WalletTransaction({
       user: req.user._id,
       type: "debit",
@@ -1676,24 +1312,26 @@ exports.transferWalletToAccount = async (req, res, next) => {
       beneficiary: destinationAccount._id,
       beneficiaryType: "Account",
       beneficiaryCurrency: "USD",
-      // beneficiary: destinationAccount.user._id,
       conversionRate,
       description: description || "Wallet to account transfer (debit)",
       status: "completed",
       reference: sharedReference,
       metadata,
       processedAt: new Date(),
+      ipAddress: req.ip,
+      userAgent: req.headers["user-agent"],
     });
 
+    // Create Transaction for destination account (credit)
     const creditTransaction = new Transaction({
       user: destinationAccount.user._id,
       type: "credit",
       amount: convertedAmount,
-      source: sourceWallet.address,
+      source: sourceWallet._id,
       sourceType: "Wallet",
       sourceCurrency: sourceWallet.currency,
       sourceUser: sourceWallet.user._id,
-      destination: destinationAccount.accountNumber,
+      destination: destinationAccount._id,
       destinationType: "Account",
       destinationCurrency: "USD",
       beneficiary: destinationAccount.user._id,
@@ -1706,14 +1344,12 @@ exports.transferWalletToAccount = async (req, res, next) => {
     });
 
     // Save all transactions
-    // await walletTransaction.save({ session });
     await debitTransaction.save({ session });
     await creditTransaction.save({ session });
 
     logger.debug("Transactions created", {
       userId: req.user._id,
       requestId: req.id,
-      // walletTransactionId: walletTransaction._id,
       debitTransactionId: debitTransaction._id,
       creditTransactionId: creditTransaction._id,
       reference: sharedReference,
@@ -1733,6 +1369,41 @@ exports.transferWalletToAccount = async (req, res, next) => {
     }
     destinationAccount.transactions.push(creditTransaction._id);
     await destinationAccount.save({ session });
+
+    // Create notification for source wallet owner
+    // await notificationService.createNotification(
+    //   sourceWallet.user._id,
+    //   "Wallet Withdrawal Completed",
+    //   `Your withdrawal of ${decimalAmount.toString()} ${
+    //     sourceWallet.currency
+    //   } from your wallet to account has been completed.`,
+    //   "transaction",
+    //   {
+    //     transactionId: debitTransaction._id,
+    //     reference: sharedReference,
+    //     type: "withdrawal",
+    //   },
+    //   session
+    // );
+
+    // // If destination account belongs to different user, create notification for them too
+    // if (
+    //   sourceWallet.user._id.toString() !==
+    //   destinationAccount.user._id.toString()
+    // ) {
+    //   await notificationService.createNotification(
+    //     destinationAccount.user._id,
+    //     "Account Deposit Received",
+    //     `You have received ${convertedAmount.toString()} USD in your account from wallet transfer.`,
+    //     "transaction",
+    //     {
+    //       transactionId: creditTransaction._id,
+    //       reference: sharedReference,
+    //       type: "deposit",
+    //     },
+    //     session
+    //   );
+    // }
 
     logger.debug("Committing database transaction", {
       userId: req.user._id,
@@ -1763,7 +1434,6 @@ exports.transferWalletToAccount = async (req, res, next) => {
       "Withdrawal Successful",
       "Wallet to account withdrawal completed successfully",
       {
-        // walletTransaction,
         debitTransaction,
         creditTransaction,
         amount: decimalAmount.toString(),
@@ -1794,7 +1464,13 @@ exports.transferWalletToAccount = async (req, res, next) => {
       timestamp: new Date().toISOString(),
     });
 
-    next(error);
+    return apiResponse.error(
+      res,
+      500,
+      "Transfer Failed",
+      "An error occurred during wallet to account transfer",
+      "WALLET_TO_ACCOUNT_ERROR"
+    );
   }
 };
 
@@ -1803,7 +1479,7 @@ exports.transferWalletToAccount = async (req, res, next) => {
  * @route   POST /api/wallets/transfer/card
  * @access  Private
  */
-exports.transferWalletToCard = async (req, res, next) => {
+exports.transferWalletToCard = async (req, res) => {
   // Start logging
   logger.info("Wallet-to-card transfer request initiated", {
     userId: req.user._id,
@@ -1858,7 +1534,16 @@ exports.transferWalletToCard = async (req, res, next) => {
         sourceWalletId,
         timestamp: new Date().toISOString(),
       });
-      return apiResponse.badRequest(res, "Source wallet not found");
+
+      await session.abortTransaction();
+      session.endSession();
+
+      return apiResponse.badRequest(
+        res,
+        "Invalid Request",
+        "Source wallet not found",
+        "SOURCE_WALLET_NOT_FOUND"
+      );
     }
 
     // Check if source wallet has sufficient balance
@@ -1878,7 +1563,16 @@ exports.transferWalletToCard = async (req, res, next) => {
         ).toFixed(8),
         timestamp: new Date().toISOString(),
       });
-      return apiResponse.badRequest(res, "Insufficient funds in source wallet");
+
+      await session.abortTransaction();
+      session.endSession();
+
+      return apiResponse.badRequest(
+        res,
+        "Insufficient Funds",
+        "Insufficient funds in source wallet",
+        "INSUFFICIENT_WALLET_FUNDS"
+      );
     }
 
     // Check transaction limits
@@ -1893,7 +1587,16 @@ exports.transferWalletToCard = async (req, res, next) => {
         reason: limitCheck.reason,
         timestamp: new Date().toISOString(),
       });
-      return apiResponse.badRequest(res, limitCheck.reason);
+
+      await session.abortTransaction();
+      session.endSession();
+
+      return apiResponse.badRequest(
+        res,
+        "Limit Exceeded",
+        limitCheck.reason,
+        "TRANSACTION_LIMIT_EXCEEDED"
+      );
     }
 
     // Find destination card (using _id)
@@ -1910,7 +1613,16 @@ exports.transferWalletToCard = async (req, res, next) => {
         destinationCardId,
         timestamp: new Date().toISOString(),
       });
-      return apiResponse.badRequest(res, "Destination card not found");
+
+      await session.abortTransaction();
+      session.endSession();
+
+      return apiResponse.badRequest(
+        res,
+        "Invalid Request",
+        "Destination card not found",
+        "DESTINATION_CARD_NOT_FOUND"
+      );
     }
 
     // Check if the card is valid for receiving funds
@@ -1922,9 +1634,15 @@ exports.transferWalletToCard = async (req, res, next) => {
         cardStatus: destinationCard.status,
         timestamp: new Date().toISOString(),
       });
+
+      await session.abortTransaction();
+      session.endSession();
+
       return apiResponse.badRequest(
         res,
-        `Destination card is ${destinationCard.status}`
+        "Card Error",
+        `Destination card is ${destinationCard.status}`,
+        "CARD_NOT_ACTIVE"
       );
     }
 
@@ -1936,7 +1654,16 @@ exports.transferWalletToCard = async (req, res, next) => {
         expiryDate: destinationCard.expiryDate,
         timestamp: new Date().toISOString(),
       });
-      return apiResponse.badRequest(res, "Destination card is expired");
+
+      await session.abortTransaction();
+      session.endSession();
+
+      return apiResponse.badRequest(
+        res,
+        "Card Error",
+        "Destination card is expired",
+        "CARD_EXPIRED"
+      );
     }
 
     // Currency conversion check (cards are always in USD)
@@ -2077,36 +1804,16 @@ exports.transferWalletToCard = async (req, res, next) => {
       completedAt: new Date(),
     });
 
-    // Create Transaction records for general ledger
-    // const debitTransaction = new Transaction({
-    //   user: req.user._id,
-    //   type: "Debit",
-    //   amount: decimalAmount,
-    //   source: sourceWallet.address,
-    //   sourceType: "Wallet",
-    //   sourceCurrency: sourceWallet.currency,
-    //   sourceUser: sourceWallet.user._id,
-    //   destination: destinationCard.number,
-    //   destinationType: "Card",
-    //   destinationCurrency: "USD",
-    //   beneficiary: destinationCard.user._id,
-    //   conversionRate,
-    //   description: description || "Wallet to card transfer (debit)",
-    //   status: "completed",
-    //   reference: sharedReference,
-    //   metadata,
-    //   processedAt: new Date(),
-    // });
-
+    // Create Transaction for destination card (credit)
     const creditTransaction = new Transaction({
       user: destinationCard.user._id,
       type: "credit",
       amount: convertedAmount,
-      source: sourceWallet.address,
+      source: sourceWallet._id,
       sourceType: "Wallet",
       sourceCurrency: sourceWallet.currency,
       sourceUser: sourceWallet.user._id,
-      destination: destinationCard.number,
+      destination: destinationCard._id,
       destinationType: "Card",
       destinationCurrency: "USD",
       beneficiary: destinationCard.user._id,
@@ -2121,14 +1828,12 @@ exports.transferWalletToCard = async (req, res, next) => {
     });
 
     // Save all transactions
-    // await walletTransaction.save({ session });
     await debitTransaction.save({ session });
     await creditTransaction.save({ session });
 
     logger.debug("Transactions created", {
       userId: req.user._id,
       requestId: req.id,
-      // walletTransactionId: walletTransaction._id,
       debitTransactionId: debitTransaction._id,
       creditTransactionId: creditTransaction._id,
       reference: sharedReference,
@@ -2148,6 +1853,50 @@ exports.transferWalletToCard = async (req, res, next) => {
     }
     destinationCard.transactions.push(creditTransaction._id);
     await destinationCard.save({ session });
+
+    // Create notification for the wallet owner
+    // await notificationService.createNotification(
+    //   sourceWallet.user._id,
+    //   "Wallet to Card Transfer Completed",
+    //   `Your transfer of ${decimalAmount.toString()} ${
+    //     sourceWallet.currency
+    //   } from wallet to ${
+    //     isDebitCard ? "debit" : "credit"
+    //   } card has been completed.`,
+    //   "transaction",
+    //   {
+    //     transactionId: debitTransaction._id,
+    //     reference: sharedReference,
+    //     type: "wallet_to_card",
+    //   },
+    //   session
+    // );
+
+    // // If destination card belongs to a different user, notify them too
+    // if (
+    //   sourceWallet.user._id.toString() !== destinationCard.user._id.toString()
+    // ) {
+    //   const notificationMessage = isDebitCard
+    //     ? `You have received ${convertedAmount.toString()} USD on your debit card ending in ${
+    //         destinationCard.last4
+    //       }.`
+    //     : `Your credit card ending in ${
+    //         destinationCard.last4
+    //       } has been paid ${convertedAmount.toString()} USD from a wallet transfer.`;
+
+    //   await notificationService.createNotification(
+    //     destinationCard.user._id,
+    //     isDebitCard ? "Card Deposit Received" : "Credit Card Payment Received",
+    //     notificationMessage,
+    //     "transaction",
+    //     {
+    //       transactionId: creditTransaction._id,
+    //       reference: sharedReference,
+    //       type: "card_deposit",
+    //     },
+    //     session
+    //   );
+    // }
 
     logger.debug("Committing database transaction", {
       userId: req.user._id,
@@ -2178,7 +1927,6 @@ exports.transferWalletToCard = async (req, res, next) => {
       "Transfer Successful",
       "Wallet to card transfer completed successfully",
       {
-        // walletTransaction,
         debitTransaction,
         creditTransaction,
         amount: decimalAmount.toString(),
@@ -2209,11 +1957,22 @@ exports.transferWalletToCard = async (req, res, next) => {
       timestamp: new Date().toISOString(),
     });
 
-    next(error);
+    return apiResponse.error(
+      res,
+      500,
+      "Transfer Failed",
+      "An error occurred during wallet to card transfer",
+      "WALLET_TO_CARD_ERROR"
+    );
   }
 };
 
-exports.transferAccountToAccount = async (req, res, next) => {
+/**
+ * @desc    Transfer from account to account
+ * @route   POST /api/account/transfer/account
+ * @access  Private
+ */
+exports.transferAccountToAccount = async (req, res) => {
   // Start logging
   logger.info("Account-to-account transfer request initiated", {
     userId: req.user._id,
@@ -2242,6 +2001,26 @@ exports.transferAccountToAccount = async (req, res, next) => {
       description,
       metadata,
     } = req.body;
+
+    // Check if source and destination are the same
+    if (sourceAccountId === destinationAccountId) {
+      logger.warn("Same source and destination account", {
+        userId: req.user._id,
+        requestId: req.id,
+        sourceAccountId,
+        timestamp: new Date().toISOString(),
+      });
+
+      await session.abortTransaction();
+      session.endSession();
+
+      return apiResponse.badRequest(
+        res,
+        "Invalid Request",
+        "Source and destination accounts cannot be the same",
+        "SAME_ACCOUNT_ERROR"
+      );
+    }
 
     // Convert amount to Decimal128 for precise calculations
     const decimalAmount = mongoose.Types.Decimal128.fromString(
@@ -2272,7 +2051,16 @@ exports.transferAccountToAccount = async (req, res, next) => {
         sourceAccountId,
         timestamp: new Date().toISOString(),
       });
-      return apiResponse.badRequest(res, "Source account not found");
+
+      await session.abortTransaction();
+      session.endSession();
+
+      return apiResponse.badRequest(
+        res,
+        "Invalid Request",
+        "Source account not found or does not belong to you",
+        "SOURCE_ACCOUNT_NOT_FOUND"
+      );
     }
 
     // Check if source account has sufficient balance
@@ -2292,9 +2080,15 @@ exports.transferAccountToAccount = async (req, res, next) => {
         ).toFixed(8),
         timestamp: new Date().toISOString(),
       });
+
+      await session.abortTransaction();
+      session.endSession();
+
       return apiResponse.badRequest(
         res,
-        "Insufficient funds in source account"
+        "Insufficient Funds",
+        "Insufficient funds in source account",
+        "INSUFFICIENT_ACCOUNT_FUNDS"
       );
     }
 
@@ -2312,7 +2106,16 @@ exports.transferAccountToAccount = async (req, res, next) => {
         destinationAccountId,
         timestamp: new Date().toISOString(),
       });
-      return apiResponse.badRequest(res, "Destination account not found");
+
+      await session.abortTransaction();
+      session.endSession();
+
+      return apiResponse.badRequest(
+        res,
+        "Invalid Request",
+        "Destination account not found",
+        "DESTINATION_ACCOUNT_NOT_FOUND"
+      );
     }
 
     // Generate a shared reference for transactions
@@ -2382,13 +2185,13 @@ exports.transferAccountToAccount = async (req, res, next) => {
     // Create Transaction records for general ledger
     const debitTransaction = new Transaction({
       user: req.user._id,
-      type: "Debit",
+      type: "debit",
       amount: decimalAmount,
-      source: sourceAccount.accountNumber,
+      source: sourceAccount._id,
       sourceType: "Account",
       sourceCurrency: "USD",
       sourceUser: sourceAccount.user._id,
-      destination: destinationAccount.accountNumber,
+      destination: destinationAccount._id,
       destinationType: "Account",
       destinationCurrency: "USD",
       beneficiary: destinationAccount.user._id,
@@ -2402,13 +2205,13 @@ exports.transferAccountToAccount = async (req, res, next) => {
 
     const creditTransaction = new Transaction({
       user: destinationAccount.user._id,
-      type: "Credit",
+      type: "credit",
       amount: decimalAmount,
-      source: sourceAccount.accountNumber,
+      source: sourceAccount._id,
       sourceType: "Account",
       sourceCurrency: "USD",
       sourceUser: sourceAccount.user._id,
-      destination: destinationAccount.accountNumber,
+      destination: destinationAccount._id,
       destinationType: "Account",
       destinationCurrency: "USD",
       beneficiary: destinationAccount.user._id,
@@ -2445,6 +2248,43 @@ exports.transferAccountToAccount = async (req, res, next) => {
     }
     destinationAccount.transactions.push(creditTransaction._id);
     await destinationAccount.save({ session });
+
+    // Create notification for source account owner
+    // await notificationService.createNotification(
+    //   sourceAccount.user._id,
+    //   "Account Transfer Completed",
+    //   `Your transfer of $${decimalAmount.toString()} from account ${
+    //     sourceAccount.name || sourceAccount.accountNumber
+    //   } has been completed.`,
+    //   "transaction",
+    //   {
+    //     transactionId: debitTransaction._id,
+    //     reference: sharedReference,
+    //     type: "account_transfer",
+    //   },
+    //   session
+    // );
+
+    // // If destination account belongs to different user, create notification for them too
+    // if (
+    //   sourceAccount.user._id.toString() !==
+    //   destinationAccount.user._id.toString()
+    // ) {
+    //   await notificationService.createNotification(
+    //     destinationAccount.user._id,
+    //     "Account Deposit Received",
+    //     `You have received $${decimalAmount.toString()} in your account ${
+    //       destinationAccount.name || destinationAccount.accountNumber
+    //     }.`,
+    //     "transaction",
+    //     {
+    //       transactionId: creditTransaction._id,
+    //       reference: sharedReference,
+    //       type: "account_deposit",
+    //     },
+    //     session
+    //   );
+    // }
 
     logger.debug("Committing database transaction", {
       userId: req.user._id,
@@ -2501,12 +2341,22 @@ exports.transferAccountToAccount = async (req, res, next) => {
       timestamp: new Date().toISOString(),
     });
 
-    next(error);
+    return apiResponse.error(
+      res,
+      500,
+      "Transfer Failed",
+      "An error occurred during account to account transfer",
+      "ACCOUNT_TRANSFER_ERROR"
+    );
   }
 };
 
-// Account to Card Transfer
-exports.transferAccountToCard = async (req, res, next) => {
+/**
+ * @desc    Transfer from account to card
+ * @route   POST /api/account/transfer/card
+ * @access  Private
+ */
+exports.transferAccountToCard = async (req, res) => {
   // Start logging
   logger.info("Account-to-card transfer request initiated", {
     userId: req.user._id,
@@ -2565,7 +2415,16 @@ exports.transferAccountToCard = async (req, res, next) => {
         sourceAccountId,
         timestamp: new Date().toISOString(),
       });
-      return apiResponse.badRequest(res, "Source account not found");
+
+      await session.abortTransaction();
+      session.endSession();
+
+      return apiResponse.badRequest(
+        res,
+        "Invalid Request",
+        "Source account not found or does not belong to you",
+        "SOURCE_ACCOUNT_NOT_FOUND"
+      );
     }
 
     // Check if source account has sufficient balance
@@ -2585,9 +2444,15 @@ exports.transferAccountToCard = async (req, res, next) => {
         ).toFixed(8),
         timestamp: new Date().toISOString(),
       });
+
+      await session.abortTransaction();
+      session.endSession();
+
       return apiResponse.badRequest(
         res,
-        "Insufficient funds in source account"
+        "Insufficient Funds",
+        "Insufficient funds in source account",
+        "INSUFFICIENT_ACCOUNT_FUNDS"
       );
     }
 
@@ -2605,7 +2470,58 @@ exports.transferAccountToCard = async (req, res, next) => {
         destinationCardId,
         timestamp: new Date().toISOString(),
       });
-      return apiResponse.badRequest(res, "Destination card not found");
+
+      await session.abortTransaction();
+      session.endSession();
+
+      return apiResponse.badRequest(
+        res,
+        "Invalid Request",
+        "Destination card not found",
+        "DESTINATION_CARD_NOT_FOUND"
+      );
+    }
+
+    // Check if card is active
+    if (destinationCard.status !== "active") {
+      logger.warn("Destination card is not active", {
+        userId: req.user._id,
+        requestId: req.id,
+        destinationCardId: destinationCard._id,
+        cardStatus: destinationCard.status,
+        timestamp: new Date().toISOString(),
+      });
+
+      await session.abortTransaction();
+      session.endSession();
+
+      return apiResponse.badRequest(
+        res,
+        "Card Error",
+        `Destination card is ${destinationCard.status}`,
+        "CARD_NOT_ACTIVE"
+      );
+    }
+
+    // Check if card is expired
+    if (destinationCard.isExpired) {
+      logger.warn("Destination card is expired", {
+        userId: req.user._id,
+        requestId: req.id,
+        destinationCardId: destinationCard._id,
+        expiryDate: destinationCard.expiryDate,
+        timestamp: new Date().toISOString(),
+      });
+
+      await session.abortTransaction();
+      session.endSession();
+
+      return apiResponse.badRequest(
+        res,
+        "Card Error",
+        "Destination card is expired",
+        "CARD_EXPIRED"
+      );
     }
 
     // Generate a shared reference for transactions
@@ -2613,7 +2529,13 @@ exports.transferAccountToCard = async (req, res, next) => {
 
     // Store old balances for logging
     const oldSourceBalance = sourceAccount.availableBalance.toString();
-    const oldDestinationBalance = destinationCard.availableBalance.toString();
+
+    // For cards, we need to check which balance field to use based on type
+    const isDebitCard =
+      destinationCard.type === "debit" || destinationCard.type === "prepaid";
+    const oldDestinationBalance = isDebitCard
+      ? destinationCard.availableBalance.toString()
+      : destinationCard.ledgerBalance.toString();
 
     // Deduct from source account
     sourceAccount.availableBalance = mongoose.Types.Decimal128.fromString(
@@ -2643,29 +2565,46 @@ exports.transferAccountToCard = async (req, res, next) => {
 
     await sourceAccount.save({ session });
 
-    // Add to destination card
-    destinationCard.availableBalance = mongoose.Types.Decimal128.fromString(
-      (
-        parseFloat(destinationCard.availableBalance.toString()) +
-        parseFloat(decimalAmount.toString())
-      ).toFixed(8)
-    );
+    // Add to destination card based on card type
+    if (isDebitCard) {
+      destinationCard.availableBalance = mongoose.Types.Decimal128.fromString(
+        (
+          parseFloat(destinationCard.availableBalance.toString()) +
+          parseFloat(decimalAmount.toString())
+        ).toFixed(8)
+      );
 
-    // Update ledger balance too
-    destinationCard.ledgerBalance = mongoose.Types.Decimal128.fromString(
-      (
-        parseFloat(destinationCard.ledgerBalance.toString()) +
-        parseFloat(decimalAmount.toString())
-      ).toFixed(8)
-    );
+      // Update ledger balance too
+      destinationCard.ledgerBalance = mongoose.Types.Decimal128.fromString(
+        (
+          parseFloat(destinationCard.ledgerBalance.toString()) +
+          parseFloat(decimalAmount.toString())
+        ).toFixed(8)
+      );
+    } else {
+      // For credit cards, we're paying down the balance (reducing it)
+      destinationCard.ledgerBalance = mongoose.Types.Decimal128.fromString(
+        Math.max(
+          0,
+          parseFloat(destinationCard.ledgerBalance.toString()) -
+            parseFloat(decimalAmount.toString())
+        ).toFixed(8)
+      );
+    }
+
+    // Update last used time
+    destinationCard.lastUsedAt = new Date();
 
     logger.debug("Updating Destination card balance", {
       userId: req.user._id,
       requestId: req.id,
       destinationCardId: destinationCard._id,
+      cardType: destinationCard.type,
       oldBalance: oldDestinationBalance,
-      amountAdded: decimalAmount.toString(),
-      newBalance: destinationCard.availableBalance.toString(),
+      amountProcessed: decimalAmount.toString(),
+      newBalance: isDebitCard
+        ? destinationCard.availableBalance.toString()
+        : destinationCard.ledgerBalance.toString(),
       timestamp: new Date().toISOString(),
     });
 
@@ -2674,18 +2613,20 @@ exports.transferAccountToCard = async (req, res, next) => {
     // Create Transaction records for general ledger
     const debitTransaction = new Transaction({
       user: req.user._id,
-      type: "Debit",
+      type: "debit",
       amount: decimalAmount,
-      source: sourceAccount.accountNumber,
+      source: sourceAccount._id,
       sourceType: "Account",
       sourceCurrency: "USD",
       sourceUser: sourceAccount.user._id,
-      destination: destinationCard.last4,
+      destination: destinationCard._id,
       destinationType: "Card",
       destinationCurrency: "USD",
       beneficiary: destinationCard.user._id,
       conversionRate: 1,
-      description: description || "Account to card transfer (debit)",
+      description:
+        description ||
+        `Account to ${isDebitCard ? "debit" : "credit"} card transfer (debit)`,
       status: "completed",
       reference: sharedReference,
       metadata,
@@ -2694,18 +2635,20 @@ exports.transferAccountToCard = async (req, res, next) => {
 
     const creditTransaction = new Transaction({
       user: destinationCard.user._id,
-      type: "Credit",
+      type: "credit",
       amount: decimalAmount,
-      source: sourceAccount.accountNumber,
+      source: sourceAccount._id,
       sourceType: "Account",
       sourceCurrency: "USD",
       sourceUser: sourceAccount.user._id,
-      destination: destinationCard.last4,
+      destination: destinationCard._id,
       destinationType: "Card",
       destinationCurrency: "USD",
       beneficiary: destinationCard.user._id,
       conversionRate: 1,
-      description: description || "Account to card transfer (credit)",
+      description:
+        description ||
+        `Account to ${isDebitCard ? "debit" : "credit"} card transfer (credit)`,
       status: "completed",
       reference: sharedReference,
       metadata,
@@ -2737,6 +2680,60 @@ exports.transferAccountToCard = async (req, res, next) => {
     }
     destinationCard.transactions.push(creditTransaction._id);
     await destinationCard.save({ session });
+
+    // Create notification for account owner
+    const notificationTitle = isDebitCard
+      ? "Card Funding Completed"
+      : "Credit Card Payment Completed";
+    const notificationMessage = isDebitCard
+      ? `Your transfer of $${decimalAmount.toString()} from account to card ending in ${
+          destinationCard.last4
+        } has been completed.`
+      : `Your payment of $${decimalAmount.toString()} from account to credit card ending in ${
+          destinationCard.last4
+        } has been completed.`;
+
+    // await notificationService.createNotification(
+    //   sourceAccount.user._id,
+    //   notificationTitle,
+    //   notificationMessage,
+    //   "transaction",
+    //   {
+    //     transactionId: debitTransaction._id,
+    //     reference: sharedReference,
+    //     type: isDebitCard ? "card_funding" : "card_payment",
+    //   },
+    //   session
+    // );
+
+    // // If card belongs to different user, notify them too
+    // if (
+    //   sourceAccount.user._id.toString() !== destinationCard.user._id.toString()
+    // ) {
+    //   const recipientTitle = isDebitCard
+    //     ? "Card Deposit Received"
+    //     : "Credit Card Payment Received";
+    //   const recipientMessage = isDebitCard
+    //     ? `Your card ending in ${
+    //         destinationCard.last4
+    //       } has been funded with $${decimalAmount.toString()}.`
+    //     : `A payment of $${decimalAmount.toString()} has been made to your credit card ending in ${
+    //         destinationCard.last4
+    //       }.`;
+
+    //   await notificationService.createNotification(
+    //     destinationCard.user._id,
+    //     recipientTitle,
+    //     recipientMessage,
+    //     "transaction",
+    //     {
+    //       transactionId: creditTransaction._id,
+    //       reference: sharedReference,
+    //       type: isDebitCard ? "card_deposit" : "card_payment_received",
+    //     },
+    //     session
+    //   );
+    // }
 
     logger.debug("Committing database transaction", {
       userId: req.user._id,
@@ -2793,12 +2790,22 @@ exports.transferAccountToCard = async (req, res, next) => {
       timestamp: new Date().toISOString(),
     });
 
-    next(error);
+    return apiResponse.error(
+      res,
+      500,
+      "Transfer Failed",
+      "An error occurred during account to card transfer",
+      "ACCOUNT_TO_CARD_ERROR"
+    );
   }
 };
 
-// Account to Wallet Transfer
-exports.transferAccountToWallet = async (req, res, next) => {
+/**
+ * @desc    Transfer from account to wallet
+ * @route   POST /api/account/transfer/wallet
+ * @access  Private
+ */
+exports.transferAccountToWallet = async (req, res) => {
   // Start logging
   logger.info("Account-to-wallet transfer request initiated", {
     userId: req.user._id,
@@ -2835,7 +2842,7 @@ exports.transferAccountToWallet = async (req, res, next) => {
     );
 
     // Log lookup attempt
-    logger.debug("Looking up wallet and account", {
+    logger.debug("Looking up account and wallet", {
       userId: req.user._id,
       requestId: req.id,
       sourceAccountId,
@@ -2843,7 +2850,7 @@ exports.transferAccountToWallet = async (req, res, next) => {
       timestamp: new Date().toISOString(),
     });
 
-    // Find source wallet
+    // Find source account
     const sourceAccount = await Account.findOne({
       _id: sourceAccountId,
       user: req.user._id,
@@ -2858,7 +2865,16 @@ exports.transferAccountToWallet = async (req, res, next) => {
         sourceAccountId,
         timestamp: new Date().toISOString(),
       });
-      return apiResponse.badRequest(res, "Source account not found");
+
+      await session.abortTransaction();
+      session.endSession();
+
+      return apiResponse.badRequest(
+        res,
+        "Invalid Request",
+        "Source account not found or does not belong to you",
+        "SOURCE_ACCOUNT_NOT_FOUND"
+      );
     }
 
     // Check if source account has sufficient balance
@@ -2866,7 +2882,7 @@ exports.transferAccountToWallet = async (req, res, next) => {
       parseFloat(sourceAccount.availableBalance.toString()) <
       parseFloat(decimalAmount.toString())
     ) {
-      logger.warn("Insufficient funds in source wallet", {
+      logger.warn("Insufficient funds in source account", {
         userId: req.user._id,
         requestId: req.id,
         sourceAccountId: sourceAccount._id,
@@ -2878,25 +2894,19 @@ exports.transferAccountToWallet = async (req, res, next) => {
         ).toFixed(8),
         timestamp: new Date().toISOString(),
       });
-      return apiResponse.badRequest(res, "Insufficient funds in source wallet");
+
+      await session.abortTransaction();
+      session.endSession();
+
+      return apiResponse.badRequest(
+        res,
+        "Insufficient Funds",
+        "Insufficient funds in source account",
+        "INSUFFICIENT_ACCOUNT_FUNDS"
+      );
     }
 
-    // Check transaction limits
-    // const limitCheck = sourceAccount.checkTransactionLimits(
-    //   parseFloat(decimalAmount.toString())
-    // );
-    // if (!limitCheck.allowed) {
-    //   logger.warn("Transaction limit exceeded", {
-    //     userId: req.user._id,
-    //     requestId: req.id,
-    //     sourceWalletId: sourceWallet._id,
-    //     reason: limitCheck.reason,
-    //     timestamp: new Date().toISOString(),
-    //   });
-    //   return apiResponse.badRequest(res, limitCheck.reason);
-    // }
-
-    // Find destination account (notice we're looking for id not accountNumber here)
+    // Find destination wallet
     const destinationWallet = await Wallet.findOne({
       _id: destinationWalletId,
     })
@@ -2910,7 +2920,37 @@ exports.transferAccountToWallet = async (req, res, next) => {
         destinationWalletId,
         timestamp: new Date().toISOString(),
       });
-      return apiResponse.badRequest(res, "Destination wallet not found");
+
+      await session.abortTransaction();
+      session.endSession();
+
+      return apiResponse.badRequest(
+        res,
+        "Invalid Request",
+        "Destination wallet not found",
+        "DESTINATION_WALLET_NOT_FOUND"
+      );
+    }
+
+    // Check if wallet is active
+    if (destinationWallet.status !== "active") {
+      logger.warn("Destination wallet is not active", {
+        userId: req.user._id,
+        requestId: req.id,
+        destinationWalletId: destinationWallet._id,
+        walletStatus: destinationWallet.status,
+        timestamp: new Date().toISOString(),
+      });
+
+      await session.abortTransaction();
+      session.endSession();
+
+      return apiResponse.badRequest(
+        res,
+        "Wallet Error",
+        `Destination wallet is ${destinationWallet.status}`,
+        "WALLET_NOT_ACTIVE"
+      );
     }
 
     // Currency conversion check (accounts are always in USD)
@@ -2923,7 +2963,7 @@ exports.transferAccountToWallet = async (req, res, next) => {
       timestamp: new Date().toISOString(),
     });
 
-    // Convert amount to USD since accounts are in USD
+    // Convert amount to wallet's currency from USD
     const convertedAmount = await convertCurrency(
       decimalAmount,
       "USD",
@@ -2951,7 +2991,7 @@ exports.transferAccountToWallet = async (req, res, next) => {
     const oldSourceBalance = sourceAccount.availableBalance.toString();
     const oldDestinationBalance = destinationWallet.balance.toString();
 
-    // Deduct from source wallet
+    // Deduct from source account
     sourceAccount.availableBalance = mongoose.Types.Decimal128.fromString(
       (
         parseFloat(sourceAccount.availableBalance.toString()) -
@@ -2959,7 +2999,15 @@ exports.transferAccountToWallet = async (req, res, next) => {
       ).toFixed(8)
     );
 
-    logger.debug("Updating Source wallet balance", {
+    // Update ledger balance too
+    sourceAccount.ledgerBalance = mongoose.Types.Decimal128.fromString(
+      (
+        parseFloat(sourceAccount.ledgerBalance.toString()) -
+        parseFloat(decimalAmount.toString())
+      ).toFixed(8)
+    );
+
+    logger.debug("Updating Source account balance", {
       userId: req.user._id,
       requestId: req.id,
       sourceAccountId: sourceAccount._id,
@@ -2971,7 +3019,7 @@ exports.transferAccountToWallet = async (req, res, next) => {
 
     await sourceAccount.save({ session });
 
-    // Add to destination account
+    // Add to destination wallet
     destinationWallet.balance = mongoose.Types.Decimal128.fromString(
       (
         parseFloat(destinationWallet.balance.toString()) +
@@ -2987,7 +3035,7 @@ exports.transferAccountToWallet = async (req, res, next) => {
       ).toFixed(8)
     );
 
-    logger.debug("Updating Destination account balance", {
+    logger.debug("Updating Destination wallet balance", {
       userId: req.user._id,
       requestId: req.id,
       destinationWalletId: destinationWallet._id,
@@ -3001,54 +3049,33 @@ exports.transferAccountToWallet = async (req, res, next) => {
 
     // Calculate conversion rate
     const conversionRate =
-      "USD" !== "USD"
+      destinationWallet.currency !== "USD"
         ? parseFloat(convertedAmount.toString()) /
           parseFloat(decimalAmount.toString())
         : 1;
 
-    // Create WalletTransaction for source (outgoing)
-    // const walletTransaction = new WalletTransaction({
-    //   user: req.user._id,
-    //   type: "deposit",
-    //   amount: decimalAmount,
-    //   currency: "USD",
-    //   sourceId: sourceAccount._id,
-    //   sourceType: "Account",
-    //   sourceCurrency: "USD",
-    //   destinationId: destinationWallet._id,
-    //   destinationType: "Wallet",
-    //   destinationCurrency: destinationWallet.currency,
-    //   conversionRate,
-    //   description: description || "Wallet to account transfer",
-    //   status: "completed",
-    //   reference: sharedReference,
-    //   metadata,
-    //   ipAddress: req.ip,
-    //   userAgent: req.headers["user-agent"],
-    //   completedAt: new Date(),
-    // });
-
-    // Create Transaction records for general ledger
+    // Create Transaction for source account (debit)
     const debitTransaction = new Transaction({
       user: req.user._id,
       type: "debit",
       amount: decimalAmount,
-      source: sourceAccount.accountNumber,
+      source: sourceAccount._id,
       sourceType: "Account",
       sourceCurrency: "USD",
       sourceUser: sourceAccount.user._id,
-      destination: destinationWallet.address,
+      destination: destinationWallet._id,
       destinationType: "Wallet",
       destinationCurrency: destinationWallet.currency,
       beneficiary: destinationWallet.user._id,
       conversionRate,
-      description: description || "Wallet to account transfer (debit)",
+      description: description || "Account to wallet transfer (debit)",
       status: "completed",
       reference: sharedReference,
       metadata,
       processedAt: new Date(),
     });
 
+    // Create WalletTransaction for destination wallet (credit)
     const creditTransaction = new WalletTransaction({
       user: destinationWallet.user._id,
       type: "credit",
@@ -3057,28 +3084,26 @@ exports.transferAccountToWallet = async (req, res, next) => {
       source: sourceAccount._id,
       sourceType: "Account",
       sourceCurrency: "USD",
-      // sourceId: sourceAccount.user._id,
       beneficiary: destinationWallet._id,
       beneficiaryType: "Wallet",
       beneficiaryCurrency: destinationWallet.currency,
-      // beneficiary: destinationWallet.user._id,
       conversionRate,
-      description: description || "Wallet to account transfer (credit)",
+      description: description || "Account to wallet transfer (credit)",
       status: "completed",
       reference: sharedReference,
       metadata,
       processedAt: new Date(),
+      ipAddress: req.ip,
+      userAgent: req.headers["user-agent"],
     });
 
     // Save all transactions
-    // await walletTransaction.save({ session });
     await debitTransaction.save({ session });
     await creditTransaction.save({ session });
 
     logger.debug("Transactions created", {
       userId: req.user._id,
       requestId: req.id,
-      // walletTransactionId: walletTransaction._id,
       debitTransactionId: debitTransaction._id,
       creditTransactionId: creditTransaction._id,
       reference: sharedReference,
@@ -3090,14 +3115,51 @@ exports.transferAccountToWallet = async (req, res, next) => {
       sourceAccount.transactions = [];
     }
     sourceAccount.transactions.push(debitTransaction._id);
-    sourceAccount.lastActivityAt = new Date();
     await sourceAccount.save({ session });
 
     if (!destinationWallet.transactions) {
       destinationWallet.transactions = [];
     }
     destinationWallet.transactions.push(creditTransaction._id);
+    destinationWallet.lastActivityAt = new Date();
     await destinationWallet.save({ session });
+
+    // Create notification for source account owner
+    // await notificationService.createNotification(
+    //   sourceAccount.user._id,
+    //   "Wallet Funding Completed",
+    //   `Your transfer of $${decimalAmount.toString()} from account to wallet has been completed.`,
+    //   "transaction",
+    //   {
+    //     transactionId: debitTransaction._id,
+    //     reference: sharedReference,
+    //     type: "wallet_funding",
+    //   },
+    //   session
+    // );
+
+    // // If destination wallet belongs to different user, notify them too
+    // if (
+    //   sourceAccount.user._id.toString() !==
+    //   destinationWallet.user._id.toString()
+    // ) {
+    //   await notificationService.createNotification(
+    //     destinationWallet.user._id,
+    //     "Wallet Deposit Received",
+    //     `You have received ${convertedAmount.toString()} ${
+    //       destinationWallet.currency
+    //     } in your wallet ${
+    //       destinationWallet.name || destinationWallet.address
+    //     }.`,
+    //     "transaction",
+    //     {
+    //       transactionId: creditTransaction._id,
+    //       reference: sharedReference,
+    //       type: "wallet_deposit",
+    //     },
+    //     session
+    //   );
+    // }
 
     logger.debug("Committing database transaction", {
       userId: req.user._id,
@@ -3110,7 +3172,7 @@ exports.transferAccountToWallet = async (req, res, next) => {
     await session.commitTransaction();
     session.endSession();
 
-    logger.info("Wallet to account transfer completed successfully", {
+    logger.info("Account to wallet transfer completed successfully", {
       userId: req.user._id,
       requestId: req.id,
       transactionReference: sharedReference,
@@ -3128,7 +3190,6 @@ exports.transferAccountToWallet = async (req, res, next) => {
       "Deposit Successful",
       "Account to wallet deposit completed successfully",
       {
-        // walletTransaction,
         debitTransaction,
         creditTransaction,
         amount: decimalAmount.toString(),
@@ -3149,7 +3210,7 @@ exports.transferAccountToWallet = async (req, res, next) => {
     await session.abortTransaction();
     session.endSession();
 
-    logger.error("Wallet to account transfer failed:", {
+    logger.error("Account to wallet transfer failed:", {
       error: error.message,
       errorCode: error.code || error.statusCode,
       errorStack: error.stack,
@@ -3159,11 +3220,22 @@ exports.transferAccountToWallet = async (req, res, next) => {
       timestamp: new Date().toISOString(),
     });
 
-    next(error);
+    return apiResponse.error(
+      res,
+      500,
+      "Transfer Failed",
+      "An error occurred during account to wallet transfer",
+      "ACCOUNT_TO_WALLET_ERROR"
+    );
   }
 };
 
-exports.transferCardToCard = async (req, res, next) => {
+/**
+ * @desc    Transfer from card to card
+ * @route   POST /api/card/transfer/card
+ * @access  Private
+ */
+exports.transferCardToCard = async (req, res) => {
   // Start logging
   logger.info("Card-to-card transfer request initiated", {
     userId: req.user._id,
@@ -3187,6 +3259,26 @@ exports.transferCardToCard = async (req, res, next) => {
   try {
     const { amount, sourceCardId, destinationCardId, description, metadata } =
       req.body;
+
+    // Check if source and destination are the same
+    if (sourceCardId === destinationCardId) {
+      logger.warn("Same source and destination card", {
+        userId: req.user._id,
+        requestId: req.id,
+        sourceCardId,
+        timestamp: new Date().toISOString(),
+      });
+
+      await session.abortTransaction();
+      session.endSession();
+
+      return apiResponse.badRequest(
+        res,
+        "Invalid Request",
+        "Source and destination cards cannot be the same",
+        "SAME_CARD_ERROR"
+      );
+    }
 
     // Convert amount to Decimal128 for precise calculations
     const decimalAmount = mongoose.Types.Decimal128.fromString(
@@ -3217,7 +3309,58 @@ exports.transferCardToCard = async (req, res, next) => {
         sourceCardId,
         timestamp: new Date().toISOString(),
       });
-      return apiResponse.badRequest(res, "Source card not found");
+
+      await session.abortTransaction();
+      session.endSession();
+
+      return apiResponse.badRequest(
+        res,
+        "Invalid Request",
+        "Source card not found or does not belong to you",
+        "SOURCE_CARD_NOT_FOUND"
+      );
+    }
+
+    // Check if source card is active
+    if (sourceCard.status !== "active") {
+      logger.warn("Source card is not active", {
+        userId: req.user._id,
+        requestId: req.id,
+        sourceCardId: sourceCard._id,
+        cardStatus: sourceCard.status,
+        timestamp: new Date().toISOString(),
+      });
+
+      await session.abortTransaction();
+      session.endSession();
+
+      return apiResponse.badRequest(
+        res,
+        "Card Error",
+        `Source card is ${sourceCard.status}`,
+        "SOURCE_CARD_NOT_ACTIVE"
+      );
+    }
+
+    // Check if source card is expired
+    if (sourceCard.isExpired) {
+      logger.warn("Source card is expired", {
+        userId: req.user._id,
+        requestId: req.id,
+        sourceCardId: sourceCard._id,
+        expiryDate: sourceCard.expiryDate,
+        timestamp: new Date().toISOString(),
+      });
+
+      await session.abortTransaction();
+      session.endSession();
+
+      return apiResponse.badRequest(
+        res,
+        "Card Error",
+        "Source card is expired",
+        "SOURCE_CARD_EXPIRED"
+      );
     }
 
     // Check if source card has sufficient balance
@@ -3237,7 +3380,16 @@ exports.transferCardToCard = async (req, res, next) => {
         ).toFixed(8),
         timestamp: new Date().toISOString(),
       });
-      return apiResponse.badRequest(res, "Insufficient funds in source card");
+
+      await session.abortTransaction();
+      session.endSession();
+
+      return apiResponse.badRequest(
+        res,
+        "Insufficient Funds",
+        "Insufficient funds in source card",
+        "INSUFFICIENT_CARD_FUNDS"
+      );
     }
 
     // Check transaction limits
@@ -3252,7 +3404,16 @@ exports.transferCardToCard = async (req, res, next) => {
         reason: limitCheck.reason,
         timestamp: new Date().toISOString(),
       });
-      return apiResponse.badRequest(res, limitCheck.reason);
+
+      await session.abortTransaction();
+      session.endSession();
+
+      return apiResponse.badRequest(
+        res,
+        "Limit Exceeded",
+        limitCheck.reason,
+        "TRANSACTION_LIMIT_EXCEEDED"
+      );
     }
 
     // Find destination card
@@ -3269,7 +3430,58 @@ exports.transferCardToCard = async (req, res, next) => {
         destinationCardId,
         timestamp: new Date().toISOString(),
       });
-      return apiResponse.badRequest(res, "Destination card not found");
+
+      await session.abortTransaction();
+      session.endSession();
+
+      return apiResponse.badRequest(
+        res,
+        "Invalid Request",
+        "Destination card not found",
+        "DESTINATION_CARD_NOT_FOUND"
+      );
+    }
+
+    // Check if destination card is active
+    if (destinationCard.status !== "active") {
+      logger.warn("Destination card is not active", {
+        userId: req.user._id,
+        requestId: req.id,
+        destinationCardId: destinationCard._id,
+        cardStatus: destinationCard.status,
+        timestamp: new Date().toISOString(),
+      });
+
+      await session.abortTransaction();
+      session.endSession();
+
+      return apiResponse.badRequest(
+        res,
+        "Card Error",
+        `Destination card is ${destinationCard.status}`,
+        "DESTINATION_CARD_NOT_ACTIVE"
+      );
+    }
+
+    // Check if destination card is expired
+    if (destinationCard.isExpired) {
+      logger.warn("Destination card is expired", {
+        userId: req.user._id,
+        requestId: req.id,
+        destinationCardId: destinationCard._id,
+        expiryDate: destinationCard.expiryDate,
+        timestamp: new Date().toISOString(),
+      });
+
+      await session.abortTransaction();
+      session.endSession();
+
+      return apiResponse.badRequest(
+        res,
+        "Card Error",
+        "Destination card is expired",
+        "DESTINATION_CARD_EXPIRED"
+      );
     }
 
     // Generate a shared reference for transactions
@@ -3278,6 +3490,9 @@ exports.transferCardToCard = async (req, res, next) => {
     // Store old balances for logging
     const oldSourceBalance = sourceCard.availableBalance.toString();
     const oldDestinationBalance = destinationCard.availableBalance.toString();
+
+    // Check if the destination is a credit card
+    const isDestinationCreditCard = destinationCard.type === "credit";
 
     // Deduct from source card
     sourceCard.availableBalance = mongoose.Types.Decimal128.fromString(
@@ -3307,49 +3522,71 @@ exports.transferCardToCard = async (req, res, next) => {
 
     await sourceCard.save({ session });
 
-    // Add to destination card
-    destinationCard.availableBalance = mongoose.Types.Decimal128.fromString(
-      (
-        parseFloat(destinationCard.availableBalance.toString()) +
-        parseFloat(decimalAmount.toString())
-      ).toFixed(8)
-    );
+    // Add to destination card or pay down credit card balance
+    if (isDestinationCreditCard) {
+      // For credit cards, we're paying down the balance (reducing it)
+      destinationCard.ledgerBalance = mongoose.Types.Decimal128.fromString(
+        Math.max(
+          0,
+          parseFloat(destinationCard.ledgerBalance.toString()) -
+            parseFloat(decimalAmount.toString())
+        ).toFixed(8)
+      );
+    } else {
+      // For debit/prepaid cards, add to the balance
+      destinationCard.availableBalance = mongoose.Types.Decimal128.fromString(
+        (
+          parseFloat(destinationCard.availableBalance.toString()) +
+          parseFloat(decimalAmount.toString())
+        ).toFixed(8)
+      );
 
-    // Update ledger balance too
-    destinationCard.ledgerBalance = mongoose.Types.Decimal128.fromString(
-      (
-        parseFloat(destinationCard.ledgerBalance.toString()) +
-        parseFloat(decimalAmount.toString())
-      ).toFixed(8)
-    );
+      // Update ledger balance too
+      destinationCard.ledgerBalance = mongoose.Types.Decimal128.fromString(
+        (
+          parseFloat(destinationCard.ledgerBalance.toString()) +
+          parseFloat(decimalAmount.toString())
+        ).toFixed(8)
+      );
+    }
 
     logger.debug("Updating Destination card balance", {
       userId: req.user._id,
       requestId: req.id,
       destinationCardId: destinationCard._id,
       oldBalance: oldDestinationBalance,
-      amountAdded: decimalAmount.toString(),
-      newBalance: destinationCard.availableBalance.toString(),
+      amountProcessed: decimalAmount.toString(),
+      newBalance: isDestinationCreditCard
+        ? destinationCard.ledgerBalance.toString()
+        : destinationCard.availableBalance.toString(),
       timestamp: new Date().toISOString(),
     });
+
+    // Update last used timestamp
+    sourceCard.lastUsedAt = new Date();
+    destinationCard.lastUsedAt = new Date();
 
     await destinationCard.save({ session });
 
     // Create Transaction records for general ledger
     const debitTransaction = new Transaction({
       user: req.user._id,
-      type: "Debit",
+      type: "debit",
       amount: decimalAmount,
-      source: sourceCard.last4,
+      source: sourceCard._id,
       sourceType: "Card",
       sourceCurrency: "USD",
       sourceUser: sourceCard.user._id,
-      destination: destinationCard.last4,
+      destination: destinationCard._id,
       destinationType: "Card",
       destinationCurrency: "USD",
       beneficiary: destinationCard.user._id,
       conversionRate: 1,
-      description: description || "Card to card transfer (debit)",
+      description:
+        description ||
+        `Card to ${
+          isDestinationCreditCard ? "credit" : "debit"
+        } card transfer (debit)`,
       status: "completed",
       reference: sharedReference,
       metadata,
@@ -3358,18 +3595,22 @@ exports.transferCardToCard = async (req, res, next) => {
 
     const creditTransaction = new Transaction({
       user: destinationCard.user._id,
-      type: "Credit",
+      type: "credit",
       amount: decimalAmount,
-      source: sourceCard.last4,
+      source: sourceCard._id,
       sourceType: "Card",
       sourceCurrency: "USD",
       sourceUser: sourceCard.user._id,
-      destination: destinationCard.last4,
+      destination: destinationCard._id,
       destinationType: "Card",
       destinationCurrency: "USD",
       beneficiary: destinationCard.user._id,
       conversionRate: 1,
-      description: description || "Card to card transfer (credit)",
+      description:
+        description ||
+        `Card to ${
+          isDestinationCreditCard ? "credit" : "debit"
+        } card transfer (credit)`,
       status: "completed",
       reference: sharedReference,
       metadata,
@@ -3394,15 +3635,71 @@ exports.transferCardToCard = async (req, res, next) => {
       sourceCard.transactions = [];
     }
     sourceCard.transactions.push(debitTransaction._id);
-    sourceCard.lastUsedAt = new Date();
     await sourceCard.save({ session });
 
     if (!destinationCard.transactions) {
       destinationCard.transactions = [];
     }
     destinationCard.transactions.push(creditTransaction._id);
-    destinationCard.lastUsedAt = new Date();
     await destinationCard.save({ session });
+
+    // Create notification for source card owner
+    const notificationTitle = isDestinationCreditCard
+      ? "Credit Card Payment Completed"
+      : "Card Transfer Completed";
+
+    const notificationMessage = isDestinationCreditCard
+      ? `Your payment of $${decimalAmount.toString()} from card ending in ${
+          sourceCard.last4
+        } to credit card ending in ${destinationCard.last4} has been completed.`
+      : `Your transfer of $${decimalAmount.toString()} from card ending in ${
+          sourceCard.last4
+        } to card ending in ${destinationCard.last4} has been completed.`;
+
+    // await notificationService.createNotification(
+    //   sourceCard.user._id,
+    //   notificationTitle,
+    //   notificationMessage,
+    //   "transaction",
+    //   {
+    //     transactionId: debitTransaction._id,
+    //     reference: sharedReference,
+    //     type: isDestinationCreditCard ? "credit_card_payment" : "card_transfer",
+    //   },
+    //   session
+    // );
+
+    // // If destination card belongs to different user, notify them too
+    // if (
+    //   sourceCard.user._id.toString() !== destinationCard.user._id.toString()
+    // ) {
+    //   const recipientTitle = isDestinationCreditCard
+    //     ? "Credit Card Payment Received"
+    //     : "Card Deposit Received";
+
+    //   const recipientMessage = isDestinationCreditCard
+    //     ? `A payment of $${decimalAmount.toString()} has been made to your credit card ending in ${
+    //         destinationCard.last4
+    //       }.`
+    //     : `You have received $${decimalAmount.toString()} on your card ending in ${
+    //         destinationCard.last4
+    //       }.`;
+
+    //   await notificationService.createNotification(
+    //     destinationCard.user._id,
+    //     recipientTitle,
+    //     recipientMessage,
+    //     "transaction",
+    //     {
+    //       transactionId: creditTransaction._id,
+    //       reference: sharedReference,
+    //       type: isDestinationCreditCard
+    //         ? "credit_payment_received"
+    //         : "card_deposit",
+    //     },
+    //     session
+    //   );
+    // }
 
     logger.debug("Committing database transaction", {
       userId: req.user._id,
@@ -3459,11 +3756,22 @@ exports.transferCardToCard = async (req, res, next) => {
       timestamp: new Date().toISOString(),
     });
 
-    next(error);
+    return apiResponse.error(
+      res,
+      500,
+      "Transfer Failed",
+      "An error occurred during card to card transfer",
+      "CARD_TO_CARD_ERROR"
+    );
   }
 };
 
-exports.transferCardToAccount = async (req, res, next) => {
+/**
+ * @desc    Transfer from card to account
+ * @route   POST /api/card/transfer/account
+ * @access  Private
+ */
+exports.transferCardToAccount = async (req, res) => {
   // Start logging
   logger.info("Card-to-account transfer request initiated", {
     userId: req.user._id,
@@ -3522,7 +3830,58 @@ exports.transferCardToAccount = async (req, res, next) => {
         sourceCardId,
         timestamp: new Date().toISOString(),
       });
-      return apiResponse.badRequest(res, "Source card not found");
+
+      await session.abortTransaction();
+      session.endSession();
+
+      return apiResponse.badRequest(
+        res,
+        "Invalid Request",
+        "Source card not found or does not belong to you",
+        "SOURCE_CARD_NOT_FOUND"
+      );
+    }
+
+    // Check if source card is active
+    if (sourceCard.status !== "active") {
+      logger.warn("Source card is not active", {
+        userId: req.user._id,
+        requestId: req.id,
+        sourceCardId: sourceCard._id,
+        cardStatus: sourceCard.status,
+        timestamp: new Date().toISOString(),
+      });
+
+      await session.abortTransaction();
+      session.endSession();
+
+      return apiResponse.badRequest(
+        res,
+        "Card Error",
+        `Source card is ${sourceCard.status}`,
+        "SOURCE_CARD_NOT_ACTIVE"
+      );
+    }
+
+    // Check if source card is expired
+    if (sourceCard.isExpired) {
+      logger.warn("Source card is expired", {
+        userId: req.user._id,
+        requestId: req.id,
+        sourceCardId: sourceCard._id,
+        expiryDate: sourceCard.expiryDate,
+        timestamp: new Date().toISOString(),
+      });
+
+      await session.abortTransaction();
+      session.endSession();
+
+      return apiResponse.badRequest(
+        res,
+        "Card Error",
+        "Source card is expired",
+        "SOURCE_CARD_EXPIRED"
+      );
     }
 
     // Check if source card has sufficient balance
@@ -3542,7 +3901,16 @@ exports.transferCardToAccount = async (req, res, next) => {
         ).toFixed(8),
         timestamp: new Date().toISOString(),
       });
-      return apiResponse.badRequest(res, "Insufficient funds in source card");
+
+      await session.abortTransaction();
+      session.endSession();
+
+      return apiResponse.badRequest(
+        res,
+        "Insufficient Funds",
+        "Insufficient funds in source card",
+        "INSUFFICIENT_CARD_FUNDS"
+      );
     }
 
     // Check transaction limits
@@ -3557,7 +3925,16 @@ exports.transferCardToAccount = async (req, res, next) => {
         reason: limitCheck.reason,
         timestamp: new Date().toISOString(),
       });
-      return apiResponse.badRequest(res, limitCheck.reason);
+
+      await session.abortTransaction();
+      session.endSession();
+
+      return apiResponse.badRequest(
+        res,
+        "Limit Exceeded",
+        limitCheck.reason,
+        "TRANSACTION_LIMIT_EXCEEDED"
+      );
     }
 
     // Find destination account
@@ -3574,7 +3951,16 @@ exports.transferCardToAccount = async (req, res, next) => {
         destinationAccountId,
         timestamp: new Date().toISOString(),
       });
-      return apiResponse.badRequest(res, "Destination account not found");
+
+      await session.abortTransaction();
+      session.endSession();
+
+      return apiResponse.badRequest(
+        res,
+        "Invalid Request",
+        "Destination account not found",
+        "DESTINATION_ACCOUNT_NOT_FOUND"
+      );
     }
 
     // Generate a shared reference for transactions
@@ -3641,16 +4027,20 @@ exports.transferCardToAccount = async (req, res, next) => {
 
     await destinationAccount.save({ session });
 
+    // Update card last used timestamp
+    sourceCard.lastUsedAt = new Date();
+    await sourceCard.save({ session });
+
     // Create Transaction records for general ledger
     const debitTransaction = new Transaction({
       user: req.user._id,
-      type: "Debit",
+      type: "debit",
       amount: decimalAmount,
-      source: sourceCard.last4,
+      source: sourceCard._id,
       sourceType: "Card",
       sourceCurrency: "USD",
       sourceUser: sourceCard.user._id,
-      destination: destinationAccount.accountNumber,
+      destination: destinationAccount._id,
       destinationType: "Account",
       destinationCurrency: "USD",
       beneficiary: destinationAccount.user._id,
@@ -3664,13 +4054,13 @@ exports.transferCardToAccount = async (req, res, next) => {
 
     const creditTransaction = new Transaction({
       user: destinationAccount.user._id,
-      type: "Credit",
+      type: "credit",
       amount: decimalAmount,
-      source: sourceCard.last4,
+      source: sourceCard._id,
       sourceType: "Card",
       sourceCurrency: "USD",
       sourceUser: sourceCard.user._id,
-      destination: destinationAccount.accountNumber,
+      destination: destinationAccount._id,
       destinationType: "Account",
       destinationCurrency: "USD",
       beneficiary: destinationAccount.user._id,
@@ -3700,7 +4090,6 @@ exports.transferCardToAccount = async (req, res, next) => {
       sourceCard.transactions = [];
     }
     sourceCard.transactions.push(debitTransaction._id);
-    sourceCard.lastUsedAt = new Date();
     await sourceCard.save({ session });
 
     if (!destinationAccount.transactions) {
@@ -3708,6 +4097,42 @@ exports.transferCardToAccount = async (req, res, next) => {
     }
     destinationAccount.transactions.push(creditTransaction._id);
     await destinationAccount.save({ session });
+
+    // Create notification for the card owner
+    // await notificationService.createNotification(
+    //   sourceCard.user._id,
+    //   "Card to Account Transfer Completed",
+    //   `Your transfer of $${decimalAmount.toString()} from card ending in ${
+    //     sourceCard.last4
+    //   } to account has been completed.`,
+    //   "transaction",
+    //   {
+    //     transactionId: debitTransaction._id,
+    //     reference: sharedReference,
+    //     type: "card_to_account",
+    //   },
+    //   session
+    // );
+
+    // // If destination account belongs to a different user, notify them too
+    // if (
+    //   sourceCard.user._id.toString() !== destinationAccount.user._id.toString()
+    // ) {
+    //   await notificationService.createNotification(
+    //     destinationAccount.user._id,
+    //     "Account Deposit Received",
+    //     `You have received $${decimalAmount.toString()} in your account ${
+    //       destinationAccount.name || destinationAccount.accountNumber
+    //     }.`,
+    //     "transaction",
+    //     {
+    //       transactionId: creditTransaction._id,
+    //       reference: sharedReference,
+    //       type: "account_deposit",
+    //     },
+    //     session
+    //   );
+    // }
 
     logger.debug("Committing database transaction", {
       userId: req.user._id,
@@ -3764,16 +4189,22 @@ exports.transferCardToAccount = async (req, res, next) => {
       timestamp: new Date().toISOString(),
     });
 
-    next(error);
+    return apiResponse.error(
+      res,
+      500,
+      "Transfer Failed",
+      "An error occurred during card to account transfer",
+      "CARD_TO_ACCOUNT_ERROR"
+    );
   }
 };
 
 /**
- * Card to Wallet Transfer Controller
- * Handles transferring funds from a card to a wallet
+ * @desc    Transfer from card to wallet
+ * @route   POST /api/card/transfer/wallet
+ * @access  Privatef
  */
-
-exports.transferCardToWallet = async (req, res, next) => {
+exports.transferCardToWallet = async (req, res) => {
   // Start logging
   logger.info("Card-to-wallet transfer request initiated", {
     userId: req.user._id,
@@ -3827,7 +4258,16 @@ exports.transferCardToWallet = async (req, res, next) => {
         sourceCardId,
         timestamp: new Date().toISOString(),
       });
-      return apiResponse.badRequest(res, "Source card not found");
+
+      await session.abortTransaction();
+      session.endSession();
+
+      return apiResponse.badRequest(
+        res,
+        "Invalid Request",
+        "Source card not found or does not belong to you",
+        "SOURCE_CARD_NOT_FOUND"
+      );
     }
 
     // Check if card is active
@@ -3839,7 +4279,37 @@ exports.transferCardToWallet = async (req, res, next) => {
         cardStatus: sourceCard.status,
         timestamp: new Date().toISOString(),
       });
-      return apiResponse.badRequest(res, `Card is ${sourceCard.status}`);
+
+      await session.abortTransaction();
+      session.endSession();
+
+      return apiResponse.badRequest(
+        res,
+        "Card Error",
+        `Card is ${sourceCard.status}`,
+        "CARD_NOT_ACTIVE"
+      );
+    }
+
+    // Check if card is expired
+    if (sourceCard.isExpired) {
+      logger.warn("Source card is expired", {
+        userId: req.user._id,
+        requestId: req.id,
+        sourceCardId: sourceCard._id,
+        expiryDate: sourceCard.expiryDate,
+        timestamp: new Date().toISOString(),
+      });
+
+      await session.abortTransaction();
+      session.endSession();
+
+      return apiResponse.badRequest(
+        res,
+        "Card Error",
+        "Source card is expired",
+        "CARD_EXPIRED"
+      );
     }
 
     // Check if source card has sufficient balance
@@ -3859,7 +4329,16 @@ exports.transferCardToWallet = async (req, res, next) => {
         ).toFixed(8),
         timestamp: new Date().toISOString(),
       });
-      return apiResponse.badRequest(res, "Insufficient funds in source card");
+
+      await session.abortTransaction();
+      session.endSession();
+
+      return apiResponse.badRequest(
+        res,
+        "Insufficient Funds",
+        "Insufficient funds in source card",
+        "INSUFFICIENT_CARD_FUNDS"
+      );
     }
 
     // Check transaction limits
@@ -3874,7 +4353,16 @@ exports.transferCardToWallet = async (req, res, next) => {
         reason: limitCheck.reason,
         timestamp: new Date().toISOString(),
       });
-      return apiResponse.badRequest(res, limitCheck.reason);
+
+      await session.abortTransaction();
+      session.endSession();
+
+      return apiResponse.badRequest(
+        res,
+        "Limit Exceeded",
+        limitCheck.reason,
+        "TRANSACTION_LIMIT_EXCEEDED"
+      );
     }
 
     // Find destination wallet
@@ -3891,7 +4379,16 @@ exports.transferCardToWallet = async (req, res, next) => {
         destinationWalletId,
         timestamp: new Date().toISOString(),
       });
-      return apiResponse.badRequest(res, "Destination wallet not found");
+
+      await session.abortTransaction();
+      session.endSession();
+
+      return apiResponse.badRequest(
+        res,
+        "Invalid Request",
+        "Destination wallet not found",
+        "DESTINATION_WALLET_NOT_FOUND"
+      );
     }
 
     // Check if wallet is active
@@ -3903,9 +4400,15 @@ exports.transferCardToWallet = async (req, res, next) => {
         walletStatus: destinationWallet.status,
         timestamp: new Date().toISOString(),
       });
+
+      await session.abortTransaction();
+      session.endSession();
+
       return apiResponse.badRequest(
         res,
-        `Wallet is ${destinationWallet.status}`
+        "Wallet Error",
+        `Wallet is ${destinationWallet.status}`,
+        "WALLET_NOT_ACTIVE"
       );
     }
 
@@ -3983,6 +4486,14 @@ exports.transferCardToWallet = async (req, res, next) => {
       ).toFixed(8)
     );
 
+    // Update ledger balance too
+    destinationWallet.ledgerBalance = mongoose.Types.Decimal128.fromString(
+      (
+        parseFloat(destinationWallet.ledgerBalance.toString()) +
+        parseFloat(convertedAmount.toString())
+      ).toFixed(8)
+    );
+
     logger.debug("Updating Destination wallet balance", {
       userId: req.user._id,
       requestId: req.id,
@@ -3995,6 +4506,14 @@ exports.transferCardToWallet = async (req, res, next) => {
 
     await destinationWallet.save({ session });
 
+    // Update last used timestamp for card
+    sourceCard.lastUsedAt = new Date();
+    await sourceCard.save({ session });
+
+    // Update last activity timestamp for wallet
+    destinationWallet.lastActivityAt = new Date();
+    await destinationWallet.save({ session });
+
     // Calculate conversion rate
     const conversionRate =
       destinationWallet.currency !== "USD"
@@ -4002,38 +4521,16 @@ exports.transferCardToWallet = async (req, res, next) => {
           parseFloat(decimalAmount.toString())
         : 1;
 
-    // Create WalletTransaction for destination (incoming)
-    const creditTransaction = new WalletTransaction({
-      user: destinationWallet.user._id,
-      type: "deposit",
-      amount: convertedAmount,
-      currency: destinationWallet.currency,
+    // Create Transaction for card (debit)
+    const debitTransaction = new Transaction({
+      user: req.user._id,
+      type: "debit",
+      amount: decimalAmount,
       source: sourceCard._id,
       sourceType: "Card",
       sourceCurrency: "USD",
-      beneficiary: destinationWallet._id,
-      beneficiaryType: "Wallet",
-      beneficiaryCurrency: destinationWallet.currency,
-      conversionRate,
-      description: description || "Card to wallet transfer",
-      status: "completed",
-      reference: sharedReference,
-      metadata,
-      ipAddress: req.ip,
-      userAgent: req.headers["user-agent"],
-      completedAt: new Date(),
-    });
-
-    // Create Transaction records for general ledger
-    const debitTransaction = new Transaction({
-      user: req.user._id,
-      type: "Debit",
-      amount: decimalAmount,
-      source: sourceCard.last4,
-      sourceType: "Card",
-      sourceCurrency: "USD",
       sourceUser: sourceCard.user._id,
-      destination: destinationWallet.address,
+      destination: destinationWallet._id,
       destinationType: "Wallet",
       destinationCurrency: destinationWallet.currency,
       beneficiary: destinationWallet.user._id,
@@ -4045,35 +4542,35 @@ exports.transferCardToWallet = async (req, res, next) => {
       processedAt: new Date(),
     });
 
-    // const creditTransaction = new Transaction({
-    //   user: destinationWallet.user._id,
-    //   type: "Credit",
-    //   amount: convertedAmount,
-    //   source: sourceCard.last4,
-    //   sourceType: "Card",
-    //   sourceCurrency: "USD",
-    //   sourceUser: sourceCard.user._id,
-    //   destination: destinationWallet.address,
-    //   destinationType: "Wallet",
-    //   destinationCurrency: destinationWallet.currency,
-    //   beneficiary: destinationWallet.user._id,
-    //   conversionRate,
-    //   description: description || "Card to wallet transfer (credit)",
-    //   status: "completed",
-    //   reference: sharedReference,
-    //   metadata,
-    //   processedAt: new Date(),
-    // });
+    // Create WalletTransaction for wallet (credit)
+    const creditTransaction = new WalletTransaction({
+      user: destinationWallet.user._id,
+      type: "credit",
+      amount: convertedAmount,
+      currency: destinationWallet.currency,
+      source: sourceCard._id,
+      sourceType: "Card",
+      sourceCurrency: "USD",
+      beneficiary: destinationWallet._id,
+      beneficiaryType: "Wallet",
+      beneficiaryCurrency: destinationWallet.currency,
+      conversionRate,
+      description: description || "Card to wallet transfer (credit)",
+      status: "completed",
+      reference: sharedReference,
+      metadata,
+      ipAddress: req.ip,
+      userAgent: req.headers["user-agent"],
+      completedAt: new Date(),
+    });
 
     // Save all transactions
-    // await walletTransaction.save({ session });
     await debitTransaction.save({ session });
     await creditTransaction.save({ session });
 
     logger.debug("Transactions created", {
       userId: req.user._id,
       requestId: req.id,
-      // walletTransactionId: walletTransaction._id,
       debitTransactionId: debitTransaction._id,
       creditTransactionId: creditTransaction._id,
       reference: sharedReference,
@@ -4085,15 +4582,51 @@ exports.transferCardToWallet = async (req, res, next) => {
       sourceCard.transactions = [];
     }
     sourceCard.transactions.push(debitTransaction._id);
-    sourceCard.lastUsedAt = new Date();
     await sourceCard.save({ session });
 
     if (!destinationWallet.transactions) {
       destinationWallet.transactions = [];
     }
-    destinationWallet.transactions.push(walletTransaction._id);
-    destinationWallet.lastActivityAt = new Date();
+    destinationWallet.transactions.push(creditTransaction._id);
     await destinationWallet.save({ session });
+
+    // Create notification for card owner
+    // await notificationService.createNotification(
+    //   sourceCard.user._id,
+    //   "Card to Wallet Transfer Completed",
+    //   `Your transfer of $${decimalAmount.toString()} from card ending in ${
+    //     sourceCard.last4
+    //   } to wallet has been completed.`,
+    //   "transaction",
+    //   {
+    //     transactionId: debitTransaction._id,
+    //     reference: sharedReference,
+    //     type: "card_to_wallet",
+    //   },
+    //   session
+    // );
+
+    // // If destination wallet belongs to different user, notify them too
+    // if (
+    //   sourceCard.user._id.toString() !== destinationWallet.user._id.toString()
+    // ) {
+    //   await notificationService.createNotification(
+    //     destinationWallet.user._id,
+    //     "Wallet Deposit Received",
+    //     `You have received ${convertedAmount.toString()} ${
+    //       destinationWallet.currency
+    //     } in your wallet ${
+    //       destinationWallet.name || destinationWallet.address
+    //     }.`,
+    //     "transaction",
+    //     {
+    //       transactionId: creditTransaction._id,
+    //       reference: sharedReference,
+    //       type: "wallet_deposit",
+    //     },
+    //     session
+    //   );
+    // }
 
     logger.debug("Committing database transaction", {
       userId: req.user._id,
@@ -4124,7 +4657,6 @@ exports.transferCardToWallet = async (req, res, next) => {
       "Transfer Successful",
       "Card to wallet transfer completed successfully",
       {
-        // walletTransaction,
         debitTransaction,
         creditTransaction,
         amount: decimalAmount.toString(),
@@ -4155,6 +4687,12 @@ exports.transferCardToWallet = async (req, res, next) => {
       timestamp: new Date().toISOString(),
     });
 
-    next(error);
+    return apiResponse.error(
+      res,
+      500,
+      "Transfer Failed",
+      "An error occurred during card to wallet transfer",
+      "CARD_TO_WALLET_ERROR"
+    );
   }
 };

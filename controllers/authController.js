@@ -15,13 +15,13 @@ const {
   generateChallengeToken,
   validateChallengeToken,
 } = require("../utils/encryption");
-const { populate } = require("../models/Transaction");
+const notificationService = require("../services/notificationService");
 
 // Default banking information
 const DEFAULT_BANK_INFO = {
-  bank: "Prime Banking",
-  routingNumber: "021000021", // Default routing number
-  accountType: "checking",
+  bank: process.env.DEFAULT_BANK || "Prime Banking",
+  routingNumber: process.env.DEFAULT_ROUTING_NUMBER || "021000021", // Default routing number
+  accountType: process.env.DEFAULT_ACCOUNT_TYPE || "checking",
 };
 
 /**
@@ -214,15 +214,28 @@ exports.register = async (req, res) => {
       walletName,
     } = req.body;
 
+    // Input validation
+    if (!firstName || !lastName || !username || !email || !password) {
+      return apiResponse.badRequest(
+        res,
+        "Bad Request",
+        "Missing required fields",
+        "MISSING_FIELDS"
+      );
+    }
+
     // Check if user already exists
     const existingUser = await User.findOne({
       $or: [
         { email: email.toLowerCase() },
         { username: username.toLowerCase() },
       ],
-    });
+    }).session(session);
 
     if (existingUser) {
+      await session.abortTransaction();
+      session.endSession();
+
       if (existingUser.email === email.toLowerCase()) {
         return apiResponse.badRequest(
           res,
@@ -293,6 +306,15 @@ exports.register = async (req, res) => {
       user._id,
       req.ip,
       req.get("user-agent") || "unknown"
+    );
+
+    // Create notification in the same transaction
+    await notificationService.createNotification(
+      user._id,
+      "Successful Account Opening",
+      `Your account has been created successfully.`,
+      "system",
+      { ...user }
     );
 
     // Commit transaction
@@ -373,6 +395,16 @@ exports.login = async (req, res) => {
   try {
     const { identifier, password } = req.body;
 
+    // Input validation
+    if (!identifier || !password) {
+      return apiResponse.badRequest(
+        res,
+        "Bad Request",
+        "Email/username and password are required",
+        "MISSING_CREDENTIALS"
+      );
+    }
+
     // Find user by email or username
     const user = await User.findOne({
       $or: [
@@ -435,10 +467,10 @@ exports.login = async (req, res) => {
         select: "-createdIp -lastAccessedIp",
         populate: {
           path: "transactions",
-          options: { sort: { processedAt: -1 } },
+          options: { sort: { processedAt: -1 }, limit: 20 }, // Limit transactions
           populate: [
-            { path: "sourceUser" }, // Populate the sourceUser field
-            { path: "beneficiary" }, // Populate the beneficiary field
+            { path: "sourceUser", select: "fullName username" }, // Limit fields
+            { path: "beneficiary", select: "name nickname" }, // Limit fields
           ],
         },
       })
@@ -447,10 +479,10 @@ exports.login = async (req, res) => {
         select: "-securitySettings.twoFactorSecret",
         populate: {
           path: "transactions",
-          options: { sort: { completedAt: -1 } },
+          options: { sort: { completedAt: -1 }, limit: 20 }, // Limit transactions
           populate: [
-            { path: "source" }, // Populate the sourceUser field
-            { path: "beneficiary" }, // Populate the beneficiary field
+            { path: "source", select: "fullName username" }, // Limit fields
+            { path: "beneficiary", select: "name nickname" }, // Limit fields
           ],
         },
       })
@@ -462,21 +494,17 @@ exports.login = async (req, res) => {
           select: "accountNumber maskedAccountNumber type name bank",
         },
       })
-      .populate({
-        path: "beneficiaries",
-        // select: "name bank accountNumber routingNumber nickname isFavorite",
-      })
-      .populate({
-        path: "walletBeneficiaries",
-        // select: "name bank accountNumber routingNumber nickname isFavorite",
-      })
+      .populate("beneficiaries")
+      .populate("walletBeneficiaries")
       .populate({
         path: "investments",
-        populate: {
-          path: "plan",
-          // select: "accountNumber maskedAccountNumber type name bank",
-        },
-        // select: "name bank accountNumber routingNumber nickname isFavorite",
+        populate: [
+          { path: "plan" },
+          {
+            path: "transactions",
+            options: { sort: { createdAt: -1 }, limit: 10 }, // Limit transactions
+          },
+        ],
       })
       .populate({
         path: "bills",
@@ -490,39 +518,35 @@ exports.login = async (req, res) => {
           "user currency status requestDate priority preloadedAccount processingNotes processedBy processedAt notificationSent notificationDate",
       });
 
-      if (populatedUser.investments && populatedUser.investments.length > 0) {
-        for (let investment of populatedUser.investments) {
-          // Include the growth schedule metadata directly
-          // The frontend already has getInvestmentTrend to process this
+    if (populatedUser.investments && populatedUser.investments.length > 0) {
+      for (let investment of populatedUser.investments) {
+        // Include the growth schedule metadata directly
+        if (
+          investment.metadata?.growthSchedule &&
+          investment.metadata?.nextGrowthIndex !== undefined
+        ) {
+          const { growthSchedule, nextGrowthIndex } = investment.metadata;
 
-          // Optionally add some additional data that might be useful
-          if (
-            investment.metadata?.growthSchedule &&
-            investment.metadata?.nextGrowthIndex !== undefined
-          ) {
-            const { growthSchedule, nextGrowthIndex } = investment.metadata;
+          // Add today's expected growth amount
+          if (nextGrowthIndex < growthSchedule.length) {
+            investment.nextGrowthAmount = growthSchedule[nextGrowthIndex];
+            investment.nextGrowthPercentage =
+              (growthSchedule[nextGrowthIndex] / investment.currentValue) * 100;
+          }
 
-            // Add today's expected growth amount
-            if (nextGrowthIndex < growthSchedule.length) {
-              investment.nextGrowthAmount = growthSchedule[nextGrowthIndex];
-              investment.nextGrowthPercentage =
-                (growthSchedule[nextGrowthIndex] / investment.currentValue) *
-                100;
-            }
+          // Include last processed growth (yesterday's growth)
+          if (nextGrowthIndex > 0) {
+            investment.lastGrowthAmount = growthSchedule[nextGrowthIndex - 1];
 
-            // Include last processed growth (yesterday's growth)
-            if (nextGrowthIndex > 0) {
-              investment.lastGrowthAmount = growthSchedule[nextGrowthIndex - 1];
-
-              // Calculate percentage based on value before yesterday's growth
-              const valueBeforeLastGrowth =
-                investment.currentValue - investment.lastGrowthAmount;
-              investment.lastGrowthPercentage =
-                (investment.lastGrowthAmount / valueBeforeLastGrowth) * 100;
-            }
+            // Calculate percentage based on value before yesterday's growth
+            const valueBeforeLastGrowth =
+              investment.currentValue - investment.lastGrowthAmount;
+            investment.lastGrowthPercentage =
+              (investment.lastGrowthAmount / valueBeforeLastGrowth) * 100;
           }
         }
       }
+    }
 
     logger.info("User logged in", {
       userId: user._id,
@@ -627,73 +651,94 @@ exports.refreshToken = async (req, res) => {
       );
     }
 
-    // Get the user
-    const user = await User.findById(tokenDoc.user);
+    // Start a transaction for token refresh
+    const session = await mongoose.startSession();
+    session.startTransaction();
 
-    if (!user) {
-      logger.warn("Refresh token used for non-existent user", {
-        tokenId: tokenDoc._id,
-        userId: tokenDoc.user,
-        ip: req.ip,
-        requestId: req.id,
-      });
+    try {
+      // Get the user
+      const user = await User.findById(tokenDoc.user).session(session);
 
-      return apiResponse.unauthorized(
-        res,
-        "Unauthorized",
-        "User not found",
-        "USER_NOT_FOUND"
-      );
-    }
+      if (!user) {
+        await session.abortTransaction();
+        session.endSession();
 
-    // Check if account is active
-    if (user.status !== "active" && user.status !== "pendingVerification") {
-      logger.warn("Token refresh attempt with inactive account", {
-        userId: user._id,
-        status: user.status,
-        ip: req.ip,
-        requestId: req.id,
-      });
+        logger.warn("Refresh token used for non-existent user", {
+          tokenId: tokenDoc._id,
+          userId: tokenDoc.user,
+          ip: req.ip,
+          requestId: req.id,
+        });
 
-      return apiResponse.forbidden(
-        res,
-        "Account Restricted",
-        `Your account is ${user.status}. Please contact support.`,
-        "ACCOUNT_RESTRICTED"
-      );
-    }
-
-    // Generate new JWT token
-    const token = generateToken(user._id, user.role);
-
-    // Generate new refresh token
-    const newRefreshToken = await generateRefreshToken(
-      user._id,
-      req.ip,
-      req.get("user-agent") || "unknown"
-    );
-
-    // Revoke the old refresh token
-    await tokenDoc.revoke();
-
-    logger.info("Access token refreshed", {
-      userId: user._id,
-      username: user.username,
-      ip: req.ip,
-      requestId: req.id,
-    });
-
-    // Return new tokens using apiResponse utility
-    return apiResponse.success(
-      res,
-      200,
-      "Token Refreshed",
-      "Token refreshed successfully",
-      {
-        token,
-        refreshToken: newRefreshToken.token,
+        return apiResponse.unauthorized(
+          res,
+          "Unauthorized",
+          "User not found",
+          "USER_NOT_FOUND"
+        );
       }
-    );
+
+      // Check if account is active
+      if (user.status !== "active" && user.status !== "pendingVerification") {
+        await session.abortTransaction();
+        session.endSession();
+
+        logger.warn("Token refresh attempt with inactive account", {
+          userId: user._id,
+          status: user.status,
+          ip: req.ip,
+          requestId: req.id,
+        });
+
+        return apiResponse.forbidden(
+          res,
+          "Account Restricted",
+          `Your account is ${user.status}. Please contact support.`,
+          "ACCOUNT_RESTRICTED"
+        );
+      }
+
+      // Generate new JWT token
+      const token = generateToken(user._id, user.role);
+
+      // Generate new refresh token
+      const newRefreshToken = await generateRefreshToken(
+        user._id,
+        req.ip,
+        req.get("user-agent") || "unknown"
+      );
+
+      // Revoke the old refresh token
+      await tokenDoc.revoke(session);
+
+      // Commit the transaction
+      await session.commitTransaction();
+      session.endSession();
+
+      logger.info("Access token refreshed", {
+        userId: user._id,
+        username: user.username,
+        ip: req.ip,
+        requestId: req.id,
+      });
+
+      // Return new tokens using apiResponse utility
+      return apiResponse.success(
+        res,
+        200,
+        "Token Refreshed",
+        "Token refreshed successfully",
+        {
+          token,
+          refreshToken: newRefreshToken.token,
+        }
+      );
+    } catch (error) {
+      // Abort transaction on error
+      await session.abortTransaction();
+      session.endSession();
+      throw error;
+    }
   } catch (error) {
     logger.error("Token refresh error", {
       error: error.message,
@@ -725,14 +770,26 @@ exports.logout = async (req, res) => {
       const tokenDoc = await RefreshToken.findOne({ token: refreshToken });
 
       if (tokenDoc) {
-        await tokenDoc.revoke();
+        // Start a transaction for token revocation
+        const session = await mongoose.startSession();
+        session.startTransaction();
 
-        logger.info("User logged out (token revoked)", {
-          userId: tokenDoc.user,
-          tokenId: tokenDoc._id,
-          ip: req.ip,
-          requestId: req.id,
-        });
+        try {
+          await tokenDoc.revoke(session);
+          await session.commitTransaction();
+
+          logger.info("User logged out (token revoked)", {
+            userId: tokenDoc.user,
+            tokenId: tokenDoc._id,
+            ip: req.ip,
+            requestId: req.id,
+          });
+        } catch (error) {
+          await session.abortTransaction();
+          throw error;
+        } finally {
+          session.endSession();
+        }
       }
     }
 
@@ -766,6 +823,16 @@ exports.logout = async (req, res) => {
  */
 exports.getMe = async (req, res) => {
   try {
+    // Input validation
+    if (!req.user || !req.user._id) {
+      return apiResponse.unauthorized(
+        res,
+        "Unauthorized",
+        "User not authenticated",
+        "USER_NOT_AUTHENTICATED"
+      );
+    }
+
     // Get user with populated data
     const user = await User.findById(req.user._id)
       .populate({
@@ -773,10 +840,10 @@ exports.getMe = async (req, res) => {
         select: "-createdIp -lastAccessedIp",
         populate: {
           path: "transactions",
-          options: { sort: { processedAt: -1 } },
+          options: { sort: { processedAt: -1 }, limit: 20 }, // Limit transactions
           populate: [
-            { path: "sourceUser" }, // Populate the sourceUser field
-            { path: "beneficiary" }, // Populate the beneficiary field
+            { path: "sourceUser", select: "fullName username" }, // Limit fields
+            { path: "beneficiary", select: "name nickname" }, // Limit fields
           ],
         },
       })
@@ -785,10 +852,10 @@ exports.getMe = async (req, res) => {
         select: "-securitySettings.twoFactorSecret",
         populate: {
           path: "transactions",
-          options: { sort: { completedAt: -1 } },
+          options: { sort: { completedAt: -1 }, limit: 20 }, // Limit transactions
           populate: [
-            { path: "source" }, // Populate the sourceUser field
-            { path: "beneficiary" }, // Populate the beneficiary field
+            { path: "source", select: "fullName username" }, // Limit fields
+            { path: "beneficiary", select: "name nickname" }, // Limit fields
           ],
         },
       })
@@ -800,21 +867,17 @@ exports.getMe = async (req, res) => {
           select: "accountNumber maskedAccountNumber type name bank",
         },
       })
-      .populate({
-        path: "beneficiaries",
-        // select: "name bank accountNumber routingNumber nickname isFavorite",
-      })
-      .populate({
-        path: "walletBeneficiaries",
-        // select: "name bank accountNumber routingNumber nickname isFavorite",
-      })
+      .populate("beneficiaries")
+      .populate("walletBeneficiaries")
       .populate({
         path: "investments",
-        populate: {
-          path: "plan",
-          // select: "accountNumber maskedAccountNumber type name bank",
-        },
-        // select: "name bank accountNumber routingNumber nickname isFavorite",
+        populate: [
+          { path: "plan" },
+          {
+            path: "transactions",
+            options: { sort: { createdAt: -1 }, limit: 10 },
+          },
+        ],
       })
       .populate({
         path: "bills",
@@ -884,7 +947,7 @@ exports.getMe = async (req, res) => {
     );
   } catch (error) {
     logger.error("Error retrieving user profile", {
-      userId: req.user._id,
+      userId: req.user?._id,
       error: error.message,
       stack: error.stack,
       requestId: req.id,
@@ -906,14 +969,34 @@ exports.getMe = async (req, res) => {
  * @param {Object} res - Express response object
  */
 exports.setPasscode = async (req, res) => {
-  // console.log('lll', req.body)
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
   try {
     const { passcode } = req.body;
 
+    // Input validation
+    if (!passcode || passcode.length < 4) {
+      await session.abortTransaction();
+      session.endSession();
+
+      return apiResponse.badRequest(
+        res,
+        "Bad Request",
+        "Valid passcode is required (minimum 4 characters)",
+        "INVALID_PASSCODE"
+      );
+    }
+
     // Get user
-    const user = await User.findById(req.user._id).select("+passcodeHash");
+    const user = await User.findById(req.user._id)
+      .select("+passcodeHash")
+      .session(session);
 
     if (!user) {
+      await session.abortTransaction();
+      session.endSession();
+
       return apiResponse.notFound(
         res,
         "Not Found",
@@ -927,7 +1010,19 @@ exports.setPasscode = async (req, res) => {
     user.passcodeHash = await bcrypt.hash(passcode, salt);
     user.passcodeAttemptLeft = config.security.passcodeMaxAttempts;
 
-    await user.save();
+    await user.save({ session });
+
+    // Create notification
+    await notificationService.createNotification(
+      user._id,
+      "Passcode Set Successfully",
+      `Your passcode has been set successfully.`,
+      "system",
+      { userId: user._id }
+    );
+
+    await session.commitTransaction();
+    session.endSession();
 
     logger.info("User passcode set", {
       userId: user._id,
@@ -941,8 +1036,11 @@ exports.setPasscode = async (req, res) => {
       "Passcode set successfully"
     );
   } catch (error) {
+    await session.abortTransaction();
+    session.endSession();
+
     logger.error("Error setting passcode", {
-      userId: req.user._id,
+      userId: req.user?._id,
       error: error.message,
       stack: error.stack,
       requestId: req.id,
@@ -995,93 +1093,118 @@ exports.verifyPasscode = async (req, res, next) => {
       );
     }
 
-    // Get user with passcode hash
-    const user = await User.findById(userId).select("+passcodeHash");
+    // Start a transaction
+    const session = await mongoose.startSession();
+    session.startTransaction();
 
-    if (!user) {
-      return apiResponse.notFound(
-        res,
-        "Not Found",
-        "User not found",
-        "USER_NOT_FOUND"
-      );
-    }
+    try {
+      // Get user with passcode hash
+      const user = await User.findById(userId)
+        .select("+passcodeHash")
+        .session(session);
 
-    // Check if passcode is set
-    if (!user.passcodeHash) {
-      return apiResponse.badRequest(
-        res,
-        "Bad Request",
-        "Passcode not set",
-        "PASSCODE_NOT_SET"
-      );
-    }
+      if (!user) {
+        await session.abortTransaction();
+        session.endSession();
 
-    // Check if passcode attempts are left
-    if (user.passcodeAttemptLeft <= 0) {
-      return apiResponse.forbidden(
-        res,
-        "Account Locked",
-        "Account locked due to too many passcode attempts",
-        "PASSCODE_ATTEMPTS_EXCEEDED"
-      );
-    }
-
-    // Compute expected hash using challenge token
-    const expectedHash = crypto
-      .createHash("sha256")
-      .update(user.passcodeHash + challengeToken)
-      .digest("hex");
-
-    // Compare with provided verification hash
-    if (passcodeVerification !== expectedHash) {
-      // Decrement attempts
-      user.passcodeAttemptLeft -= 1;
-
-      // If no attempts left, lock account
-      if (user.passcodeAttemptLeft <= 0) {
-        user.status = "locked";
-
-        logger.warn("Account locked due to passcode attempts", {
-          userId: user._id,
-          requestId: req.id,
-        });
+        return apiResponse.notFound(
+          res,
+          "Not Found",
+          "User not found",
+          "USER_NOT_FOUND"
+        );
       }
 
-      await user.save();
+      // Check if passcode is set
+      if (!user.passcodeHash) {
+        await session.abortTransaction();
+        session.endSession();
 
-      logger.warn("Invalid passcode attempt", {
+        return apiResponse.badRequest(
+          res,
+          "Bad Request",
+          "Passcode not set",
+          "PASSCODE_NOT_SET"
+        );
+      }
+
+      // Check if passcode attempts are left
+      if (user.passcodeAttemptLeft <= 0) {
+        await session.abortTransaction();
+        session.endSession();
+
+        return apiResponse.forbidden(
+          res,
+          "Account Locked",
+          "Account locked due to too many passcode attempts",
+          "PASSCODE_ATTEMPTS_EXCEEDED"
+        );
+      }
+
+      // Compute expected hash using challenge token
+      const expectedHash = crypto
+        .createHash("sha256")
+        .update(user.passcodeHash + challengeToken)
+        .digest("hex");
+
+      // Compare with provided verification hash
+      if (passcodeVerification !== expectedHash) {
+        // Decrement attempts
+        user.passcodeAttemptLeft -= 1;
+
+        // If no attempts left, lock account
+        if (user.passcodeAttemptLeft <= 0) {
+          user.status = "locked";
+
+          logger.warn("Account locked due to passcode attempts", {
+            userId: user._id,
+            requestId: req.id,
+          });
+        }
+
+        await user.save({ session });
+        await session.commitTransaction();
+        session.endSession();
+
+        logger.warn("Invalid passcode attempt", {
+          userId: user._id,
+          attemptsLeft: user.passcodeAttemptLeft,
+          requestId: req.id,
+        });
+
+        return apiResponse.badRequest(
+          res,
+          "Invalid Passcode",
+          `Invalid passcode. ${user.passcodeAttemptLeft} attempts left.`,
+          "INVALID_PASSCODE"
+        );
+      }
+
+      // Reset attempts on successful verification
+      user.passcodeAttemptLeft = config.security.passcodeMaxAttempts;
+      await user.save({ session });
+      await session.commitTransaction();
+      session.endSession();
+
+      logger.info("Passcode verified successfully", {
         userId: user._id,
-        attemptsLeft: user.passcodeAttemptLeft,
+        action: validationResult.action,
         requestId: req.id,
       });
 
-      return apiResponse.badRequest(
-        res,
-        "Invalid Passcode",
-        `Invalid passcode. ${user.passcodeAttemptLeft} attempts left.`,
-        "INVALID_PASSCODE"
-      );
+      // Add the action to the request for downstream middleware
+      req.verifiedAction = validationResult.action;
+
+      // Proceed to next middleware/handler
+      next();
+    } catch (error) {
+      await session.abortTransaction();
+      session.endSession();
+      throw error;
     }
-
-    // Reset attempts on successful verification
-    user.passcodeAttemptLeft = config.security.passcodeMaxAttempts;
-    await user.save();
-
-    logger.info("Passcode verified successfully", {
-      userId: user._id,
-      action: validationResult.action,
-      requestId: req.id,
-    });
-
-    // Add the action to the request for downstream middleware
-    req.verifiedAction = validationResult.action;
-
-    // Proceed to next middleware/handler
-    next();
   } catch (error) {
     logger.error("Error verifying passcode", {
-      userId: req.user._id,
+      userId: req.user?._id,
       error: error.message,
       stack: error.stack,
       requestId: req.id,
@@ -1106,51 +1229,80 @@ exports.forgotPassword = async (req, res) => {
   try {
     const { email } = req.body;
 
-    // Find user by email
-    const user = await User.findOne({ email: email.toLowerCase() });
+    // Input validation
+    if (!email) {
+      return apiResponse.badRequest(
+        res,
+        "Bad Request",
+        "Email is required",
+        "EMAIL_REQUIRED"
+      );
+    }
 
-    if (!user) {
-      // Don't reveal that the user doesn't exist
+    // Start a transaction
+    const session = await mongoose.startSession();
+    session.startTransaction();
+
+    try {
+      // Find user by email
+      const user = await User.findOne({ email: email.toLowerCase() }).session(
+        session
+      );
+
+      if (!user) {
+        // Don't reveal that the user doesn't exist
+        await session.commitTransaction();
+        session.endSession();
+
+        return apiResponse.success(
+          res,
+          200,
+          "Reset Instructions Sent",
+          "Password reset instructions sent if email exists"
+        );
+      }
+
+      // Generate reset token
+      const resetToken = crypto.randomBytes(32).toString("hex");
+
+      // Hash token and set to resetPasswordToken field
+      const resetPasswordToken = crypto
+        .createHash("sha256")
+        .update(resetToken)
+        .digest("hex");
+
+      // Set expiry
+      const resetPasswordExpire =
+        Date.now() + config.security.passwordResetExpires;
+
+      // Save to user
+      user.resetPasswordToken = resetPasswordToken;
+      user.resetPasswordExpire = resetPasswordExpire;
+      await user.save({ session, validateBeforeSave: false });
+
+      // TODO: Send email with reset token
+      // This would typically be implemented with an email service
+
+      await session.commitTransaction();
+      session.endSession();
+
+      logger.info("Password reset requested", {
+        userId: user._id,
+        email: user.email,
+        requestId: req.id,
+      });
+
       return apiResponse.success(
         res,
         200,
         "Reset Instructions Sent",
-        "Password reset instructions sent if email exists"
+        "Password reset instructions sent"
       );
+    } catch (error) {
+      await session.abortTransaction();
+      session.endSession();
+      throw error;
     }
-
-    // Generate reset token
-    const resetToken = crypto.randomBytes(32).toString("hex");
-
-    // Hash token and set to resetPasswordToken field
-    const resetPasswordToken = crypto
-      .createHash("sha256")
-      .update(resetToken)
-      .digest("hex");
-
-    // Set expiry
-    const resetPasswordExpire =
-      Date.now() + config.security.passwordResetExpires;
-
-    // Save to user
-    user.resetPasswordToken = resetPasswordToken;
-    user.resetPasswordExpire = resetPasswordExpire;
-    await user.save({ validateBeforeSave: false });
-
-    // TODO: Send email with reset token
-
-    logger.info("Password reset requested", {
-      userId: user._id,
-      email: user.email,
-      requestId: req.id,
-    });
-
-    return apiResponse.success(
-      res,
-      200,
-      "Reset Instructions Sent",
-      "Password reset instructions sent"
-    );
   } catch (error) {
     logger.error("Error requesting password reset", {
       error: error.message,
@@ -1177,49 +1329,75 @@ exports.resetPassword = async (req, res) => {
   try {
     const { token, password } = req.body;
 
-    // Hash token
-    const resetPasswordToken = crypto
-      .createHash("sha256")
-      .update(token)
-      .digest("hex");
-
-    // Find user by token and expiry
-    const user = await User.findOne({
-      resetPasswordToken,
-      resetPasswordExpire: { $gt: Date.now() },
-    });
-
-    if (!user) {
+    // Input validation
+    if (!token || !password) {
       return apiResponse.badRequest(
         res,
-        "Invalid Token",
-        "Invalid or expired token",
-        "INVALID_RESET_TOKEN"
+        "Bad Request",
+        "Token and new password are required",
+        "MISSING_RESET_FIELDS"
       );
     }
 
-    // Set new password
-    user.password = password;
-    user.resetPasswordToken = undefined;
-    user.resetPasswordExpire = undefined;
+    // Start a transaction
+    const session = await mongoose.startSession();
+    session.startTransaction();
 
-    await user.save();
+    try {
+      // Hash token
+      const resetPasswordToken = crypto
+        .createHash("sha256")
+        .update(token)
+        .digest("hex");
 
-    // Revoke all refresh tokens for this user
-    await RefreshToken.revokeAllForUser(user._id);
+      // Find user by token and expiry
+      const user = await User.findOne({
+        resetPasswordToken,
+        resetPasswordExpire: { $gt: Date.now() },
+      }).session(session);
 
-    logger.info("Password reset completed", {
-      userId: user._id,
-      email: user.email,
-      requestId: req.id,
-    });
+      if (!user) {
+        await session.abortTransaction();
+        session.endSession();
 
-    return apiResponse.success(
-      res,
-      200,
-      "Password Reset",
-      "Password reset successful"
-    );
+        return apiResponse.badRequest(
+          res,
+          "Invalid Token",
+          "Invalid or expired token",
+          "INVALID_RESET_TOKEN"
+        );
+      }
+
+      // Set new password
+      user.password = password;
+      user.resetPasswordToken = undefined;
+      user.resetPasswordExpire = undefined;
+
+      await user.save({ session });
+
+      // Revoke all refresh tokens for this user
+      await RefreshToken.revokeAllForUser(user._id, session);
+
+      await session.commitTransaction();
+      session.endSession();
+
+      logger.info("Password reset completed", {
+        userId: user._id,
+        email: user.email,
+        requestId: req.id,
+      });
+
+      return apiResponse.success(
+        res,
+        200,
+        "Password Reset",
+        "Password reset successful"
+      );
+    } catch (error) {
+      await session.abortTransaction();
+      session.endSession();
+      throw error;
+    }
   } catch (error) {
     logger.error("Error resetting password", {
       error: error.message,
@@ -1246,54 +1424,95 @@ exports.updatePassword = async (req, res) => {
   try {
     const { currentPassword, newPassword } = req.body;
 
-    // Get user with password
-    const user = await User.findById(req.user._id).select("+password");
-
-    if (!user) {
-      return apiResponse.notFound(
+    // Input validation
+    if (!currentPassword || !newPassword) {
+      return apiResponse.badRequest(
         res,
-        "Not Found",
-        "User not found",
-        "USER_NOT_FOUND"
+        "Bad Request",
+        "Current password and new password are required",
+        "MISSING_PASSWORD_FIELDS"
       );
     }
 
-    // Check current password
-    if (!(await user.matchPassword(currentPassword))) {
-      logger.warn("Invalid current password in update attempt", {
+    // Start a transaction
+    const session = await mongoose.startSession();
+    session.startTransaction();
+
+    try {
+      // Get user with password
+      const user = await User.findById(req.user._id)
+        .select("+password")
+        .session(session);
+
+      if (!user) {
+        await session.abortTransaction();
+        session.endSession();
+
+        return apiResponse.notFound(
+          res,
+          "Not Found",
+          "User not found",
+          "USER_NOT_FOUND"
+        );
+      }
+
+      // Check current password
+      if (!(await user.matchPassword(currentPassword))) {
+        await session.abortTransaction();
+        session.endSession();
+
+        logger.warn("Invalid current password in update attempt", {
+          userId: user._id,
+          requestId: req.id,
+        });
+
+        return apiResponse.badRequest(
+          res,
+          "Invalid Password",
+          "Current password is incorrect",
+          "INVALID_CURRENT_PASSWORD"
+        );
+      }
+
+      // Update password
+      user.password = newPassword;
+      await user.save({ session });
+
+      // Revoke all refresh tokens for this user
+      await RefreshToken.revokeAllForUser(user._id, session);
+
+      // Create notification for password update
+      await notificationService.createNotification(
+        user._id,
+        "Password updated Successfully",
+        `Your password has been updated successfully.`,
+        "system",
+        {},
+        session
+      );
+
+      await session.commitTransaction();
+      session.endSession();
+
+      logger.info("Password updated", {
         userId: user._id,
         requestId: req.id,
       });
 
-      return apiResponse.badRequest(
+      return apiResponse.success(
         res,
-        "Invalid Password",
-        "Current password is incorrect",
-        "INVALID_CURRENT_PASSWORD"
+        200,
+        "Password Updated",
+        "Password updated successfully"
       );
+    } catch (error) {
+      await session.abortTransaction();
+      session.endSession();
+      throw error;
     }
-
-    // Update password
-    user.password = newPassword;
-    await user.save();
-
-    // Revoke all refresh tokens for this user
-    await RefreshToken.revokeAllForUser(user._id);
-
-    logger.info("Password updated", {
-      userId: user._id,
-      requestId: req.id,
-    });
-
-    return apiResponse.success(
-      res,
-      200,
-      "Password Updated",
-      "Password updated successfully"
-    );
   } catch (error) {
     logger.error("Error updating password", {
-      userId: req.user._id,
+      userId: req.user?._id,
       error: error.message,
       stack: error.stack,
       requestId: req.id,

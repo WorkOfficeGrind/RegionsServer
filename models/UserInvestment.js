@@ -37,6 +37,13 @@ const UserInvestmentSchema = new mongoose.Schema(
       required: [true, "Amount is required"],
       min: [1, "Amount is required"],
     },
+    previousValue: {
+      type: Number,
+      required: [true, "Previous value is required"],
+      default: function () {
+        return this.amount; // Initially set to investment amount
+      },
+    },
     currentValue: {
       type: Number,
       required: [true, "Current value is required"],
@@ -135,6 +142,11 @@ UserInvestmentSchema.virtual("remainingDays").get(function () {
   return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 });
 
+UserInvestmentSchema.virtual("percentageChange").get(function () {
+  if (!this.previousValue || this.previousValue === 0) return 0;
+  return ((this.currentValue - this.previousValue) / this.previousValue) * 100;
+});
+
 // Virtual for progress percentage
 UserInvestmentSchema.virtual("progressPercentage").get(function () {
   if (this.status !== "active") return 100;
@@ -173,6 +185,18 @@ UserInvestmentSchema.post("save", function (doc) {
     action: this.isNew ? "created" : "updated",
   });
 });
+
+UserInvestmentSchema.methods.recordValueChange = async function () {
+  // Only update previousValue when calculating new interest
+  this.previousValue = this.currentValue;
+  await this.save();
+
+  return {
+    success: true,
+    message: "Previous value recorded successfully",
+    previousValue: this.previousValue,
+  };
+};
 
 // Method to calculate interest
 UserInvestmentSchema.methods.calculateInterest = async function (
@@ -225,49 +249,14 @@ UserInvestmentSchema.methods.calculateInterest = async function (
       };
     }
 
+    // ADD THIS HERE: Update previousValue before calculating new interest
+    this.previousValue = this.currentValue;
+
     // Calculate interest based on compound frequency
     let interestRate = this.rate / 100;
     let periodsPerYear;
 
-    switch (this.compoundFrequency) {
-      case "daily":
-        periodsPerYear = 365;
-        break;
-      case "weekly":
-        periodsPerYear = 52;
-        break;
-      case "monthly":
-        periodsPerYear = 12;
-        break;
-      case "quarterly":
-        periodsPerYear = 4;
-        break;
-      case "annually":
-        periodsPerYear = 1;
-        break;
-      case "none":
-        periodsPerYear = 0; // Simple interest
-        break;
-      default:
-        periodsPerYear = 12; // Default to monthly
-    }
-
-    let newValue;
-
-    if (periodsPerYear === 0) {
-      // Simple interest
-      const dailyRate = interestRate / 365;
-      const interestEarned = this.investedAmount * dailyRate * diffDays;
-      newValue = this.currentValue + interestEarned;
-    } else {
-      // Compound interest
-      const ratePerPeriod = interestRate / periodsPerYear;
-      const periodsElapsed = (diffDays / 365) * periodsPerYear;
-
-      // For partial periods
-      newValue =
-        this.currentValue * Math.pow(1 + ratePerPeriod, periodsElapsed);
-    }
+    // ... rest of your calculation logic ...
 
     // Update current value and last calculation date
     const interestEarned = newValue - this.currentValue;
@@ -281,6 +270,7 @@ UserInvestmentSchema.methods.calculateInterest = async function (
       userId: this.user,
       interestEarned: interestEarned,
       currentValue: this.currentValue,
+      previousValue: this.previousValue,
       daysElapsed: diffDays,
     });
 
@@ -289,6 +279,7 @@ UserInvestmentSchema.methods.calculateInterest = async function (
       message: "Interest calculated successfully",
       interestEarned: interestEarned,
       currentValue: this.currentValue,
+      previousValue: this.previousValue,
     };
   } catch (error) {
     logger.error("Error calculating investment interest", {
@@ -377,6 +368,8 @@ UserInvestmentSchema.methods.withdraw = async function (
     throw error;
   }
 };
+
+
 
 // Create indexes
 UserInvestmentSchema.index({ user: 1 });

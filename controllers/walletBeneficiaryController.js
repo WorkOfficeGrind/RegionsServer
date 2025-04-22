@@ -3,6 +3,7 @@ const mongoose = require("mongoose");
 const { logger } = require("../config/logger");
 const User = require("../models/User");
 const WalletBeneficiary = require("../models/WalletBeneficiary");
+const notificationService = require("../services/notificationService");
 
 // Create Beneficiary
 exports.createBeneficiary = async (req, res) => {

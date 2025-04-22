@@ -12,6 +12,8 @@ const {
   transferAccountToWallet,
   transferWalletToWallet,
 } = require("../controllers/transactionController");
+const userController = require("../controllers/userController");
+const { getTransactionById } = require("../controllers/accountController");
 
 const router = express.Router();
 
@@ -80,6 +82,14 @@ router.post(
 );
 
 /**
+ * @route   GET /api/v1/transactions/:id
+ * @desc    Get a single transaction by ID
+ * @access  Private
+ */
+router.get("/:transactionId", getTransactionById);
+
+
+/**
  * @route   GET /api/v1/transactions
  * @desc    Get all transactions for the authenticated user
  * @access  Private
@@ -97,12 +107,6 @@ router.post(
  */
 // router.get("/summary", transactionController.getTransactionSummary);
 
-/**
- * @route   GET /api/v1/transactions/:id
- * @desc    Get a single transaction by ID
- * @access  Private
- */
-// router.get("/:id", transactionController.getTransaction);
 
 /**
  * @route   GET /api/v1/transactions/:id/receipt

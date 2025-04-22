@@ -6,6 +6,7 @@ const Transaction = require("../models/Transaction");
 const { logger } = require("../config/logger");
 const apiResponse = require("../utils/apiResponse");
 const mongoose = require("mongoose");
+const notificationService = require("../services/notificationService");
 
 /**
  * @desc    Create a new bill

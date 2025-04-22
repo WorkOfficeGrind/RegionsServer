@@ -1,61 +1,73 @@
 const express = require("express");
+const router = express.Router();
 const {
   authenticate,
   verifyPasscode,
   hasRole,
 } = require("../middlewares/authMiddleware");
-const { validate, schemas } = require("../middlewares/validator");
-const {
-  createInvestmentPlan,
-  getAllInvestmentPlans,
-  addUserInvestment,
-} = require("../controllers/investmentController");
+const investmentController = require("../controllers/investmentController");
 
-const router = express.Router();
+// Routes for investment plans
+router.get("/plans", authenticate, investmentController.getInvestmentPlans);
+router.get("/plans/:id", authenticate, investmentController.getInvestmentPlan);
 
-// Apply authentication middleware to all routes
-// router.use(authenticate);
-
-/**
- * @route   POST /api/v1/investments
- * @desc    Create an investment plans
- * @access  Private
- */
-router.post(
-  "/plans",
-  // validate(schemas.transaction.create),
-  authenticate,
-  hasRole("admin"),
-  // verifyPasscode,
-  createInvestmentPlan
-);
-
-/**
- * @route   GET /api/v1/investments
- * @desc    Get all investment plans
- * @access  Private
- */
-router.get(
-  "/plans",
-  // validate(schemas.transaction.create),
-  authenticate,
-  // hasRole("admin"),
-  // verifyPasscode,
-  getAllInvestmentPlans
-);
-
-/**
- * @route   POST /api/v1/investments
- * @desc    Add an investment plan to user portfolio
- * @access  Private
- */
+// Routes for user investments
 router.post(
   "/invest",
-  // validate(schemas.transaction.create),
   authenticate,
-  // hasRole("admin"),
   verifyPasscode,
-  addUserInvestment
+  investmentController.createInvestment
+);
+
+router.post(
+  "/:id/add-liquidity",
+  authenticate,
+  verifyPasscode,
+  investmentController.addLiquidityToInvestment
+);
+
+router.post(
+  "/:id/trade",
+  authenticate,
+  verifyPasscode,
+  investmentController.withdrawInvestment
+);
+
+router.get("/", authenticate, investmentController.getUserInvestments);
+router.get(
+  "/performance",
+  authenticate,
+  investmentController.getInvestmentPerformance
+);
+router.get(
+  "/transactions",
+  authenticate,
+  investmentController.getInvestmentTransactions
+);
+router.get("/:id", authenticate, investmentController.getInvestmentDetails);
+
+// Routes for investment actions
+router.post(
+  "/:id/withdraw",
+  authenticate,
+  investmentController.withdrawInvestment
+);
+router.post("/:id/cancel", authenticate, investmentController.cancelInvestment);
+
+// Admin routes for investment management
+router.post(
+  "/process-growth",
+  authenticate,
+  hasRole("admin"),
+  investmentController.processInvestmentGrowth
+);
+
+router.post(
+  "/:id/simulate-growth",
+  authenticate,
+  hasRole("admin"),
+
+  investmentController.simulateInvestmentGrowth
 );
 
 module.exports = router;

@@ -2,6 +2,7 @@ const walletService = require("../services/walletService");
 const transactionService = require("../services/transactionService");
 const { logger } = require("../config/logger");
 const apiResponse = require("../utils/apiResponse");
+const notificationService = require("../services/notificationService");
 
 /**
  * Wallet controller for handling wallet operations

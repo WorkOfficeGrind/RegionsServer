@@ -4,8 +4,11 @@ const app = require("./app");
 const connectDB = require("./config/db");
 const cronService = require("./services/cronService");
 const { logger } = require("./config/logger");
+const ChartDataService = require("./services/chartService");
 
 const server = http.createServer(app);
+
+const chartDataService = new ChartDataService(server);
 
 // Handle uncaught exceptions
 process.on("uncaughtException", (err) => {
